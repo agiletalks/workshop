@@ -25,9 +25,9 @@
             --secondary: #0d9488;
             --secondary-hover: #0f766e;
             --accent: #e11d48;
-            --sidebar-width: 320px;
-            --header-height: 70px;
-            --transition-speed: 0.25s;
+            --sidebar-width: 280px;
+            --drawer-width: 440px;
+            --transition-speed: 0.3s;
         }
 
         * {
@@ -46,54 +46,108 @@
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             overflow-x: hidden;
         }
 
-        /* Sidebar Styling */
-        aside {
-            width: var(--sidebar-width);
-            background: rgba(255, 255, 255, 0.9);
-            border-right: 1px solid var(--border-color);
-            backdrop-filter: blur(15px);
-            position: fixed;
+        /* Top Header Bar */
+        .top-header {
+            position: sticky;
             top: 0;
-            bottom: 0;
-            left: 0;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            padding: 24px;
-        }
-
-        .brand {
+            width: 100%;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 32px;
+            padding: 0 24px;
+            gap: 16px;
+            z-index: 990;
         }
 
-        .brand-logo {
-            width: 36px;
-            height: 36px;
+        .btn-toggle-sidebar {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 22px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-toggle-sidebar:hover {
+            background: rgba(124, 58, 237, 0.08);
+            color: var(--primary);
+        }
+
+        .top-header-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-logo-mini {
+            width: 30px;
+            height: 30px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 10px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 18px;
+            font-size: 15px;
             color: white;
-            box-shadow: 0 4px 15px var(--primary-glow);
+            box-shadow: 0 4px 10px var(--primary-glow);
         }
 
-        .brand-name {
+        .brand-name-mini {
             font-family: 'Outfit', sans-serif;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             letter-spacing: 0.5px;
             background: linear-gradient(to right, #0f172a, var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        /* Layout wrapper */
+        .app-container {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Sidebar Styling (Collapsible) */
+        aside {
+            width: var(--sidebar-width);
+            background: rgba(255, 255, 255, 0.95);
+            border-right: 1px solid var(--border-color);
+            backdrop-filter: blur(15px);
+            position: fixed;
+            top: 64px;
+            bottom: 0;
+            left: calc(-1 * var(--sidebar-width));
+            z-index: 980;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            transition: transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 10px 0 30px rgba(15, 23, 42, 0.03);
+        }
+
+        body.sidebar-open aside {
+            transform: translateX(var(--sidebar-width));
+        }
+
+        .brand {
+            display: none;
         }
 
         .nav-section {
@@ -149,98 +203,54 @@
             font-size: 18px;
         }
 
-        /* Syllabus Planner Sidebar Summary */
-        .planner-preview-card {
-            margin-top: auto;
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            box-shadow: 0 4px 12px rgba(148, 163, 184, 0.05);
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.25);
+            backdrop-filter: blur(4px);
+            z-index: 979;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-speed) ease;
         }
 
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .preview-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .time-badge {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .time-badge.ok {
-            background: rgba(124, 58, 237, 0.08);
-            color: var(--primary);
-            border: 1px solid rgba(124, 58, 237, 0.15);
-        }
-
-        .planner-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-
-        .stat-item {
-            background: rgba(241, 245, 249, 0.8);
-            padding: 8px 6px;
-            border-radius: 6px;
-            text-align: center;
-            border: 1px solid rgba(226, 232, 240, 0.5);
-        }
-
-        .stat-val {
-            font-weight: 700;
-            color: var(--text-primary);
-            font-size: 14px;
-        }
-
-        .btn-view-planner {
-            display: block;
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            text-align: center;
-            padding: 10px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all var(--transition-speed);
-            border: none;
-            box-shadow: 0 4px 10px var(--primary-glow);
-        }
-
-        .btn-view-planner:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
+        body.sidebar-open .sidebar-overlay {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         /* Main Content Styling */
         main {
-            margin-left: var(--sidebar-width);
             flex: 1;
             padding: 40px;
             max-width: 1200px;
-            width: calc(100% - var(--sidebar-width));
+            width: 100%;
+            margin: 0 auto;
+            transition: margin-left var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @media (min-width: 1024px) {
+            aside {
+                left: 0;
+            }
+            main {
+                margin-left: var(--sidebar-width);
+                width: calc(100% - var(--sidebar-width));
+            }
+            body.sidebar-collapsed aside {
+                transform: translateX(calc(-1 * var(--sidebar-width)));
+            }
+            body.sidebar-collapsed main {
+                margin-left: 0;
+                width: 100%;
+            }
+            .sidebar-overlay {
+                display: none;
+            }
         }
 
         header {
@@ -1134,71 +1144,298 @@
             from { transform: translateY(100px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        /* Floating Cart FAB */
+        .cart-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
+            z-index: 950;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .cart-fab:hover {
+            transform: scale(1.1) translateY(-3px);
+            box-shadow: 0 12px 30px rgba(124, 58, 237, 0.5);
+        }
+
+        .cart-fab-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--accent);
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(225, 29, 72, 0.4);
+            animation: badgePulse 2s infinite;
+        }
+
+        @keyframes badgePulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        /* Cart Drawer */
+        .cart-drawer {
+            position: fixed;
+            top: 0;
+            right: calc(-1 * var(--drawer-width));
+            width: var(--drawer-width);
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-color);
+            box-shadow: -10px 0 40px rgba(15, 23, 42, 0.1);
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .cart-drawer.open {
+            transform: translateX(calc(-1 * var(--drawer-width)));
+        }
+
+        .cart-drawer-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+        }
+
+        .cart-drawer-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cart-drawer-close {
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .cart-drawer-close:hover {
+            color: var(--text-primary);
+        }
+
+        .cart-drawer-body {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .cart-drawer-footer {
+            padding: 24px;
+            border-top: 1px solid var(--border-color);
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .cart-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.25);
+            backdrop-filter: blur(4px);
+            z-index: 1099;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-speed) ease;
+        }
+
+        .cart-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --drawer-width: 100%;
+            }
+        }
+
+        /* Search and Filter System */
+        .search-filter-container {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px -2px rgba(148, 163, 184, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14.5px;
+            color: var(--text-primary);
+            outline: none;
+            transition: all var(--transition-speed);
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-pill {
+            background: #f1f5f9;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            user-select: none;
+        }
+
+        .filter-pill:hover {
+            background: rgba(124, 58, 237, 0.05);
+            color: var(--primary);
+            border-color: var(--border-hover);
+        }
+
+        .filter-pill.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 10px var(--primary-glow);
+        }
+        
+        .no-results {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
 
-    <!-- SIDEBAR -->
-    <aside>
-        <div class="brand">
-            <div class="brand-logo">EA</div>
-            <div class="brand-name">課程規劃助手</div>
+    <!-- TOP HEADER -->
+    <div class="top-header">
+        <button class="btn-toggle-sidebar" onclick="toggleSidebar()">☰</button>
+        <div class="top-header-brand">
+            <span class="brand-logo-mini">EA</span>
+            <span class="brand-name-mini">情緒敏捷引導庫</span>
         </div>
+    </div>
 
-        <div class="nav-section">
-            <div class="nav-section-title">工具與規劃</div>
-            <ul class="nav-menu">
-                <li class="nav-item active" onclick="switchTab('toolkit')">
-                    <span class="nav-icon">📘</span>
-                    <span>5天引導工具包</span>
-                </li>
-                <li class="nav-item" onclick="switchTab('planner')">
-                    <span class="nav-icon">🛒</span>
-                    <span>我的挑選清單</span>
-                </li>
-            </ul>
-        </div>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-        <div class="nav-section">
-            <div class="nav-section-title">案例研究</div>
-            <ul class="nav-menu">
-                <li class="nav-item" onclick="switchTab('case-microsoft')">
-                    <span class="nav-icon">🏢</span>
-                    <span>微軟文化轉型</span>
-                </li>
-                <li class="nav-item" onclick="switchTab('case-maya')">
-                    <span class="nav-icon">👩</span>
-                    <span>Maya 領導力困境</span>
-                </li>
-            </ul>
-        </div>
-
-        <!-- PLANNER SIDEBAR PREVIEW -->
-        <div class="planner-preview-card">
-            <div class="preview-header">
-                <span class="preview-title">我的工具箱 (購物車)</span>
-                <span id="timeBadge" class="time-badge ok">
-                    <span id="totalTimeLabel">0</span> min
-                </span>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside>
+            <div class="nav-section">
+                <div class="nav-section-title">工具庫</div>
+                <ul class="nav-menu">
+                    <li class="nav-item active" onclick="switchTab('toolkit')">
+                        <span class="nav-icon">📚</span>
+                        <span>情緒敏捷工具庫</span>
+                    </li>
+                </ul>
             </div>
 
-            <div class="planner-stats">
-                <div class="stat-item">
-                    <div id="toolCountLabel" class="stat-val">0</div>
-                    <div>已選工具數</div>
-                </div>
-                <div class="stat-item">
-                    <div id="blockCountLabel" class="stat-val">0</div>
-                    <div>總活動區塊</div>
-                </div>
+            <div class="nav-section">
+                <div class="nav-section-title">案例研究</div>
+                <ul class="nav-menu">
+                    <li class="nav-item" onclick="switchTab('case-microsoft')">
+                        <span class="nav-icon">🏢</span>
+                        <span>微軟文化轉型</span>
+                    </li>
+                    <li class="nav-item" onclick="switchTab('case-maya')">
+                        <span class="nav-icon">👩</span>
+                        <span>Maya 領導力困境</span>
+                    </li>
+                </ul>
             </div>
+        </aside>
 
-            <button class="btn-view-planner" onclick="switchTab('planner')">查看挑選清單</button>
-        </div>
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <main>
+        <!-- MAIN CONTENT -->
+        <main>
         
         <!-- HEADER -->
         <header>
@@ -1232,112 +1469,42 @@
             </div>
         </header>
 
-        <!-- TAB CONTENT: TOOLKIT -->
+                <!-- TAB CONTENT: TOOLKIT -->
         <div id="tab-toolkit" class="tab-content active">
-            <!-- Day Selection Pills -->
-            <div class="day-pills">
-                <button class="day-pill active" onclick="selectDay(1)">Day 1: Arrival & Safety</button>
-                <button class="day-pill" onclick="selectDay(2)">Day 2: Presence & Connection</button>
-                <button class="day-pill" onclick="selectDay(3)">Day 3: Bias & Reflection</button>
-                <button class="day-pill" onclick="selectDay(4)">Day 4: Coaching Skills</button>
-                <button class="day-pill" onclick="selectDay(5)">Day 5: Integration & Closing</button>
+            <!-- Search & Filter System -->
+            <div class="search-filter-container">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="toolSearchInput" placeholder="搜尋工具名稱、目的、流程、引導重點、標籤或關鍵字..." oninput="filterTools()">
+                </div>
+                
+                <div class="filter-section">
+                    <div class="filter-label">🏷️ 主題類別</div>
+                    <div class="filter-pills" id="categoryFilterPills">
+                        <!-- Dynamically filled Category pills -->
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <div class="filter-label">🏷️ 屬性標籤</div>
+                    <div class="filter-pills" id="tagFilterPills">
+                        <!-- Dynamically filled Tag pills -->
+                    </div>
+                </div>
             </div>
 
-            <!-- Day Overview -->
-            <div class="day-overview-card">
-                <span class="day-overview-tag">學習節奏與主軸</span>
-                <h3 id="dayTitle" class="day-overview-title">Day 1－Arrival 與 Psychological Safety 建立</h3>
-                <div id="dayOverview" class="day-overview-text"></div>
+            <!-- Category Overview Card (Dynamically shown/hidden) -->
+            <div id="categoryOverviewCard" class="day-overview-card" style="display: none;">
+                <span class="day-overview-tag">類別學習主軸與節奏</span>
+                <h3 id="categoryTitle" class="day-overview-title"></h3>
+                <div id="categoryOverview" class="day-overview-text"></div>
             </div>
 
             <!-- Tools List -->
             <div id="toolsList" class="tools-grid">
                 <!-- Dynamically filled -->
             </div>
-        </div>
-
-        <!-- TAB CONTENT: PLANNER -->
-        <div id="tab-planner" class="tab-content">
-            <div class="planner-layout">
-                <div class="planner-main">
-                    
-                    <!-- Empty State -->
-                    <div id="plannerEmptyState" class="planner-empty-state">
-                        <span style="font-size: 48px;">🛒</span>
-                        <h3>您的挑選清單目前是空的</h3>
-                        <p>回到「5天引導工具包」或「案例研究」中，點擊「加入大綱規劃」按鈕將活動加入購物車。</p>
-                        <button class="btn-secondary" onclick="switchTab('toolkit')">去挑選工具</button>
-                    </div>
-
-                    <!-- Items container -->
-                    <div id="plannerItemsList" style="display: flex; flex-direction: column; gap: 14px;">
-                        <!-- Dynamically filled -->
-                    </div>
-
-                    <!-- Add custom block -->
-                    <div class="add-custom-block-card">
-                        <input type="text" id="customBlockName" class="custom-block-input" placeholder="例如：暖身與引言 / 中場休息 / 課程結尾 QA...">
-                        <input type="number" id="customBlockDuration" class="planner-duration-input" value="10" min="5" max="120" style="width: 80px;">
-                        <span style="font-size: 13px; color: var(--text-secondary); margin-right: 10px;">分鐘</span>
-                        <button class="btn-add-custom" onclick="addCustomBlock()">➕ 新增自訂區塊</button>
-                    </div>
-                </div>
-
-                <!-- Planner controls and details -->
-                <div class="planner-sidebar">
-                    <div class="control-box">
-                        <div class="control-box-title">💾 購物車控制選項</div>
-                        <div class="export-buttons">
-                            <button class="btn-action btn-primary-action" onclick="exportSyllabus()">📋 匯出我的精選引導清單</button>
-                            <button class="btn-action btn-outline-action" onclick="clearPlanner()">🧹 清空目前挑選內容</button>
-                        </div>
-                    </div>
-
-                    <div class="control-box">
-                        <div class="control-box-title">⚖️ 學習體驗平衡度 (五大主題分布)</div>
-                        <div class="balance-meters">
-                            <div class="meter-item">
-                                <div class="meter-info">
-                                    <span class="meter-label">安全感與破冰 (Day 1)</span>
-                                    <span id="meter-cnt-1" class="meter-count">0</span>
-                                </div>
-                                <div class="meter-track"><div id="meter-fill-1" class="meter-fill" style="background: #3b82f6; width: 0%;"></div></div>
-                            </div>
-                            <div class="meter-item">
-                                <div class="meter-info">
-                                    <span class="meter-label">自我臨在與覺察 (Day 2)</span>
-                                    <span id="meter-cnt-2" class="meter-count">0</span>
-                                </div>
-                                <div class="meter-track"><div id="meter-fill-2" class="meter-fill" style="background: #8b5cf6; width: 0%;"></div></div>
-                            </div>
-                            <div class="meter-item">
-                                <div class="meter-info">
-                                    <span class="meter-label">直覺偏見與反思 (Day 3)</span>
-                                    <span id="meter-cnt-3" class="meter-count">0</span>
-                                </div>
-                                <div class="meter-track"><div id="meter-fill-3" class="meter-fill" style="background: #ec4899; width: 0%;"></div></div>
-                            </div>
-                            <div class="meter-item">
-                                <div class="meter-info">
-                                    <span class="meter-label">教練對話與技能 (Day 4)</span>
-                                    <span id="meter-cnt-4" class="meter-count">0</span>
-                                </div>
-                                <div class="meter-track"><div id="meter-fill-4" class="meter-fill" style="background: #14b8a6; width: 0%;"></div></div>
-                            </div>
-                            <div class="meter-item">
-                                <div class="meter-info">
-                                    <span class="meter-label">學習整合與承諾 (Day 5)</span>
-                                    <span id="meter-cnt-5" class="meter-count">0</span>
-                                </div>
-                                <div class="meter-track"><div id="meter-fill-5" class="meter-fill" style="background: #f59e0b; width: 0%;"></div></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB CONTENT: CASE MICROSOFT -->
+        </div><!-- TAB CONTENT: CASE MICROSOFT -->
         <div id="tab-case-microsoft" class="tab-content">
             <div class="case-container">
                 <div class="case-left-pane">
@@ -1400,6 +1567,98 @@
         </div>
 
     </main>
+
+        </main>
+    </div> <!-- Close .app-container -->
+
+    <!-- FLOATING CART FAB -->
+    <button class="cart-fab" id="cartFab" onclick="toggleCart()">
+        🛒
+        <div id="cartBadge" class="cart-fab-badge" style="display: none;">0</div>
+    </button>
+
+    <!-- CART OVERLAY -->
+    <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+
+    <!-- CART DRAWER -->
+    <div class="cart-drawer" id="cartDrawer">
+        <div class="cart-drawer-header">
+            <h3 class="cart-drawer-title">🛒 我的挑選清單 (購物車)</h3>
+            <button class="cart-drawer-close" onclick="toggleCart()">×</button>
+        </div>
+        
+        <div class="cart-drawer-body">
+            <!-- Empty State -->
+            <div id="plannerEmptyState" class="planner-empty-state">
+                <span style="font-size: 48px;">🛒</span>
+                <h3>您的購物車目前是空的</h3>
+                <p>在左側工具庫或案例研究中，點擊「加入大綱規劃」按鈕將活動加入購物車。</p>
+            </div>
+
+            <!-- Items container -->
+            <div id="plannerItemsList" style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- Dynamically filled -->
+            </div>
+
+            <!-- Add custom block -->
+            <div class="add-custom-block-card" style="margin-top: 10px;">
+                <input type="text" id="customBlockName" class="custom-block-input" placeholder="例如：暖身與引言 / 中場休息 / 課程結尾 QA...">
+                <input type="number" id="customBlockDuration" class="planner-duration-input" value="10" min="5" max="120" style="width: 80px;">
+                <span style="font-size: 13px; color: var(--text-secondary); margin-right: 10px;">分</span>
+                <button class="btn-add-custom" onclick="addCustomBlock()">➕ 新增自訂區塊</button>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+
+            <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span>⚖️ 學習體驗平衡度</span>
+                <span id="totalTimeLabel" class="time-badge ok" style="font-size:11px;">0 min</span>
+            </div>
+            
+            <div class="balance-meters">
+                <div class="meter-item">
+                    <div class="meter-info">
+                        <span class="meter-label">安全感與破冰 (Day 1)</span>
+                        <span id="meter-cnt-1" class="meter-count">0</span>
+                    </div>
+                    <div class="meter-track"><div id="meter-fill-1" class="meter-fill" style="background: #3b82f6; width: 0%;"></div></div>
+                </div>
+                <div class="meter-item">
+                    <div class="meter-info">
+                        <span class="meter-label">自我臨在與覺察 (Day 2)</span>
+                        <span id="meter-cnt-2" class="meter-count">0</span>
+                    </div>
+                    <div class="meter-track"><div id="meter-fill-2" class="meter-fill" style="background: #8b5cf6; width: 0%;"></div></div>
+                </div>
+                <div class="meter-item">
+                    <div class="meter-info">
+                        <span class="meter-label">直覺偏見與反思 (Day 3)</span>
+                        <span id="meter-cnt-3" class="meter-count">0</span>
+                    </div>
+                    <div class="meter-track"><div id="meter-fill-3" class="meter-fill" style="background: #ec4899; width: 0%;"></div></div>
+                </div>
+                <div class="meter-item">
+                    <div class="meter-info">
+                        <span class="meter-label">教練對話與技能 (Day 4)</span>
+                        <span id="meter-cnt-4" class="meter-count">0</span>
+                    </div>
+                    <div class="meter-track"><div id="meter-fill-4" class="meter-fill" style="background: #14b8a6; width: 0%;"></div></div>
+                </div>
+                <div class="meter-item">
+                    <div class="meter-info">
+                        <span class="meter-label">學習整合與承諾 (Day 5)</span>
+                        <span id="meter-cnt-5" class="meter-count">0</span>
+                    </div>
+                    <div class="meter-track"><div id="meter-fill-5" class="meter-fill" style="background: #f59e0b; width: 0%;"></div></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cart-drawer-footer">
+            <button class="btn-action btn-primary-action" onclick="exportSyllabus()">📋 匯出精選引導清單</button>
+            <button class="btn-action btn-outline-action" onclick="clearPlanner()">🧹 清空目前購物車</button>
+        </div>
+    </div>
 
     <!-- EXPORT MODAL -->
     <div id="exportModal" class="modal">
@@ -2749,10 +3008,46 @@
             return { story: story.join(''), qa: qa };
         }
 
-        // Initialize application on load
+                // Initialize application on load
+        const CATEGORIES = {
+            1: "安全感與破冰 (Safety & Arrival)",
+            2: "自我臨在與連結 (Presence & Connection)",
+            3: "直覺偏見與反思 (Bias & Reflection)",
+            4: "教練對話與技能 (Coaching Skills)",
+            5: "整合與承諾 (Integration & Closing)"
+        };
+
+        let ALL_TOOLS = [];
+        let ALL_TAGS = [];
+        let activeCategory = 'all';
+        let activeTag = 'all';
+
         window.onload = function() {
-            // Render Toolkit Day 1 initially
-            selectDay(1);
+            // Flatten all tools for unified filtering
+            TOOLKIT_DATA.forEach(day => {
+                if (day.tools && day.tools.length) {
+                    day.tools.forEach(tool => {
+                        ALL_TOOLS.push({
+                            ...tool,
+                            dayNum: day.num,
+                            categoryName: CATEGORIES[day.num] || "未分類"
+                        });
+                    });
+                }
+            });
+
+            // Extract unique tags/types
+            const tagSet = new Set();
+            ALL_TOOLS.forEach(tool => {
+                if (tool.type) tagSet.add(tool.type);
+            });
+            ALL_TAGS = Array.from(tagSet).sort();
+
+            // Render category and tag pills
+            renderFilterPills();
+
+            // Display all tools by default
+            filterTools();
 
             // Parse and render Microsoft case
             const msData = parseMicrosoftCase(MICROSOFT_CASE_RAW);
@@ -2785,13 +3080,44 @@
             updatePlannerUI();
         };
 
+        // Sidebar Collapse Logic
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-open');
+            if (window.innerWidth >= 1024) {
+                document.body.classList.toggle('sidebar-collapsed');
+            }
+        }
+
+        // Cart Drawer Toggle Logic
+        function toggleCart() {
+            const drawer = document.getElementById('cartDrawer');
+            const overlay = document.getElementById('cartOverlay');
+            drawer.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        // Open Cart Drawer
+        function openCart() {
+            const drawer = document.getElementById('cartDrawer');
+            const overlay = document.getElementById('cartOverlay');
+            drawer.classList.add('open');
+            overlay.classList.add('open');
+        }
+
         // Navigation Switching
         function switchTab(tabName) {
             // Update active menu item
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
-            event.currentTarget.classList.add('active');
+            
+            // Highlight the clicked/selected nav item
+            const items = Array.from(document.querySelectorAll('.nav-item'));
+            const targetItem = items.find(item => {
+                const onclickStr = item.getAttribute('onclick');
+                return onclickStr && onclickStr.includes(`'${tabName}'`);
+            });
+            if (targetItem) targetItem.classList.add('active');
 
             // Hide all tab contents
             document.querySelectorAll('.tab-content').forEach(content => {
@@ -2806,11 +3132,8 @@
             const pageDesc = document.getElementById('pageDescription');
 
             if (tabName === 'toolkit') {
-                pageTitle.textContent = "5天引導工具包";
-                pageDesc.textContent = "瀏覽完整的五天 Emotional Agility (EA) 引導工具，挑選適合的工具加入購物車，動態規劃您的專屬引導大綱。";
-            } else if (tabName === 'planner') {
-                pageTitle.textContent = "我的挑選清單 (購物車)";
-                pageDesc.textContent = "瀏覽您所加入購物車的活動與工具，可自由修改排序、預估配時並填寫引導備註，最終一鍵匯出為 Markdown 大綱。";
+                pageTitle.textContent = "情緒敏捷工具庫";
+                pageDesc.textContent = "瀏覽完整的 Emotional Agility (EA) 引導工具，利用標籤與搜尋快速挑選適合的工具加入大綱，隨時點擊右下角購物車展開規劃與匯出。";
             } else if (tabName === 'case-microsoft') {
                 pageTitle.textContent = "案例：微軟文化轉型";
                 pageDesc.textContent = "適用於團隊層面的文化變革、直覺偏見與「在當下以不同方式回應情緒防衛」的引導訓練。";
@@ -2821,6 +3144,11 @@
             
             // Close dropdown just in case
             document.getElementById('templateDropdown').style.display = 'none';
+
+            // Close sidebar on mobile
+            if (window.innerWidth < 1024) {
+                document.body.classList.remove('sidebar-open');
+            }
         }
 
         // Dropdown toggle
@@ -2835,29 +3163,103 @@
             document.getElementById('templateDropdown').style.display = 'none';
         }
 
-        // Day Selector
-        function selectDay(dayNum) {
-            selectedDayNum = dayNum;
-            document.querySelectorAll('.day-pill').forEach((pill, idx) => {
-                if (idx + 1 === dayNum) pill.classList.add('active');
-                else pill.classList.remove('active');
+        // Filter Pills Rendering
+        function renderFilterPills() {
+            // Render Categories
+            const catContainer = document.getElementById('categoryFilterPills');
+            let catHtml = `<button class="filter-pill ${activeCategory === 'all' ? 'active' : ''}" onclick="selectCategory('all')">全部主題</button>`;
+            for (let key in CATEGORIES) {
+                catHtml += `<button class="filter-pill ${activeCategory === key ? 'active' : ''}" onclick="selectCategory('${key}')">${CATEGORIES[key]}</button>`;
+            }
+            catContainer.innerHTML = catHtml;
+
+            // Render Tags
+            const tagContainer = document.getElementById('tagFilterPills');
+            let tagHtml = `<button class="filter-pill ${activeTag === 'all' ? 'active' : ''}" onclick="selectTag('all')">全部標籤</button>`;
+            ALL_TAGS.forEach(tag => {
+                tagHtml += `<button class="filter-pill ${activeTag === tag ? 'active' : ''}" onclick="selectTag('${tag}')">${tag}</button>`;
+            });
+            tagContainer.innerHTML = tagHtml;
+        }
+
+        function selectCategory(cat) {
+            activeCategory = cat;
+            renderFilterPills();
+            filterTools();
+            
+            // Handle overview card display
+            const overviewCard = document.getElementById('categoryOverviewCard');
+            if (cat === 'all') {
+                overviewCard.style.display = 'none';
+            } else {
+                const dayNum = parseInt(cat);
+                const dayData = TOOLKIT_DATA.find(d => d.num === dayNum);
+                if (dayData) {
+                    document.getElementById('categoryTitle').textContent = `${CATEGORIES[dayNum]}`;
+                    document.getElementById('categoryOverview').innerHTML = dayData.overview.join('<br>');
+                    overviewCard.style.display = 'block';
+                } else {
+                    overviewCard.style.display = 'none';
+                }
+            }
+        }
+
+        function selectTag(tag) {
+            activeTag = tag;
+            renderFilterPills();
+            filterTools();
+        }
+
+        // Tool Filtering Logic
+        function filterTools() {
+            const query = document.getElementById('toolSearchInput').value.toLowerCase().trim();
+
+            const filtered = ALL_TOOLS.filter(tool => {
+                // Category Filter
+                if (activeCategory !== 'all' && tool.dayNum !== parseInt(activeCategory)) {
+                    return false;
+                }
+                // Tag Filter
+                if (activeTag !== 'all' && tool.type !== activeTag) {
+                    return false;
+                }
+                // Search Query Filter
+                if (query) {
+                    const nameMatch = tool.name.toLowerCase().includes(query);
+                    const typeMatch = tool.type && tool.type.toLowerCase().includes(query);
+                    const purposeMatch = tool.purpose && tool.purpose.some(p => p.toLowerCase().includes(query));
+                    const processMatch = tool.process && tool.process.some(p => p.toLowerCase().includes(query));
+                    const tipsMatch = tool.tips && tool.tips.some(t => t.toLowerCase().includes(query));
+                    const insightsMatch = tool.insights && tool.insights.some(i => i.toLowerCase().includes(query));
+                    const debriefMatch = tool.debrief && tool.debrief.some(d => d.toLowerCase().includes(query));
+                    return nameMatch || typeMatch || purposeMatch || processMatch || tipsMatch || insightsMatch || debriefMatch;
+                }
+                return true;
             });
 
-            const dayData = TOOLKIT_DATA.find(d => d.num === dayNum);
-            if (!dayData) return;
+            renderToolsList(filtered);
+        }
 
-            document.getElementById('dayTitle').textContent = `Day ${dayData.num}－${dayData.title}`;
-            document.getElementById('dayOverview').innerHTML = dayData.overview.join('<br>');
-
-            // Render tools
+        // Render tool list
+        function renderToolsList(tools) {
             const toolsList = document.getElementById('toolsList');
             toolsList.innerHTML = '';
 
-            dayData.tools.forEach(tool => {
-                const toolId = `day-${dayNum}-tool-${tool.num}`;
-                
+            if (tools.length === 0) {
+                toolsList.innerHTML = `
+                    <div class="no-results" style="grid-column: span 2;">
+                        <span style="font-size: 32px;">🔍</span>
+                        <p style="margin-top: 10px; font-weight:600;">找不到符合篩選條件的引導工具</p>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 5px;">請嘗試更換關鍵字或清除篩選標籤</p>
+                    </div>
+                `;
+                return;
+            }
+
+            tools.forEach(tool => {
+                const toolId = `day-${tool.dayNum}-tool-${tool.num}`;
                 let bodyHtml = '';
-                
+
                 if (tool.purpose && tool.purpose.length) {
                     bodyHtml += `
                         <div class="tool-section">
@@ -2918,7 +3320,7 @@
                 card.innerHTML = `
                     <div class="tool-card-header">
                         <div class="tool-title-wrap">
-                            <span class="tool-badge">Day ${dayNum} - 工具 ${tool.num}</span>
+                            <span class="tool-badge">類別: ${tool.categoryName.split(' ')[0]}</span>
                             <h4 class="tool-name">${tool.name}</h4>
                         </div>
                         <span class="tool-type">${tool.type || '體驗工具'}</span>
@@ -2937,14 +3339,14 @@
                             <option value="45">45 分鐘</option>
                             <option value="60">60 分鐘</option>
                         </select>
-                        <button class="btn-add" onclick="addToolToPlanner(${dayNum}, ${tool.num})">🛒 加入挑選清單</button>
+                        <button class="btn-add" onclick="addToolToPlanner(${tool.dayNum}, ${tool.num})">🛒 加入挑選清單</button>
                     </div>
                 `;
                 toolsList.appendChild(card);
             });
         }
 
-        // Add Tool to Planner
+        // Add Tool to Planner (Cart)
         function addToolToPlanner(dayNum, toolNum) {
             const dayData = TOOLKIT_DATA.find(d => d.num === dayNum);
             const tool = dayData.tools.find(t => t.num === toolNum);
@@ -2953,7 +3355,13 @@
             const durationSelect = document.getElementById(`dur-${toolId}`);
             const duration = parseInt(durationSelect.value);
 
-            // Add item
+            // Avoid duplicate items
+            if (plannerItems.some(item => item.id === toolId)) {
+                showToast(`「${tool.name}」已經在購物車中囉！`);
+                openCart();
+                return;
+            }
+
             plannerItems.push({
                 id: toolId,
                 name: tool.name,
@@ -2965,8 +3373,13 @@
                 notes: ""
             });
 
-            showToast(`已成功將「${tool.name}」加入挑選清單 (${duration}分鐘)`);
+            showToast(`已成功將「${tool.name}」加入購物車 (${duration}分鐘)`);
             updatePlannerUI();
+            
+            // FAB Animation
+            const fab = document.getElementById('cartFab');
+            fab.style.transform = 'scale(1.2) rotate(-10deg)';
+            setTimeout(() => { fab.style.transform = ''; }, 300);
         }
 
         // Add Case study to Planner
@@ -2979,7 +3392,7 @@
             plannerItems.push({
                 id: `case-${caseType}-${Date.now()}`,
                 name: caseName,
-                dayNum: caseType === 'microsoft' ? 4 : 3, // map to day theme
+                dayNum: caseType === 'microsoft' ? 4 : 3, // map to category theme
                 toolNum: 0,
                 type: '案例探討',
                 duration: duration,
@@ -2987,8 +3400,13 @@
                 notes: ""
             });
 
-            showToast(`已成功將「${caseName}」加入挑選清單 (${duration}分鐘)`);
+            showToast(`已成功將「${caseName}」加入購物車 (${duration}分鐘)`);
             updatePlannerUI();
+
+            // FAB Animation
+            const fab = document.getElementById('cartFab');
+            fab.style.transform = 'scale(1.2) rotate(-10deg)';
+            setTimeout(() => { fab.style.transform = ''; }, 300);
         }
 
         // Add Custom Block
@@ -3002,7 +3420,7 @@
             plannerItems.push({
                 id: `custom-${Date.now()}`,
                 name: name,
-                dayNum: 0, // General block
+                dayNum: 0,
                 toolNum: 0,
                 type: '自訂元件',
                 duration: duration,
@@ -3038,7 +3456,7 @@
         // Update item duration
         function updateItemDuration(idx, newDuration) {
             plannerItems[idx].duration = parseInt(newDuration) || 5;
-            updatePlannerUI(true); // update stats without re-rendering items lists to avoid losing focus
+            updatePlannerUI(true); // skip re-render of list to avoid losing focus
         }
 
         // Update item notes
@@ -3048,7 +3466,7 @@
 
         // Clear Planner
         function clearPlanner() {
-            if (confirm("您確定要清除目前已挑選的所有內容嗎？")) {
+            if (confirm("您確定要清除目前購物車的所有內容嗎？")) {
                 plannerItems = [];
                 updatePlannerUI();
             }
@@ -3067,7 +3485,7 @@
         // Update planner stats & list
         function updatePlannerUI(skipItemsRender = false) {
             let totalTime = 0;
-            let dayCounts = [0, 0, 0, 0, 0, 0]; // Index 1-5 for days
+            let dayCounts = [0, 0, 0, 0, 0, 0];
             
             plannerItems.forEach(item => {
                 totalTime += item.duration;
@@ -3077,9 +3495,16 @@
             });
 
             // Update stats
-            document.getElementById('totalTimeLabel').textContent = totalTime;
-            document.getElementById('toolCountLabel').textContent = plannerItems.filter(i => !i.custom).length;
-            document.getElementById('blockCountLabel').textContent = plannerItems.length;
+            document.getElementById('totalTimeLabel').textContent = `${totalTime} min`;
+            
+            // Update Cart Badge
+            const badge = document.getElementById('cartBadge');
+            if (plannerItems.length > 0) {
+                badge.textContent = plannerItems.length;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
 
             // Update balance meters
             for (let i = 1; i <= 5; i++) {
@@ -3112,8 +3537,8 @@
                 const card = document.createElement('div');
                 card.className = 'planner-item-card';
                 
-                let dayLabel = item.dayNum > 0 ? `Day ${item.dayNum} - 工具` : '自訂元件';
-                if (item.type === '案例探討') dayLabel = `Day ${item.dayNum} - 案例討論`;
+                let sourceLabel = item.dayNum > 0 ? `類別: ${CATEGORIES[item.dayNum].split(' ')[0]}` : '自訂元件';
+                if (item.type === '案例探討') sourceLabel = `案例研究 (${CATEGORIES[item.dayNum].split(' ')[0]})`;
 
                 card.innerHTML = `
                     <div class="planner-item-left">
@@ -3122,18 +3547,18 @@
                             <button class="btn-order" onclick="moveItem(${idx}, 'down')" ${idx === plannerItems.length - 1 ? 'disabled' : ''}>▼</button>
                         </div>
                         <div class="planner-item-info">
-                            <div class="planner-item-name">${item.name}</div>
+                            <div class="planner-item-name" style="font-size: 14px;">${item.name}</div>
                             <div class="planner-item-tag">
                                 <span class="planner-item-type">${item.type}</span>
                                 <span>|</span>
-                                <span>${dayLabel}</span>
+                                <span>${sourceLabel}</span>
                             </div>
                             <input type="text" class="custom-block-input" style="padding: 6px; font-size: 11px; margin-top:8px; width: 100%; border-color: rgba(226, 232, 240, 0.6);" placeholder="填寫教學備註或引導重點..." value="${item.notes}" oninput="updateItemNotes(${idx}, this.value)">
                         </div>
                     </div>
                     <div class="planner-item-right">
                         <input type="number" class="planner-duration-input" value="${item.duration}" min="1" max="180" oninput="updateItemDuration(${idx}, this.value)">
-                        <span style="font-size:12px; color:var(--text-secondary);">min</span>
+                        <span style="font-size:12px; color:var(--text-secondary);">分</span>
                         <button class="btn-delete" onclick="removePlannerItem(${idx})">🗑️</button>
                     </div>
                 `;
@@ -3179,7 +3604,7 @@
 
             showToast(`已成功載入主題推薦套裝！`);
             updatePlannerUI();
-            switchTab('planner');
+            openCart();
         }
 
         // Export Syllabus logic
@@ -3190,15 +3615,15 @@
             }
 
             let md = `# Emotional Agility (EA) 精選引導工具與教案大綱\n\n`;
-            md += `此清單由「EA 課程規劃助手」依據 5天完整培訓紀錄與案例庫挑選生成。\n\n`;
+            md += `此清單由「EA 情緒敏捷引導庫」依據完整培訓紀錄與案例庫挑選生成。\n\n`;
             md += `* **累計估計時數**：${plannerItems.reduce((acc, i) => acc + i.duration, 0)} 分鐘\n`;
             md += `* **挑選工具組合**：\n\n`;
             md += `| 順序 | 估計時間 (分鐘) | 活動 / 道具名稱 | 分類 / 來源 | 教學備註與引導重點 |\n`;
             md += `| :---: | :---: | :--- | :--- | :--- |\n`;
 
             plannerItems.forEach((item, idx) => {
-                let source = item.dayNum > 0 ? `Day ${item.dayNum} - 工具` : `自訂元件`;
-                if (item.type === '案例探討') source = `Day ${item.dayNum} - 案例討論`;
+                let source = item.dayNum > 0 ? `${CATEGORIES[item.dayNum].split(' ')[0]}` : `自訂元件`;
+                if (item.type === '案例探討') source = `案例討論 (${CATEGORIES[item.dayNum].split(' ')[0]})`;
                 const notes = item.notes ? item.notes.replace(/\|/g, '\\|') : "無備註";
                 md += `| ${idx + 1} | ${item.duration}m | ${item.name} | ${item.type} (${source}) | ${notes} |\n`;
             });
@@ -3209,8 +3634,6 @@
             md += `3. **彈性搭配**：此清單為您的專屬教案口袋庫。實際授課時可依據團體能量與進度，彈性增刪或挪移活動。\n`;
 
             document.getElementById('exportTextarea').value = md;
-            
-            // Open Modal
             document.getElementById('exportModal').classList.add('active');
         }
 
@@ -3225,6 +3648,6 @@
             showToast("成功複製清單 Markdown 內容！");
             closeModal();
         }
-    </script>
+</script>
 </body>
 </html>
