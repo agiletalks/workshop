@@ -1000,7 +1000,18 @@
                 margin: 0 16px;
             }
         }
-    </style>
+    
+        /* Slide 2 Progressive Reveal styles */
+        .slide2-hide-initially {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        .slide2-revealed .slide2-hide-initially {
+            opacity: 1;
+            pointer-events: auto;
+        }
+</style>
 </head>
 <body>
 
@@ -1026,8 +1037,8 @@
             </section>
 
             <!-- PAGE 2: FOREWORD -->
-            <section class="slide-section" id="slide-2">
-                <div class="slide-header">
+            <section class="slide-section" id="slide-2" onclick="onSlide2Click(event)" style="cursor: pointer; overflow:hidden;">
+                <div class="slide-header slide2-hide-initially">
                     <div class="slide-title-wrap">
                         <div class="slide-title">腦中的電影，一直在播放</div>
                         <div class="slide-subtitle">一個故事如何反過來寫下我們。</div>
@@ -1037,25 +1048,27 @@
                 
                 <div class="slide-body grid-2">
                     <div>
-                        <p style="margin-bottom: 12.5px; line-height: 1.65; font-size:14px; color: var(--text-main);">
-                            一部電影能否吸引觀眾，往往取決於它的「Hook」——一個簡單卻能抓住注意力、啟動情節並推動故事向前的核心設定。
-                        </p>
-                        <p style="margin-bottom: 12.5px; line-height: 1.65; font-size:14px; color: var(--text-main);">
-                            我們的心智也在做類似的事。
-                        </p>
-                        <p style="margin-bottom: 12.5px; line-height: 1.65; font-size:14px; color: var(--text-main);">
-                            每天的每一分鐘，我們都在替發生的事情編寫劇本，而這些劇本會在腦中的電影院裡播放。
-                        </p>
-                        <p style="margin-bottom: 12.5px; line-height: 1.65; font-size:14px; font-weight: 700; color: var(--accent-orange);">
-                            但在自己的故事裡，被勾住並不一定令人著迷。它更常表現為一種讓人失去彈性的自動反應：
-                        </p>
+                        <div class="slide2-hide-initially">
+                            <p style="margin-bottom: 12.5px; line-height: 1.65; font-size:14px; color: var(--text-main);">
+                                一部電影能否吸引觀眾，往往取決於它的「Hook」——一個簡單卻能抓住注意力、啟動情節並推動故事向前的核心設定。
+                            </p>
+                            <p style="margin-bottom: 12.5px; line-height: 1.65; font-size:14px; color: var(--text-main);">
+                                我們的心智也在做類似的事。
+                            </p>
+                            <p style="margin-bottom: 12.5px; line-height: 1.65; font-size:14px; color: var(--text-main);">
+                                每天的每一分鐘，我們都在替發生的事情編寫劇本，而這些劇本會在腦中的電影院裡播放。
+                            </p>
+                            <p style="margin-bottom: 12.5px; line-height: 1.65; font-size:14px; font-weight: 700; color: var(--accent-orange);">
+                                但在自己的故事裡，被勾住並不一定令人著迷。它更常表現為一種讓人失去彈性的自動反應：
+                            </p>
+                        </div>
                         <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
-                            <div style="font-size: 13px; font-weight: 600; color: var(--text-main); border-left: 4px solid var(--accent-pink); background: #fdf2f8; padding: 6px 12px; border-radius: 0 8px 8px 0;">「再試也沒有用。」</div>
-                            <div style="font-size: 13px; font-weight: 600; color: var(--text-main); border-left: 4px solid var(--accent-pink); background: #fdf2f8; padding: 6px 12px; border-radius: 0 8px 8px 0;">「我們一直都是這樣做。」</div>
-                            <div style="font-size: 13px; font-weight: 600; color: var(--text-main); border-left: 4px solid var(--accent-pink); background: #fdf2f8; padding: 6px 12px; border-radius: 0 8px 8px 0;">「反正沒有人會聽。」</div>
+                            <div style="font-size: 13.5px; font-weight: 600; color: var(--text-main); border-left: 4px solid var(--accent-pink); background: #fdf2f8; padding: 10px 14px; border-radius: 0 10px 10px 0; line-height: 1.5; box-shadow: 0 2px 6px rgba(0,0,0,0.01);">「再試也沒有用。」</div>
+                            <div style="font-size: 13.5px; font-weight: 600; color: var(--text-main); border-left: 4px solid var(--accent-pink); background: #fdf2f8; padding: 10px 14px; border-radius: 0 10px 10px 0; line-height: 1.5; box-shadow: 0 2px 6px rgba(0,0,0,0.01);">「我們一直都是這樣做。」</div>
+                            <div style="font-size: 13.5px; font-weight: 600; color: var(--text-main); border-left: 4px solid var(--accent-pink); background: #fdf2f8; padding: 10px 14px; border-radius: 0 10px 10px 0; line-height: 1.5; box-shadow: 0 2px 6px rgba(0,0,0,0.01);">「反正沒有人會聽。」</div>
                         </div>
                     </div>
-                    <div>
+                    <div class="slide2-hide-initially">
                         <p style="margin-bottom: 10px; line-height: 1.6; font-size:14px; font-weight: 700; color: var(--accent-green);">
                             👥 團隊與文化也會被勾住：
                         </p>
@@ -1065,13 +1078,13 @@
                         <p style="margin-bottom: 10px; line-height: 1.6; font-size:13px; color: var(--text-main);">
                             電影繼續播放，視野逐漸收窄，情節也愈來愈缺乏可能。
                         </p>
-                        <blockquote style="margin: 8px 0; padding: 8px 12px; font-size: 12.5px; background: #fafaf9; border-left: 4px solid var(--accent-orange); color:#7c2d12; line-height:1.5;">
+                        <blockquote style="margin: 8px 0; padding: 10px 14px; font-size: 12.5px; background: #fafaf9; border-left: 4px solid var(--accent-orange); color:#7c2d12; line-height:1.55;">
                             「你已經看過這部電影。我們的想法與感受，開始取代實際發生的事。我們習慣採取的行動，開始取代真正需要的行動。同一幕不斷重演，一次又一次。」
                         </blockquote>
                     </div>
                 </div>
 
-                <div class="slide-footer-watermark">
+                <div class="slide-footer-watermark slide2-hide-initially">
                     <span style="font-size: 11px; color: var(--text-muted);">02 / 27 腦中的電影</span>
                 </div>
             </section>
@@ -1086,22 +1099,19 @@
                     <span class="slide-type-tag tag-concept">概念開場</span>
                 </div>
                 
-                <div class="slide-body grid-2">
-                    <div>
-                        <p style="margin-bottom: 12px; font-weight: 700; color: var(--accent-orange);">💡 什麼是「被 Hook 住」？</p>
-                        <p style="margin-bottom: 12px; line-height: 1.65; font-size:13.5px;">「被 Hook 住」在心理學上是指<strong>認知融合</strong>。當日常事情發生時，我們的大腦會像高鐵大腦一樣，在毫秒之間自動編好一套劇本，並讓我們對這個劇本深信不疑，失去退一步思考的彈性。</p>
-                        <p style="margin-bottom: 12px; font-weight: 700; color: var(--accent-pink);">📌 台灣職場與生活的日常寫照：</p>
-                        <ul style="gap: 4px; font-size:13px; padding-left:16px; color: var(--text-main);">
+                <div class="slide-body" style="max-width: 800px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 20px; justify-content: center;">
+                    <div style="background: #fafaf9; border: 1px solid var(--border-color); border-radius: 20px; padding: 24px 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.01);">
+                        <p style="margin-bottom: 16px; font-weight: 800; font-size: 17px; color: var(--accent-orange); display: flex; align-items: center; gap: 6px;">💡 什麼是「被 Hook 住」？</p>
+                        <p style="line-height: 1.7; font-size: 14.5px; color: var(--text-main); margin-bottom: 20px;">
+                            「被 Hook 住」在心理學上是指<strong>認知融合</strong>。當日常事情發生時，我們的大腦會像自動導航一樣，在毫秒之間自動編好一套劇本，並讓我們對這個劇本深信不疑，失去退一步思考的彈性。
+                        </p>
+                        
+                        <p style="margin-bottom: 12px; font-weight: 800; font-size: 15px; color: var(--accent-pink); display: flex; align-items: center; gap: 6px; border-top: 1px dashed var(--border-color); padding-top: 16px;">📌 台灣職場與生活的日常寫照：</p>
+                        <ul style="gap: 10px; font-size: 14px; padding-left: 20px; color: var(--text-main);">
                             <li><strong>LINE 訊息不讀不回半天 ➔</strong> 大腦警報：「他絕對是故意針對我、討厭我！」</li>
                             <li><strong>開會時主管眉頭皺了一下 ➔</strong> 心中劇本：「完了，他是不是看不起我的提案？」</li>
                             <li><strong>主管簡訊：『等一下來辦公室找我』 ➔</strong> 恐慌腦補：「天啊，我是不是要被開除了？」</li>
                         </ul>
-                    </div>
-                    <div>
-                        <div style="font-size: 13px; font-weight: 600; color: var(--text-main); border-left: 4px solid var(--accent-pink); background: #fdf2f8; padding: 10px 14px; margin: 8px 0; border-radius: 0 10px 10px 0; line-height: 1.5;">「再試也沒有用，反正上面早就定案了。」</div>
-                        <div style="font-size: 13px; font-weight: 600; color: var(--text-main); border-left: 4px solid var(--accent-pink); background: #fdf2f8; padding: 10px 14px; margin: 8px 0; border-radius: 0 10px 10px 0; line-height: 1.5;">「那個部門就是愛推託，根本無法溝通。」</div>
-                        <div style="font-size: 13px; font-weight: 600; color: var(--text-main); border-left: 4px solid var(--accent-pink); background: #fdf2f8; padding: 10px 14px; margin: 8px 0; border-radius: 0 10px 10px 0; line-height: 1.5;">「開會還是保持安靜最安全，多說多錯。」</div>
-                        <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 10px; line-height:1.55;">當大腦的電影不斷循環，我們的視野就會被窄化。大腦把「解讀」當成了「唯一的真相」，這就是我們被勾住、失去敏捷度的時間點。</p>
                     </div>
                 </div>
 
@@ -1111,7 +1121,7 @@
             </section>
 
             <!-- PAGE 4: EXPLORE MAP -->
-            <section class="slide-section" id="slide-5">
+            <section class="slide-section" id="slide-4">
                 <div class="slide-header">
                     <div class="slide-title-wrap">
                         <div class="slide-title">課程學習地圖與影響範圍</div>
@@ -2380,6 +2390,19 @@
         };
 
         // Operating Room sentence array
+        
+        let slide2Revealed = false;
+        function revealSlide2Content() {
+            slide2Revealed = true;
+            const s2 = document.getElementById('slide-2');
+            if (s2) s2.classList.add('slide2-revealed');
+        }
+        function onSlide2Click(e) {
+            if (!slide2Revealed) {
+                revealSlide2Content();
+            }
+        }
+
         const CASE_SENTENCES = [
             { id: 1, text: "2005 年 3 月，Elaine Bromiley 因一項小型手術前往醫院。她長期受到鼻竇問題困擾，醫師準備進行處置，以改善鼻腔內部的情況。" },
             { id: 2, text: "她的丈夫 Martin 向她道別後，帶著兩個孩子離開醫院，進行每週例行採買。" },
@@ -2460,6 +2483,12 @@
 
         // Go to Slide
         function goToSlide(slideNum) {
+            if (slideNum === 2) {
+                slide2Revealed = false;
+                const s2 = document.getElementById('slide-2');
+                if (s2) s2.classList.remove('slide2-revealed');
+            }
+
             if (slideNum < 1 || slideNum > TOTAL_SLIDES) return;
 
             // Page 10 locks check
