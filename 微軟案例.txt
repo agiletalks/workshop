@@ -1,0 +1,117 @@
+﻿一、Microsoft Case Study（中文完整翻譯）
+案例：Microsoft 的文化轉型
+到了 2014 年，Microsoft 仍然是全球最有影響力的科技公司之一，但在組織內部，卻出現了一種「卡住」的感覺。
+多年來，公司以以下文化著稱：
+嚴謹的理性思維 
+頂尖的技術人才 
+強調「誰是對的」的內部競爭 
+績效評估是比較式的。團隊彼此競爭資源。專業代表地位。
+即使公司公開鼓勵創新，錯誤仍然會被懲罰。
+
+外部環境正在快速變化：
+雲端運算正在改變商業模式 
+競爭者行動更快 
+客戶開始需要「合作夥伴」，而不只是產品 
+許多領導者開始意識到：
+過去帶來成功的文化，如今反而限制了公司發展。
+
+中階主管的困境
+中階主管感到夾在中間。
+他們被要求：
+鼓勵實驗 
+建立心理安全感 
+但同時仍然需要：
+達成季度績效 
+他們被鼓勵重視「學習」，但評估機制仍然強調：
+可預測性 
+控制 
+
+他們開始產生疑問：
+如果我讓團隊放慢來學習，會不會被懲罰？ 
+如果我承認不確定性，會不會影響地位？ 
+在這裡，「脆弱」到底安不安全？ 
+
+組織中的情緒
+在各個團隊中，存在著情緒訊號，但沒有被說出來：
+害怕變得沒有價值 
+對自己沒有跟上變化感到羞愧 
+當專業被質疑時的防衛 
+對過去被認可的身份感到失落 
+這些情緒沒有被表達，而是透過以下方式出現：
+過度工作 
+過度控管 
+沉默 
+抵抗改變 
+
+一個具體場景
+某個產品團隊正在重新設計雲端平台。
+一位初級工程師提出一個新想法，需要實驗，也可能延遲發布。
+資深工程師回應：
+「這不是這個系統的運作方式，我們以前試過。」
+主管注意到緊張氣氛，但選擇繼續推進會議。
+
+結果：
+初級工程師退縮 
+資深工程師覺得自己是對的 
+主管鬆一口氣，但隱約覺得不對 
+沒有人說出剛剛發生了什麼
+
+組織層級的問題
+類似的情境在整個組織中反覆出現。
+雖然：
+領導者談 growth mindset 
+員工參加工作坊 
+但在高壓時刻：
+控制 
+確定性 
+沉默 
+績效優先 
+仍然出現。
+
+核心問題
+我們如何幫助人們，在當下以不同方式面對恐懼、失敗與身份，讓真正的學習發生？
+
+二、對應問題（英文）
+
+1️⃣ What I See
+What do you observe in this situation?
+
+2️⃣ So What
+Who is affected and how?
+
+3️⃣ I See This
+Where do you see this pattern in your own work?
+
+4️⃣ Now What
+What is one emotionally agile move you could take?
+
+5️⃣ Speakable Line
+What could you say in that moment?
+
+6️⃣ Reflection（核心問題）
+How do we help people relate differently to fear, failure, and identity in the moment?
+
+三、建議英文回答（可直接用）
+
+🔹1. What I See（觀察）
+I see that the senior engineer quickly shuts down the idea, and the conversation moves on.
+I also see that the junior engineer stops speaking, and no one names what just happened.
+
+🔹2. So What（影響）
+The junior engineer withdraws, and fewer voices are heard.
+As a result, the idea is not explored, and the team loses a chance to learn.
+
+🔹3. I See This（連回自己）
+I see a similar pattern in my own work, where ideas are challenged quickly and people may withdraw.
+And the team often misses an opportunity to explore different perspectives.
+
+🔹4. Now What（行動）
+One emotionally agile move would be to pause the conversation and invite the team to explore the idea before moving on.
+
+🔹5. Speakable Line（最關鍵）
+👉（推薦用這句）
+I’m noticing the idea was challenged quickly.The impact is that we might miss a learning opportunity.Before we move on, could we take a minute to explore it so we support collaboration?
+
+🔹6. 高階洞察（加分用）
+The issue is not a lack of knowledge, but how people respond to fear and identity in the moment.
+When emotions are not named, they don’t disappear — they show up through behavior.
