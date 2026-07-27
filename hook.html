@@ -2214,7 +2214,7 @@
             </section>
 
             <!-- PAGE 25: UNFINISHED BUSINESS (SLIDED FROM 24) -->
-            <section class="slide-section" id="slide-28">
+            <section class="slide-section" id="slide-28" style="overflow:hidden;">
                 <div class="slide-header">
                     <div class="slide-title-wrap">
                         <div class="slide-title">有什麼正在發生，卻沒有人說出來？</div>
@@ -2223,29 +2223,30 @@
                     <span class="slide-type-tag tag-invitation" style="background: var(--accent-orange);">強力提問</span>
                 </div>
                 
-                <div class="slide-body grid-2">
-                    <div class="grid-3" style="font-size:12.5px; gap:12px; grid-column: span 1;">
-                        <div style="background:#fff7ed; padding:12px; border-radius:12px; border:1px solid rgba(234,88,12,0.12);">
-                            <strong style="color:var(--accent-orange);">Me 👤 我與自己</strong>
-                            <ul style="padding-left:12px; font-size:12px; margin-top:8px; gap:4px;">
+                <div class="slide-body" style="display:flex; flex-direction:column; gap:16px; justify-content:flex-start;">
+                    <!-- Top Row: Reference Cards (Me, We, Us) -->
+                    <div class="grid-3" style="width:100%; gap:12px;">
+                        <div style="background:#fff7ed; padding:10px 14px; border-radius:12px; border:1px solid rgba(234,88,12,0.12); display:flex; flex-direction:column; gap:4px;">
+                            <strong style="color:var(--accent-orange); font-size:13px; display:flex; align-items:center; gap:4px;">Me 👤 我與自己</strong>
+                            <ul style="padding-left:14px; font-size:11.5px; margin:0; display:flex; flex-direction:column; gap:2px; color:var(--text-main);">
                                 <li>我就是這樣的人。</li>
                                 <li>我是對的，他們是錯的。</li>
                                 <li>是他們讓我有這種感覺。</li>
                                 <li>我不能讓人知道我不確定。</li>
                             </ul>
                         </div>
-                        <div style="background:#f0fdf4; padding:12px; border-radius:12px; border:1px solid rgba(15,118,110,0.12);">
-                            <strong style="color:var(--accent-green);">We 👥 團隊與關係</strong>
-                            <ul style="padding-left:12px; font-size:12px; margin-top:8px; gap:4px;">
+                        <div style="background:#f0fdf4; padding:10px 14px; border-radius:12px; border:1px solid rgba(15,118,110,0.12); display:flex; flex-direction:column; gap:4px;">
+                            <strong style="color:var(--accent-green); font-size:13px; display:flex; align-items:center; gap:4px;">We 👥 團隊與關係</strong>
+                            <ul style="padding-left:14px; font-size:11.5px; margin:0; display:flex; flex-direction:column; gap:2px; color:var(--text-main);">
                                 <li>我們承諾了就不能改。</li>
                                 <li>每個人保持正向就好。</li>
                                 <li>你要嘛跟我們一起，要嘛退出。</li>
                                 <li>那個部門就是不合作。</li>
                             </ul>
                         </div>
-                        <div style="background:#eff6ff; padding:12px; border-radius:12px; border:1px solid rgba(29,78,216,0.12);">
-                            <strong style="color:var(--accent-blue);">Us 🏢 組織與文化</strong>
-                            <ul style="padding-left:12px; font-size:12px; margin-top:8px; gap:4px;">
+                        <div style="background:#eff6ff; padding:10px 14px; border-radius:12px; border:1px solid rgba(29,78,216,0.12); display:flex; flex-direction:column; gap:4px;">
+                            <strong style="color:var(--accent-blue); font-size:13px; display:flex; align-items:center; gap:4px;">Us 🏢 組織與文化</strong>
+                            <ul style="padding-left:14px; font-size:11.5px; margin:0; display:flex; flex-direction:column; gap:2px; color:var(--text-main);">
                                 <li>成果比感受重要。</li>
                                 <li>我們一直都是這樣做。</li>
                                 <li>流程不允許。</li>
@@ -2254,24 +2255,30 @@
                         </div>
                     </div>
 
-                    <div style="display:flex; flex-direction:column; gap:10px;">
-                        <div>
-                            <span class="input-label" style="font-size:11.5px;">✍️ 1. 您在職場中，最常聽到或說過哪一句類似的話？</span>
-                            <input type="text" id="heardPhrase" data-state-key="heardPhrase" placeholder="例如：「反正說了也沒用，上面都定案了」...">
-                        </div>
-                        <div class="grid-2" style="gap:10px;">
+                    <!-- Bottom Row: 4 Questions -->
+                    <div class="grid-2" style="width:100%; gap:20px; align-items:stretch;">
+                        <!-- Left Column: Q1, Q2, Q3 -->
+                        <div style="display:flex; flex-direction:column; gap:10px; justify-content:space-between;">
                             <div>
-                                <span class="input-label" style="font-size:11.5px;">✍️ 2. 這句話背後可能存在什麼故事？</span>
-                                <input type="text" id="underlyingStory" data-state-key="underlyingStory" placeholder="我們沒有影響力，保持沉默最安全...">
+                                <span class="input-label" style="font-size:12px; margin-bottom:4px;">✍️ 1. 您在職場中，最常聽到或說過哪一句類似的話？</span>
+                                <input type="text" id="heardPhrase" data-state-key="heardPhrase" placeholder="例如：「反正說了也沒用，上面都定案了」..." style="padding:8px 10px; font-size:12.5px;">
                             </div>
-                            <div>
-                                <span class="input-label" style="font-size:11.5px;">✍️ 3. 這個故事讓我們看不見什麼？</span>
-                                <input type="text" id="blindSpot" data-state-key="blindSpot" placeholder="高層其實在等待基層的反饋...">
+                            <div class="grid-2" style="gap:10px;">
+                                <div>
+                                    <span class="input-label" style="font-size:12px; margin-bottom:4px;">✍️ 2. 這句話背後的故事？</span>
+                                    <input type="text" id="underlyingStory" data-state-key="underlyingStory" placeholder="我們沒有影響力，保持沉默安全..." style="padding:8px 10px; font-size:12.5px;">
+                                </div>
+                                <div>
+                                    <span class="input-label" style="font-size:12px; margin-bottom:4px;">✍️ 3. 這個故事讓我們看不見？</span>
+                                    <input type="text" id="blindSpot" data-state-key="blindSpot" placeholder="高層其實在等待基層的反饋..." style="padding:8px 10px; font-size:12.5px;">
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <span class="input-label" style="font-size:11.5px; color:var(--accent-orange); font-weight:700;">✍️ 4. 關鍵提問：此時，有什麼大家感覺到了，卻還沒有人說出來？</span>
-                            <textarea id="unnamedIssue" data-state-key="unnamedIssue" placeholder="例如：其實大家對新的專案時間表都感到極度焦慮，但因為害怕被視為不配合，所以都在會議中保持沉默..." rows="2" style="font-size:13px;"></textarea>
+
+                        <!-- Right Column: Q4 highlighted box -->
+                        <div style="background:#fff7ed; border: 1px dashed var(--accent-orange); padding:14px 18px; border-radius:16px; display:flex; flex-direction:column; justify-content:center; gap:6px;">
+                            <span class="input-label" style="font-size:12.5px; color:var(--accent-orange); font-weight:800; display:block;">✍️ 4. 關鍵提問：此時，有什麼大家感覺到了，卻還沒有人說出來？</span>
+                            <textarea id="unnamedIssue" data-state-key="unnamedIssue" placeholder="例如：其實大家對新的專案時間表都感到極度焦慮，但因為害怕被視為不配合，所以都在會議中保持沉默..." rows="3" style="font-size:12.5px; padding:10px; line-height:1.5; flex:1;"></textarea>
                         </div>
                     </div>
                 </div>
