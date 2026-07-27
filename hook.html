@@ -1442,10 +1442,30 @@
                         </p>
                     </div>
                     
-                    <div style="display:flex; flex-direction:column; justify-content:center; gap:14px; height:100%;">
+                    <div style="display:flex; flex-direction:column; justify-content:flex-start; gap:12px; height:100%;">
                         <div>
-                            <span class="input-label" style="font-size:14px;">✍️ 體驗記錄：在這一輪「指認事實物體」時，我感覺大腦的反應是...</span>
-                            <textarea id="biasRound1Feel" data-state-key="biasRound1Feel" placeholder="例如：速度非常快，看見什麼就脫口而出，完全不需要耗費腦力去思考..." rows="5"></textarea>
+                            <span class="input-label" style="font-size:13.5px; margin-bottom:4px; display:block;">✍️ 體驗記錄：在這一輪「指認事實物體」時，我感覺大腦的反應是...</span>
+                            <textarea id="biasRound1Feel" data-state-key="biasRound1Feel" placeholder="例如：速度非常快，看見什麼就脫口而出，完全不需要耗費腦力去思考..." rows="3" style="font-size:12.5px; padding:10px;"></textarea>
+                        </div>
+                        
+                        <!-- Decrypt Card Round 1 -->
+                        <div id="reveal-card-12" onclick="revealCard(12)" style="position: relative; cursor: pointer; border-radius: 16px; margin-top: 4px;">
+                            <!-- Overlay -->
+                            <div id="reveal-overlay-12" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(240,253,254,0.85); border: 1px dashed var(--accent-green); border-radius:16px; display:flex; align-items:center; justify-content:center; z-index:10; transition: opacity 0.3s ease;">
+                                <span style="color: var(--accent-green); font-weight:800; font-size:13px;">💡 點擊滑鼠看第一輪原理與解密</span>
+                            </div>
+                            
+                            <!-- Content (Initially blurred) -->
+                            <div id="reveal-content-12" style="filter: blur(4px); pointer-events: none; transition: filter 0.3s ease; background:#f0fdf4; border:1px solid rgba(15,118,110,0.15); padding:12px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.01);">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                    <span style="background:var(--accent-green); color:white; font-size:9px; font-weight:800; padding:2px 6px; border-radius:20px; font-family:'Outfit';">ROUND 1</span>
+                                    <strong style="color:var(--accent-green); font-size:13px;">Fact Categorization</strong>
+                                </div>
+                                <h4 style="font-size:13.5px; font-weight:800; margin-bottom:4px; color:#14532d;">第一輪：分類指認</h4>
+                                <p style="font-size:11.5px; line-height:1.45; color:#166534; margin: 0;">
+                                    大腦極速匹配名詞資料庫。這雖省力，卻容易讓我們養成習慣，<strong>誤以為我們隨口說出的「個人解讀」，事實上只是主觀故事，卻被當作不可推翻的客觀事實。</strong>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1476,10 +1496,30 @@
                         </p>
                     </div>
                     
-                    <div style="display:flex; flex-direction:column; justify-content:center; gap:14px; height:100%;">
+                    <div style="display:flex; flex-direction:column; justify-content:flex-start; gap:12px; height:100%;">
                         <div>
-                            <span class="input-label" style="font-size:14px;">✍️ 體驗記錄：在這一輪「重新想像名字」時，我感覺大腦在尋找詞彙時...</span>
-                            <textarea id="biasRound2Feel" data-state-key="biasRound2Feel" placeholder="例如：有明顯的卡頓感！大腦會本能想說出原本正確的名字，必須要刻意踩煞車，才能勉強想出別的替代詞..." rows="5"></textarea>
+                            <span class="input-label" style="font-size:13.5px; margin-bottom:4px; display:block;">✍️ 體驗記錄：在這一輪「重新想像名字」時，我感覺大腦在尋找詞彙時...</span>
+                            <textarea id="biasRound2Feel" data-state-key="biasRound2Feel" placeholder="例如：有明顯的卡頓感！大腦會本能想說出原本正確的名字，必須要刻意踩煞車，才能勉強想出別的替代詞..." rows="3" style="font-size:12.5px; padding:10px;"></textarea>
+                        </div>
+                        
+                        <!-- Decrypt Card Round 2 -->
+                        <div id="reveal-card-13" onclick="revealCard(13)" style="position: relative; cursor: pointer; border-radius: 16px; margin-top: 4px;">
+                            <!-- Overlay -->
+                            <div id="reveal-overlay-13" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,247,237,0.85); border: 1px dashed var(--accent-orange); border-radius:16px; display:flex; align-items:center; justify-content:center; z-index:10; transition: opacity 0.3s ease;">
+                                <span style="color: var(--accent-orange); font-weight:800; font-size:13px;">💡 點擊滑鼠看第二輪原理與解密</span>
+                            </div>
+                            
+                            <!-- Content (Initially blurred) -->
+                            <div id="reveal-content-13" style="filter: blur(4px); pointer-events: none; transition: filter 0.3s ease; background:#fff7ed; border:1px solid rgba(234,88,12,0.15); padding:12px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.01);">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                    <span style="background:var(--accent-orange); color:white; font-size:9px; font-weight:800; padding:2px 6px; border-radius:20px; font-family:'Outfit';">ROUND 2</span>
+                                    <strong style="color:var(--accent-orange); font-size:13px;">Creative Flexibility</strong>
+                                </div>
+                                <h4 style="font-size:13.5px; font-weight:800; margin-bottom:4px; color:#7c2d12;">第二輪：創意彈性</h4>
+                                <p style="font-size:11.5px; line-height:1.45; color:#9a3412; margin: 0;">
+                                    重新命名需要大腦抑制預設反射、尋找創意。這需要刻意消耗認知能量，<strong>說明了我們若要看見別的可能性、跳脫慣性，就必須主動付出心智努力（Step Out）。</strong>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1510,10 +1550,30 @@
                         </p>
                     </div>
                     
-                    <div style="display:flex; flex-direction:column; justify-content:center; gap:14px; height:100%;">
+                    <div style="display:flex; flex-direction:column; justify-content:flex-start; gap:12px; height:100%;">
                         <div>
-                            <span class="input-label" style="font-size:14px;">✍️ 體驗記錄：在這一輪「快速挑剔與批判」時，我的感受是...</span>
-                            <textarea id="biasRound3Feel" data-state-key="biasRound3Feel" placeholder="例如：竟然感到意外的順暢！不需要花太多力氣思考，各種不順眼、嫌棄的詞彙很自然就浮現出來..." rows="5"></textarea>
+                            <span class="input-label" style="font-size:13.5px; margin-bottom:4px; display:block;">✍️ 體驗記錄：在這一輪「快速挑剔與批判」時，我的感受是...</span>
+                            <textarea id="biasRound3Feel" data-state-key="biasRound3Feel" placeholder="例如：竟然感到意外的順暢！不需要花太多力氣思考，各種不順眼、嫌棄的詞彙很自然就浮現出來..." rows="3" style="font-size:12.5px; padding:10px;"></textarea>
+                        </div>
+                        
+                        <!-- Decrypt Card Round 3 -->
+                        <div id="reveal-card-14" onclick="revealCard(14)" style="position: relative; cursor: pointer; border-radius: 16px; margin-top: 4px;">
+                            <!-- Overlay -->
+                            <div id="reveal-overlay-14" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(253,242,248,0.85); border: 1px dashed var(--accent-pink); border-radius:16px; display:flex; align-items:center; justify-content:center; z-index:10; transition: opacity 0.3s ease;">
+                                <span style="color: var(--accent-pink); font-weight:800; font-size:13px;">💡 點擊滑鼠看第三輪原理與解密</span>
+                            </div>
+                            
+                            <!-- Content (Initially blurred) -->
+                            <div id="reveal-content-14" style="filter: blur(4px); pointer-events: none; transition: filter 0.3s ease; background:#fdf2f8; border:1px solid rgba(219,39,119,0.15); padding:12px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.01);">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                    <span style="background:var(--accent-pink); color:white; font-size:9px; font-weight:800; padding:2px 6px; border-radius:20px; font-family:'Outfit';">ROUND 3</span>
+                                    <strong style="color:var(--accent-pink); font-size:13px;">Negativity Bias</strong>
+                                </div>
+                                <h4 style="font-size:13.5px; font-weight:800; margin-bottom:4px; color:#9d174d;">第三輪：負面偏誤</h4>
+                                <p style="font-size:11.5px; line-height:1.45; color:#9d174d; margin: 0;">
+                                    為了生存防衛，大腦天生非常擅長挑剔與焦慮。<strong>我們能零延遲、不需要任何客觀依據地產出指責與評價，這正是日常生活中 Hook（被套路）最容易形成的溫床。</strong>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1574,67 +1634,27 @@
                     <span class="slide-type-tag tag-concept">原理揭曉</span>
                 </div>
                 
-                <div class="slide-body" style="display:flex; flex-direction:column; gap:20px; justify-content:flex-start;">
-                    <!-- Top Row: Three Secret Cards (Full Width Grid-3) -->
-                    <div class="grid-3" style="width:100%;">
-                        <!-- Card 1 -->
-                        <div style="background:#f0fdf4; border:1px solid rgba(15,118,110,0.15); padding:16px 20px; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.02); transition:transform 0.2s; cursor:default;" class="secret-card-hover">
-                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                <span style="background:var(--accent-green); color:white; font-size:10px; font-weight:800; padding:3px 8px; border-radius:20px; font-family:'Outfit';">ROUND 1</span>
-                                <strong style="color:var(--accent-green); font-size:14px;">Fact Categorization</strong>
-                            </div>
-                            <h4 style="font-size:16px; font-weight:800; margin-bottom:6px; color:#14532d;">第一輪：分類指認</h4>
-                            <p style="font-size:12.5px; line-height:1.6; color:#166534;">
-                                大腦極速匹配名詞資料庫。這雖省力，卻容易讓我們養成習慣，<strong>誤以為我們隨口說出的「個人解讀」，事實上只是主觀故事，卻被當作不可推翻的客觀事實。</strong>
-                            </p>
-                        </div>
-
-                        <!-- Card 2 -->
-                        <div style="background:#fff7ed; border:1px solid rgba(234,88,12,0.15); padding:16px 20px; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.02); transition:transform 0.2s; cursor:default;" class="secret-card-hover">
-                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                <span style="background:var(--accent-orange); color:white; font-size:10px; font-weight:800; padding:3px 8px; border-radius:20px; font-family:'Outfit';">ROUND 2</span>
-                                <strong style="color:var(--accent-orange); font-size:14px;">Creative Flexibility</strong>
-                            </div>
-                            <h4 style="font-size:16px; font-weight:800; margin-bottom:6px; color:#7c2d12;">第二輪：創意彈性</h4>
-                            <p style="font-size:12.5px; line-height:1.6; color:#9a3412;">
-                                重新命名需要大腦抑制預設反射、尋找創意。這需要刻意消耗認知能量，<strong>說明了我們若要看見別的可能性、跳脫慣性，就必須主動付出心智努力（Step Out）。</strong>
-                            </p>
-                        </div>
-
-                        <!-- Card 3 -->
-                        <div style="background:#fdf2f8; border:1px solid rgba(219,39,119,0.15); padding:16px 20px; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.02); transition:transform 0.2s; cursor:default;" class="secret-card-hover">
-                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                <span style="background:var(--accent-pink); color:white; font-size:10px; font-weight:800; padding:3px 8px; border-radius:20px; font-family:'Outfit';">ROUND 3</span>
-                                <strong style="color:var(--accent-pink); font-size:14px;">Negativity Bias</strong>
-                            </div>
-                            <h4 style="font-size:16px; font-weight:800; margin-bottom:6px; color:#9d174d;">第三輪：負面偏誤</h4>
-                            <p style="font-size:12.5px; line-height:1.6; color:#9d174d;">
-                                為了生存防衛，大腦天生非常擅長挑剔與焦慮。<strong>我們能零延遲、不需要任何客觀依據地產出指責與評價，這正是日常生活中 Hook（被套路）最容易形成的溫床。</strong>
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Bottom Row: Core Conclusion (Left) & Reflection (Right) -->
-                    <div class="grid-2" style="width:100%; gap:24px; align-items:stretch;">
+                <div class="slide-body">
+                    <div class="grid-2" style="width:100%; gap:24px; align-items:stretch; height: 100%;">
                         <!-- Conclusion card -->
-                        <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:16px; padding:20px; display:flex; flex-direction:column; justify-content:center; gap:8px;">
-                            <div style="display:flex; align-items:center; gap:6px; color:var(--accent-navy); font-weight:800; font-size:14.5px;">
+                        <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:20px; padding:24px 32px; display:flex; flex-direction:column; justify-content:center; gap:12px; height: 100%;">
+                            <div style="display:flex; align-items:center; gap:6px; color:var(--accent-navy); font-weight:800; font-size:16px;">
                                 💡 核心結論：
                             </div>
-                            <p style="font-size:13.5px; line-height:1.6; color:#334155; font-weight:700;">
+                            <p style="font-size:14.5px; line-height:1.7; color:#334155; font-weight:700;">
                                 批判與焦慮，是人類心智最省力、最直覺的默認模式 (Default Mode)。
                             </p>
-                            <p style="font-size:12.5px; line-height:1.55; color:#64748b;">
+                            <p style="font-size:13.5px; line-height:1.65; color:#64748b; margin: 0;">
                                 當面對複雜工作、跨部門溝通或主管簡訊時，大腦拋出的第一個批評或擔心，本質上只是威脅防禦系統丟出的 Hook（未經驗證的信念）。如果信以為真，就會鎖死視野、失去彈性。
                             </p>
                         </div>
 
                         <!-- Reflection form -->
-                        <div style="display:flex; flex-direction:column; justify-content:space-between;">
-                            <span class="input-label" style="font-size:13px; font-weight:800; color:var(--text-main); margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+                        <div style="display:flex; flex-direction:column; justify-content:center; background: #fafaf9; border: 1px solid var(--border-color); padding: 24px 32px; border-radius: 20px; height: 100%;">
+                            <span class="input-label" style="font-size:14px; font-weight:800; color:var(--text-main); margin-bottom:8px; display:flex; align-items:center; gap:4px;">
                                 ✍️ 個人頓悟：當理解了這三個機制後，在未來的職場決策與對話中，你打算如何提醒自己？
                             </span>
-                            <textarea id="biasRevealInsight" data-state-key="biasRevealInsight" placeholder="例如：當我下意識覺得對方在推託時（第三輪的負面偏誤），我會提醒自己這只是大腦的防衛反應。我需要先停頓（第二輪的創意空間），並去向對方確認客觀的觀察事實（第一輪）..." rows="3" style="font-size:12.5px; padding:10px 12px;"></textarea>
+                            <textarea id="biasRevealInsight" data-state-key="biasRevealInsight" placeholder="例如：當我下意識覺得對方在推託時（第三輪的負面偏誤），我會提醒自己這只是大腦的防衛反應。我需要先停頓（第二輪的創意空間），並去向對方確認客觀的觀察事實（第一輪）..." rows="5" style="font-size:13px; padding:12px; line-height:1.6;"></textarea>
                         </div>
                     </div>
                 </div>
@@ -2396,6 +2416,18 @@
             slide2Revealed = true;
             const s2 = document.getElementById('slide-2');
             if (s2) s2.classList.add('slide2-revealed');
+        }
+        function revealCard(pageIdx) {
+            const overlay = document.getElementById('reveal-overlay-' + pageIdx);
+            const content = document.getElementById('reveal-content-' + pageIdx);
+            if (overlay && content) {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 300);
+                content.style.filter = 'none';
+                content.style.pointerEvents = 'auto';
+            }
         }
         function onSlide2Click(e) {
             if (!slide2Revealed) {
