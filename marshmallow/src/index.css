@@ -1,18 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
 
 :root {
-  /* Color Palette - Warm, Trustworthy Slate & Amber */
-  --bg-app: hsl(210, 20%, 98%);
+  /* Color Palette - Cathay Financial Holding Style (Green & Golden Yellow) */
+  --bg-app: hsl(145, 12%, 97%);
   --bg-card: hsl(0, 0%, 100%);
   --text-primary: hsl(222, 47%, 11%);
   --text-secondary: hsl(210, 10%, 40%);
   --text-muted: hsl(210, 10%, 60%);
-  --border-color: hsl(210, 16%, 90%);
+  --border-color: hsl(145, 12%, 90%);
   
-  --primary: hsl(215, 25%, 27%);
-  --primary-hover: hsl(215, 25%, 20%);
-  --accent: hsl(38, 92%, 50%); /* Amber marshmallow gold */
-  --accent-hover: hsl(38, 92%, 45%);
+  --primary: hsl(149, 90%, 28%); /* Cathay Green */
+  --primary-hover: hsl(149, 90%, 22%);
+  --accent: hsl(45, 100%, 50%); /* Cathay Golden Yellow */
+  --accent-hover: hsl(45, 100%, 45%);
   
   --success: hsl(142, 70%, 45%);
   --success-light: hsl(142, 70%, 95%);
