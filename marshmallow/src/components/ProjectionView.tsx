@@ -539,6 +539,12 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
                   </div>
                 </div>
               </div>
+            ) : isReadOnly ? (
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2.5rem 4rem', borderRadius: '16px', display: 'inline-block', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <h3 style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '1.5rem', fontWeight: 500 }}>
+                  ⏳ 等待講師統計並登記合格組數結果...
+                </h3>
+              </div>
             ) : (
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2.5rem 4rem', borderRadius: '16px', display: 'inline-block', border: '1px dashed rgba(255,255,255,0.1)' }}>
                 <h3 style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '1.25rem', fontSize: '1.4rem' }}>登記第一輪合格產品組數：</h3>
