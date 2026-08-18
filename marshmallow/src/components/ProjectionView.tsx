@@ -1104,7 +1104,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       {!isReadOnly && (
         <div className="projection-header">
           <div className="projection-title" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span>國泰金控 敏捷挑戰工作坊</span>
+            <span>棉花糖敏捷挑戰工作坊</span>
             <span style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.15)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '4px', textTransform: 'uppercase' }}>
               {workshop.status}
             </span>
