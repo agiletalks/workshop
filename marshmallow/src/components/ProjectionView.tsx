@@ -41,9 +41,10 @@ export const PROJECTION_SCREENS = [
 
 interface ProjectionProps {
   workshopId: string;
+  isReadOnly?: boolean;
 }
 
-export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
+export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOnly = false }) => {
   const [workshop, setWorkshop] = useState<Workshop | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [versions, setVersions] = useState<TeamVersion[]>([]);
@@ -120,9 +121,11 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
       };
       await updateWorkshopState(workshopId, updates);
     }
-  }, [workshop, workshopId]);
+  }, [workshop, workshopId, isReadOnly]);
 
+  // Keyboard navigation handler
   useEffect(() => {
+    if (isReadOnly) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName || '')) return;
       if (e.key === 'ArrowRight' || e.key === ' ') {
@@ -1097,157 +1100,165 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
                        (workshop.status === 'ROUND_2_ACTIVE' && workshop.round2PausedAt);
 
   return (
-    <div className="role-container projection-view" style={{ paddingBottom: '7.5rem' }}>
-      <div className="projection-header">
-        <div className="projection-title" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span>國泰金控 敏捷挑戰工作坊</span>
-          <span style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.15)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '4px', textTransform: 'uppercase' }}>
-            {workshop.status}
-          </span>
+    <div className={`role-container projection-view ${isReadOnly ? 'projection-readonly' : ''}`} style={isReadOnly ? { paddingBottom: 0 } : { paddingBottom: '7.5rem' }}>
+      {!isReadOnly && (
+        <div className="projection-header">
+          <div className="projection-title" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span>國泰金控 敏捷挑戰工作坊</span>
+            <span style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.15)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '4px', textTransform: 'uppercase' }}>
+              {workshop.status}
+            </span>
+          </div>
+          <div style={{ fontSize: '1.2rem', opacity: 0.6 }}>
+            {currentScreen.title}
+          </div>
         </div>
-        <div style={{ fontSize: '1.2rem', opacity: 0.6 }}>
-          {currentScreen.title}
-        </div>
-      </div>
+      )}
 
-      <div className="projection-content">
+      <div className="projection-content" style={isReadOnly ? { padding: 0 } : {}}>
         {renderScreenContent()}
       </div>
 
-      <div className="projection-footer">
-        <div>
-          專案代碼：<strong>{workshop.joinCode}</strong> | 學員連結：{joinUrl}
-        </div>
-        <div>
-          AGILE TALKS © 2026 | 按「M」鍵開合團隊監控抽屜
-        </div>
-      </div>
-
-      {/* ==========================================================================
-         PRESENTER BOTTOM CONTROLLER BAR (Subtle, slides up on hover)
-         ========================================================================== */}
-      <div className="presenter-bottom-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', justifyContent: 'space-between', width: '100%' }}>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <button 
-              className="btn btn-outline btn-control-sm"
-              onClick={handlePrev}
-              disabled={currentScreenIdx === 0 && workshop.currentRevealIndex === 0}
-              title="上一步 (鍵盤 左方向鍵)"
-            >
-              ◀ Prev
-            </button>
-            <span style={{ fontSize: '0.9rem', minWidth: '80px', textAlign: 'center', color: '#fff', fontWeight: 600 }}>
-              {currentScreen.id} ({workshop.currentRevealIndex}/{currentScreen.maxReveal})
-            </span>
-            <button 
-              className="btn btn-accent btn-control-sm"
-              onClick={handleNext}
-              disabled={currentScreenIdx === PROJECTION_SCREENS.length - 1 && workshop.currentRevealIndex === currentScreen.maxReveal}
-              title="下一步 (鍵盤 右方向鍵)"
-            >
-              Next ▶
-            </button>
+      {!isReadOnly && (
+        <div className="projection-footer">
+          <div>
+            專案代碼：<strong>{workshop.joinCode}</strong> | 學員連結：{joinUrl}
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>快速跳轉：</span>
-            <select
-              className="presenter-select"
-              value={workshop.currentProjectionScreen}
-              onChange={(e) => handleJumpToScreen(e.target.value)}
-            >
-              {PROJECTION_SCREENS.map(s => (
-                <option key={s.id} value={s.id}>{s.id} - {s.title.substring(0, 15)}...</option>
-              ))}
-            </select>
+          <div>
+            AGILE TALKS © 2026 | 按「M」鍵開合團隊監控抽屜
           </div>
-
-          {isTimerActive && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.06)', padding: '0.35rem 0.75rem', borderRadius: '8px' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--accent)', fontSize: '1.15rem' }}>
-                ⏱ {formatTime(timeLeft)}
-              </span>
-              <button className="btn btn-outline btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={toggleTimer}>
-                {isTimerPaused ? '啟動' : '暫停'}
-              </button>
-              <button className="btn btn-danger btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', background: 'var(--error)' }} onClick={endRoundEarly}>
-                結束
-              </button>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button 
-              className={`btn btn-outline btn-control-sm ${isDrawerOpen ? 'active-control' : ''}`}
-              onClick={() => setIsDrawerOpen(prev => !prev)}
-              title="開合團隊監控面板 (鍵盤 M 鍵)"
-            >
-              📊 團隊監控 {isDrawerOpen ? '▲' : '▼'}
-            </button>
-            <button 
-              className="btn btn-outline btn-control-sm btn-danger-hover" 
-              onClick={handleResetWorkshop}
-              disabled={isResetting}
-              title="重設工作坊所有數據"
-            >
-              ↻ 重設
-            </button>
-          </div>
-
         </div>
-      </div>
+      )}
 
-      {/* ==========================================================================
-         PRESENTER RIGHT MONITOR DRAWER (Slides in from right)
-         ========================================================================== */}
-      <div className={`presenter-right-drawer ${isDrawerOpen ? 'open' : ''}`}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>
-          <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.15rem' }}>📊 團隊即時狀態監控</h3>
-          <button 
-            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '1.25rem', cursor: 'pointer' }}
-            onClick={() => setIsDrawerOpen(false)}
-          >
-            ✕
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', maxHeight: 'calc(100vh - 120px)' }}>
-          {teams.map((t) => {
-            const teamVersions = versions.filter(v => v.teamId === t.id && v.syncStatus !== 'error');
-            const isOnline = Date.now() - t.lastSeenAt < 15000;
-            const isStale = Date.now() - t.lastSeenAt >= 15000 && Date.now() - t.lastSeenAt < 60000;
-
-            return (
-              <div key={t.id} className="drawer-team-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{t.name}</span>
-                  {isOnline ? (
-                    <span className="indicator indicator-online">● 連線中</span>
-                  ) : isStale ? (
-                    <span className="indicator indicator-stale">● 離線</span>
-                  ) : (
-                    <span className="indicator indicator-offline">● 斷線</span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem' }}>
-                  <span>關卡：<strong>{t.currentChallengeSequence} / 10</strong></span>
-                  <span>已交付：<strong>{teamVersions.length} 版</strong></span>
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem' }}>
-                  記錄員：{t.recorderName}
-                </div>
+      {!isReadOnly && (
+        <>
+          {/* ==========================================================================
+             PRESENTER BOTTOM CONTROLLER BAR (Subtle, slides up on hover)
+             ========================================================================== */}
+          <div className="presenter-bottom-bar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', justifyContent: 'space-between', width: '100%' }}>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button 
+                  className="btn btn-outline btn-control-sm"
+                  onClick={handlePrev}
+                  disabled={currentScreenIdx === 0 && workshop.currentRevealIndex === 0}
+                  title="上一步 (鍵盤 左方向鍵)"
+                >
+                  ◀ Prev
+                </button>
+                <span style={{ fontSize: '0.9rem', minWidth: '80px', textAlign: 'center', color: '#fff', fontWeight: 600 }}>
+                  {currentScreen.id} ({workshop.currentRevealIndex}/{currentScreen.maxReveal})
+                </span>
+                <button 
+                  className="btn btn-accent btn-control-sm"
+                  onClick={handleNext}
+                  disabled={currentScreenIdx === PROJECTION_SCREENS.length - 1 && workshop.currentRevealIndex === currentScreen.maxReveal}
+                  title="下一步 (鍵盤 右方向鍵)"
+                >
+                  Next ▶
+                </button>
               </div>
-            );
-          })}
-          {teams.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '3rem 0', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', fontSize: '0.9rem' }}>
-              尚未有團隊登記加入...
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>快速跳轉：</span>
+                <select
+                  className="presenter-select"
+                  value={workshop.currentProjectionScreen}
+                  onChange={(e) => handleJumpToScreen(e.target.value)}
+                >
+                  {PROJECTION_SCREENS.map(s => (
+                    <option key={s.id} value={s.id}>{s.id} - {s.title.substring(0, 15)}...</option>
+                  ))}
+                </select>
+              </div>
+
+              {isTimerActive && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.06)', padding: '0.35rem 0.75rem', borderRadius: '8px' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--accent)', fontSize: '1.15rem' }}>
+                    ⏱ {formatTime(timeLeft)}
+                  </span>
+                  <button className="btn btn-outline btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={toggleTimer}>
+                    {isTimerPaused ? '啟動' : '暫停'}
+                  </button>
+                  <button className="btn btn-danger btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', background: 'var(--error)' }} onClick={endRoundEarly}>
+                    結束
+                  </button>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  className={`btn btn-outline btn-control-sm ${isDrawerOpen ? 'active-control' : ''}`}
+                  onClick={() => setIsDrawerOpen(prev => !prev)}
+                  title="開合團隊監控面板 (鍵盤 M 鍵)"
+                >
+                  📊 團隊監控 {isDrawerOpen ? '▲' : '▼'}
+                </button>
+                <button 
+                  className="btn btn-outline btn-control-sm btn-danger-hover" 
+                  onClick={handleResetWorkshop}
+                  disabled={isResetting}
+                  title="重設工作坊所有數據"
+                >
+                  ↻ 重設
+                </button>
+              </div>
+
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+
+          {/* ==========================================================================
+             PRESENTER RIGHT MONITOR DRAWER (Slides in from right)
+             ========================================================================== */}
+          <div className={`presenter-right-drawer ${isDrawerOpen ? 'open' : ''}`}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.15rem' }}>📊 團隊即時狀態監控</h3>
+              <button 
+                style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '1.25rem', cursor: 'pointer' }}
+                onClick={() => setIsDrawerOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', maxHeight: 'calc(100vh - 120px)' }}>
+              {teams.map((t) => {
+                const teamVersions = versions.filter(v => v.teamId === t.id && v.syncStatus !== 'error');
+                const isOnline = Date.now() - t.lastSeenAt < 15000;
+                const isStale = Date.now() - t.lastSeenAt >= 15000 && Date.now() - t.lastSeenAt < 60000;
+
+                return (
+                  <div key={t.id} className="drawer-team-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{t.name}</span>
+                      {isOnline ? (
+                        <span className="indicator indicator-online">● 連線中</span>
+                      ) : isStale ? (
+                        <span className="indicator indicator-stale">● 離線</span>
+                      ) : (
+                        <span className="indicator indicator-offline">● 斷線</span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem' }}>
+                      <span>關卡：<strong>{t.currentChallengeSequence} / 10</strong></span>
+                      <span>已交付：<strong>{teamVersions.length} 版</strong></span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem' }}>
+                      記錄員：{t.recorderName}
+                    </div>
+                  </div>
+                );
+              })}
+              {teams.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '3rem 0', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                  尚未有團隊登記加入...
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
     </div>
   );

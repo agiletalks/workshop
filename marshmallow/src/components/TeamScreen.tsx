@@ -8,6 +8,7 @@ import {
 } from '../services/syncService';
 import { challengesData } from '../data/challengesData';
 import type { Workshop, Team, TeamVersion } from '../types';
+import { ProjectionView } from './ProjectionView';
 
 interface TeamScreenProps {
   workshopId: string;
@@ -258,18 +259,22 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
     }
 
     return (
-      <div className="role-container team-view">
+      <div className="role-container team-view mobile-slide-view">
         <header className="team-header">
           <span className="team-header-name">
-            {team ? `${team.name} (Recorder)` : '棉花糖敏捷工作坊'}
+            {team ? `${team.name} (學員端)` : '棉花糖敏捷工作坊'}
+          </span>
+          <span style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.15)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+            👀 講師引導中
           </span>
           {team && getSyncStatusBadge()}
         </header>
-        <div className="team-main">
-          <div className="card attention-mode">
-            <div className="attention-icon">👀</div>
-            <h1 className="attention-headline">{title}</h1>
-            <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>{subtitle}</p>
+        <div className="team-main" style={{ padding: '0.5rem', overflowY: 'auto' }}>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '1rem' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
+              {title} - {subtitle}
+            </div>
+            <ProjectionView workshopId={workshop.id} isReadOnly={true} />
           </div>
         </div>
       </div>
