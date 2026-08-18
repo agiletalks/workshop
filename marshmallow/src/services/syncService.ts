@@ -347,8 +347,8 @@ export async function createWorkshop(name: string, joinCode: string): Promise<Wo
     name,
     joinCode: joinCode.toUpperCase(),
     status: 'SETUP',
-    round1DurationSeconds: 360, // 6 mins
-    round2DurationSeconds: 600, // 10 mins
+    round1DurationSeconds: 1080, // 18 mins (simulating Waterfall expectation)
+    round2DurationSeconds: 600, // 10 mins (10 iterations)
     round1StartedAt: null,
     round1PausedAt: null,
     round1RemainingMs: null,

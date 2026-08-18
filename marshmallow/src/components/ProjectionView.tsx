@@ -167,7 +167,12 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         const limit = remainingMs !== null ? remainingMs : totalSec * 1000;
         const currentRemaining = Math.max(0, limit - elapsed);
         setTimeLeft(Math.ceil(currentRemaining / 1000));
-        if (currentRemaining <= 0) triggerFreeze();
+        
+        // In Round 1, we simulate 18 minutes but auto-freeze when elapsed time reaches 6 minutes (i.e. remaining time reaches 12 minutes / 720 seconds)
+        const isRound1TimeUp = isRound1 && (currentRemaining <= 720000);
+        const isRound2TimeUp = !isRound1 && (currentRemaining <= 0);
+        
+        if (isRound1TimeUp || isRound2TimeUp) triggerFreeze();
       } else {
         setTimeLeft(totalSec);
       }
@@ -492,7 +497,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
             <h1 style={{ fontSize: '5.5rem', color: 'var(--accent)', margin: '1rem 0 2rem' }}>建造最高的獨立結構</h1>
             <div style={{ background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', padding: '2.5rem 5rem', borderRadius: '20px', display: 'inline-block' }}>
               <div style={{ fontSize: '1.5rem', opacity: 0.6 }}>挑戰時間</div>
-              <div style={{ fontSize: '5rem', fontWeight: 800, color: '#fff' }}>6 分鐘</div>
+              <div style={{ fontSize: '5rem', fontWeight: 800, color: '#fff' }}>18 分鐘</div>
             </div>
           </div>
         );
@@ -799,13 +804,13 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
       case 'P18':
         return (
-          <div style={{ maxWidth: '900px', textAlign: 'left' }}>
-            <h1 style={{ fontSize: '3.5rem', color: 'var(--accent)', marginBottom: '3rem', textAlign: 'center' }}>第二輪挑戰回顧</h1>
+          <div style={{ maxWidth: '900px', textAlign: 'left', margin: '0 auto' }}>
+            <h1 style={{ fontSize: '3.5rem', color: 'var(--accent)', marginBottom: '3rem', textAlign: 'center' }}>挑戰回顧</h1>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              <div style={{ fontSize: '2.2rem', fontWeight: 600 }}>• 第一輪時間比較寬裕 (6 分鐘)。</div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 600 }}>• 第二輪時間更少 (10 分鐘，共 10 大市場挑戰)。</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--accent)', marginTop: '1rem' }}>
-                這一次，你們做出了什麼樣的產品演進？結果發生了什麼改變？
+              <div style={{ fontSize: '2rem', fontWeight: 600 }}>• <strong>第一輪 (傳統開發)</strong>：原本預期有 18 分鐘，但在第 6 分鐘被緊急中斷（因為沒有任何可運作產品，被限期整改）。</div>
+              <div style={{ fontSize: '2rem', fontWeight: 600 }}>• <strong>第二輪 (敏捷開發)</strong>：剩餘的 12 分鐘被砍掉 2 分鐘（只剩 10 分鐘），並被要求以每分鐘為單位、進行頻繁的迭代交付。</div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 700, color: 'var(--accent)', marginTop: '1rem', textAlign: 'center' }}>
+                第二輪中，你們做出了什麼樣的產品演進？交付效能發生了什麼改變？
               </div>
             </div>
           </div>
