@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   subscribeToWorkshop,
   subscribeToTeams,
@@ -50,12 +50,10 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   
-  // Refactored presenter controls states
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [round1Evidence, setRound1Evidence] = useState<string>('0');
   const [isResetting, setIsResetting] = useState<boolean>(false);
 
-  // Subscribe to updates
   useEffect(() => {
     const unsubWS = subscribeToWorkshop(workshopId, setWorkshop);
     const unsubTeams = subscribeToTeams(workshopId, setTeams);
@@ -68,96 +66,11 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
     };
   }, [workshopId]);
 
-  // Synchronized timer display
-  useEffect(() => {
+  const handleNext = useCallback(async () => {
     if (!workshop) return;
+    const currentScreenIdx = PROJECTION_SCREENS.findIndex(s => s.id === workshop.currentProjectionScreen);
+    const currentScreen = PROJECTION_SCREENS[currentScreenIdx] || PROJECTION_SCREENS[0];
 
-    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
-    const isRound2 = workshop.status === 'ROUND_2_ACTIVE';
-
-    if (!isRound1 && !isRound2) {
-      setTimeLeft(0);
-      return;
-    }
-
-    const triggerFreeze = async () => {
-      if (isRound1) {
-        await updateWorkshopState(workshopId, {
-          status: 'ROUND_1_FROZEN',
-          round1StartedAt: null,
-          round1RemainingMs: 0,
-          currentProjectionScreen: 'P06',
-          currentRevealIndex: 0
-        });
-      } else {
-        await updateWorkshopState(workshopId, {
-          status: 'ROUND_2_FROZEN',
-          round2StartedAt: null,
-          round2RemainingMs: 0,
-          currentProjectionScreen: 'P17',
-          currentRevealIndex: 0
-        });
-      }
-    };
-
-    const updateTimer = () => {
-      const startedAt = isRound1 ? workshop.round1StartedAt : workshop.round2StartedAt;
-      const pausedAt = isRound1 ? workshop.round1PausedAt : workshop.round2PausedAt;
-      const remainingMs = isRound1 ? workshop.round1RemainingMs : workshop.round2RemainingMs;
-      const totalSec = isRound1 ? workshop.round1DurationSeconds : workshop.round2DurationSeconds;
-
-      if (pausedAt && remainingMs !== null) {
-        setTimeLeft(Math.max(0, Math.ceil(remainingMs / 1000)));
-      } else if (startedAt) {
-        const elapsed = Date.now() - startedAt;
-        const limit = remainingMs !== null ? remainingMs : totalSec * 1000;
-        const currentRemaining = Math.max(0, limit - elapsed);
-        
-        setTimeLeft(Math.ceil(currentRemaining / 1000));
-
-        if (currentRemaining <= 0) {
-          triggerFreeze();
-        }
-      } else {
-        setTimeLeft(totalSec);
-      }
-    };
-
-    updateTimer();
-    const intervalId = setInterval(updateTimer, 500);
-    return () => clearInterval(intervalId);
-  }, [workshop, workshopId]);
-
-  // Sync selected team selection for Document Late (P25)
-  useEffect(() => {
-    if (teams.length > 0 && !selectedTeamId) {
-      setSelectedTeamId(teams[0].id);
-    }
-  }, [teams, selectedTeamId]);
-
-  // Sync locally stored R1 evidence count
-  useEffect(() => {
-    const raw = localStorage.getItem(`ws_${workshopId}_r1_evidence`);
-    if (raw) {
-      setRound1Evidence(raw);
-    }
-  }, [workshopId]);
-
-  if (!workshop) {
-    return (
-      <div className="role-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'var(--primary)', color: '#fff' }}>
-        <h2>讀取工作坊中...</h2>
-      </div>
-    );
-  }
-
-  const currentScreenIdx = PROJECTION_SCREENS.findIndex(s => s.id === workshop.currentProjectionScreen);
-  const currentScreen = PROJECTION_SCREENS[currentScreenIdx] || PROJECTION_SCREENS[0];
-
-  // ----------------------------------------------------
-  // PRESENTER ACTION HANDLERS
-  // ----------------------------------------------------
-  const handleNext = async () => {
     if (workshop.currentRevealIndex < currentScreen.maxReveal) {
       await updateWorkshopState(workshopId, {
         currentRevealIndex: workshop.currentRevealIndex + 1
@@ -183,12 +96,14 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
       } else {
         updates.status = nextScreen.state as WorkshopStatus;
       }
-
       await updateWorkshopState(workshopId, updates);
     }
-  };
+  }, [workshop, workshopId]);
 
-  const handlePrev = async () => {
+  const handlePrev = useCallback(async () => {
+    if (!workshop) return;
+    const currentScreenIdx = PROJECTION_SCREENS.findIndex(s => s.id === workshop.currentProjectionScreen);
+
     if (workshop.currentRevealIndex > 0) {
       await updateWorkshopState(workshopId, {
         currentRevealIndex: workshop.currentRevealIndex - 1
@@ -205,158 +120,11 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
       };
       await updateWorkshopState(workshopId, updates);
     }
-  };
+  }, [workshop, workshopId]);
 
-  const handleJumpToScreen = async (screenId: string) => {
-    const targetIdx = PROJECTION_SCREENS.findIndex(s => s.id === screenId);
-    if (targetIdx === -1) return;
-    const targetScreen = PROJECTION_SCREENS[targetIdx];
-
-    const updates: Partial<Workshop> = {
-      currentProjectionScreen: targetScreen.id,
-      currentRevealIndex: 0
-    };
-
-    if (targetScreen.id === 'P05') {
-      updates.status = 'ROUND_1_ACTIVE';
-      if (!workshop.round1StartedAt) {
-        updates.round1StartedAt = Date.now();
-        updates.round1RemainingMs = workshop.round1DurationSeconds * 1000;
-      }
-    } else if (targetScreen.id === 'P16') {
-      updates.status = 'ROUND_2_ACTIVE';
-      if (!workshop.round2StartedAt) {
-        updates.round2StartedAt = Date.now();
-        updates.round2RemainingMs = workshop.round2DurationSeconds * 1000;
-      }
-    } else {
-      updates.status = targetScreen.state as WorkshopStatus;
-    }
-
-    await updateWorkshopState(workshopId, updates);
-  };
-
-  const toggleTimer = async () => {
-    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
-    const isRound2 = workshop.status === 'ROUND_2_ACTIVE';
-
-    if (!isRound1 && !isRound2) return;
-
-    const startedAt = isRound1 ? workshop.round1StartedAt : workshop.round2StartedAt;
-    const remainingMs = isRound1 ? workshop.round1RemainingMs : workshop.round2RemainingMs;
-    const totalSec = isRound1 ? workshop.round1DurationSeconds : workshop.round2DurationSeconds;
-
-    const updates: Partial<Workshop> = {};
-
-    if (startedAt) {
-      const elapsed = Date.now() - startedAt;
-      const limit = remainingMs !== null ? remainingMs : totalSec * 1000;
-      const newRemaining = Math.max(0, limit - elapsed);
-
-      if (isRound1) {
-        updates.round1StartedAt = null;
-        updates.round1PausedAt = Date.now();
-        updates.round1RemainingMs = newRemaining;
-      } else {
-        updates.round2StartedAt = null;
-        updates.round2PausedAt = Date.now();
-        updates.round2RemainingMs = newRemaining;
-      }
-    } else {
-      if (isRound1) {
-        updates.round1StartedAt = Date.now();
-        updates.round1PausedAt = null;
-      } else {
-        updates.round2StartedAt = Date.now();
-        updates.round2PausedAt = null;
-      }
-    }
-
-    await updateWorkshopState(workshopId, updates);
-  };
-
-  const endRoundEarly = async () => {
-    const confirmEnd = window.confirm('確定要提前結束本輪挑戰嗎？這會直接凍結所有團隊的送出狀態。');
-    if (!confirmEnd) return;
-
-    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
-    if (isRound1) {
-      await updateWorkshopState(workshopId, {
-        status: 'ROUND_1_FROZEN',
-        round1StartedAt: null,
-        round1RemainingMs: 0,
-        currentProjectionScreen: 'P06',
-        currentRevealIndex: 0
-      });
-    } else {
-      await updateWorkshopState(workshopId, {
-        status: 'ROUND_2_FROZEN',
-        round2StartedAt: null,
-        round2RemainingMs: 0,
-        currentProjectionScreen: 'P17',
-        currentRevealIndex: 0
-      });
-    }
-  };
-
-  const handleSaveRound1Evidence = async () => {
-    const count = parseInt(round1Evidence, 10);
-    if (isNaN(count)) return;
-    
-    localStorage.setItem(`ws_${workshopId}_r1_evidence`, count.toString());
-    await updateWorkshopState(workshopId, {
-      currentRevealIndex: 1
-    });
-  };
-
-  const handleResetWorkshop = async () => {
-    const doubleConfirm = window.confirm('【警告】確定要重設此工作坊嗎？這將刪除所有團隊資料與版本紀錄！');
-    if (!doubleConfirm) return;
-
-    setIsResetting(true);
-    try {
-      await updateWorkshopState(workshopId, {
-        status: 'SETUP',
-        round1StartedAt: null,
-        round1PausedAt: null,
-        round1RemainingMs: null,
-        round2StartedAt: null,
-        round2PausedAt: null,
-        round2RemainingMs: null,
-        currentProjectionScreen: 'P01',
-        currentRevealIndex: 0
-      });
-
-      const DB_NAME = 'marshmallow_workshop_db';
-      const request = indexedDB.open(DB_NAME);
-      request.onsuccess = (e) => {
-        const idb = (e.target as any).result;
-        const tx = idb.transaction(['teams', 'versions', 'syncQueue'], 'readwrite');
-        tx.objectStore('teams').clear();
-        tx.objectStore('versions').clear();
-        tx.objectStore('syncQueue').clear();
-        tx.oncomplete = () => {
-          setIsResetting(false);
-          window.location.reload();
-        };
-      };
-    } catch (e) {
-      console.error(e);
-      setIsResetting(false);
-    }
-  };
-
-  // Keyboard navigation handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA' ||
-        document.activeElement?.tagName === 'SELECT'
-      ) {
-        return;
-      }
-
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName || '')) return;
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
         handleNext();
@@ -368,10 +136,138 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
         setIsDrawerOpen(prev => !prev);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [workshop, teams, versions]);
+  }, [handleNext, handlePrev]);
+
+  useEffect(() => {
+    if (!workshop) return;
+    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
+    const isRound2 = workshop.status === 'ROUND_2_ACTIVE';
+    if (!isRound1 && !isRound2) { setTimeLeft(0); return; }
+    const triggerFreeze = async () => {
+      if (isRound1) {
+        await updateWorkshopState(workshopId, { status: 'ROUND_1_FROZEN', round1StartedAt: null, round1RemainingMs: 0, currentProjectionScreen: 'P06', currentRevealIndex: 0 });
+      } else {
+        await updateWorkshopState(workshopId, { status: 'ROUND_2_FROZEN', round2StartedAt: null, round2RemainingMs: 0, currentProjectionScreen: 'P17', currentRevealIndex: 0 });
+      }
+    };
+    const updateTimer = () => {
+      const startedAt = isRound1 ? workshop.round1StartedAt : workshop.round2StartedAt;
+      const pausedAt = isRound1 ? workshop.round1PausedAt : workshop.round2PausedAt;
+      const remainingMs = isRound1 ? workshop.round1RemainingMs : workshop.round2RemainingMs;
+      const totalSec = isRound1 ? workshop.round1DurationSeconds : workshop.round2DurationSeconds;
+      if (pausedAt && remainingMs !== null) {
+        setTimeLeft(Math.max(0, Math.ceil(remainingMs / 1000)));
+      } else if (startedAt) {
+        const elapsed = Date.now() - startedAt;
+        const limit = remainingMs !== null ? remainingMs : totalSec * 1000;
+        const currentRemaining = Math.max(0, limit - elapsed);
+        setTimeLeft(Math.ceil(currentRemaining / 1000));
+        if (currentRemaining <= 0) triggerFreeze();
+      } else {
+        setTimeLeft(totalSec);
+      }
+    };
+    updateTimer();
+    const intervalId = setInterval(updateTimer, 500);
+    return () => clearInterval(intervalId);
+  }, [workshop, workshopId]);
+
+  useEffect(() => {
+    if (teams.length > 0 && !selectedTeamId) setSelectedTeamId(teams[0].id);
+  }, [teams, selectedTeamId]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(`ws_${workshopId}_r1_evidence`);
+    if (raw) setRound1Evidence(raw);
+  }, [workshopId]);
+
+  if (!workshop) {
+    return (
+      <div className="role-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'var(--primary)', color: '#fff' }}>
+        <h2>讀取工作坊中...</h2>
+      </div>
+    );
+  }
+
+  const currentScreenIdx = PROJECTION_SCREENS.findIndex(s => s.id === workshop.currentProjectionScreen);
+  const currentScreen = PROJECTION_SCREENS[currentScreenIdx] || PROJECTION_SCREENS[0];
+
+  const handleJumpToScreen = async (screenId: string) => {
+    const targetIdx = PROJECTION_SCREENS.findIndex(s => s.id === screenId);
+    if (targetIdx === -1) return;
+    const targetScreen = PROJECTION_SCREENS[targetIdx];
+    const updates: Partial<Workshop> = { currentProjectionScreen: targetScreen.id, currentRevealIndex: 0 };
+    if (targetScreen.id === 'P05') {
+      updates.status = 'ROUND_1_ACTIVE';
+      if (!workshop.round1StartedAt) { updates.round1StartedAt = Date.now(); updates.round1RemainingMs = workshop.round1DurationSeconds * 1000; }
+    } else if (targetScreen.id === 'P16') {
+      updates.status = 'ROUND_2_ACTIVE';
+      if (!workshop.round2StartedAt) { updates.round2StartedAt = Date.now(); updates.round2RemainingMs = workshop.round2DurationSeconds * 1000; }
+    } else {
+      updates.status = targetScreen.state as WorkshopStatus;
+    }
+    await updateWorkshopState(workshopId, updates);
+  };
+
+  const toggleTimer = async () => {
+    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
+    const isRound2 = workshop.status === 'ROUND_2_ACTIVE';
+    if (!isRound1 && !isRound2) return;
+    const startedAt = isRound1 ? workshop.round1StartedAt : workshop.round2StartedAt;
+    const remainingMs = isRound1 ? workshop.round1RemainingMs : workshop.round2RemainingMs;
+    const totalSec = isRound1 ? workshop.round1DurationSeconds : workshop.round2DurationSeconds;
+    const updates: Partial<Workshop> = {};
+    if (startedAt) {
+      const elapsed = Date.now() - startedAt;
+      const limit = remainingMs !== null ? remainingMs : totalSec * 1000;
+      const newRemaining = Math.max(0, limit - elapsed);
+      if (isRound1) { updates.round1StartedAt = null; updates.round1PausedAt = Date.now(); updates.round1RemainingMs = newRemaining; }
+      else { updates.round2StartedAt = null; updates.round2PausedAt = Date.now(); updates.round2RemainingMs = newRemaining; }
+    } else {
+      if (isRound1) { updates.round1StartedAt = Date.now(); updates.round1PausedAt = null; }
+      else { updates.round2StartedAt = Date.now(); updates.round2PausedAt = null; }
+    }
+    await updateWorkshopState(workshopId, updates);
+  };
+
+  const endRoundEarly = async () => {
+    const confirmEnd = window.confirm('確定要提前結束本輪挑戰嗎？這會直接凍結所有團隊的送出狀態。');
+    if (!confirmEnd) return;
+    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
+    if (isRound1) {
+      await updateWorkshopState(workshopId, { status: 'ROUND_1_FROZEN', round1StartedAt: null, round1RemainingMs: 0, currentProjectionScreen: 'P06', currentRevealIndex: 0 });
+    } else {
+      await updateWorkshopState(workshopId, { status: 'ROUND_2_FROZEN', round2StartedAt: null, round2RemainingMs: 0, currentProjectionScreen: 'P17', currentRevealIndex: 0 });
+    }
+  };
+
+  const handleSaveRound1Evidence = async () => {
+    const count = parseInt(round1Evidence, 10);
+    if (isNaN(count)) return;
+    localStorage.setItem(`ws_${workshopId}_r1_evidence`, count.toString());
+    await updateWorkshopState(workshopId, { currentRevealIndex: 1 });
+  };
+
+  const handleResetWorkshop = async () => {
+    const doubleConfirm = window.confirm('【警告】確定要重設此工作坊嗎？這將刪除所有團隊資料與版本紀錄！');
+    if (!doubleConfirm) return;
+    setIsResetting(true);
+    try {
+      await updateWorkshopState(workshopId, { status: 'SETUP', round1StartedAt: null, round1PausedAt: null, round1RemainingMs: null, round2StartedAt: null, round2PausedAt: null, round2RemainingMs: null, currentProjectionScreen: 'P01', currentRevealIndex: 0 });
+      const DB_NAME = 'marshmallow_workshop_db';
+      const request = indexedDB.open(DB_NAME);
+      request.onsuccess = (e) => {
+        const idb = (e.target as any).result;
+        const tx = idb.transaction(['teams', 'versions', 'syncQueue'], 'readwrite');
+        tx.objectStore('teams').clear();
+        tx.objectStore('versions').clear();
+        tx.objectStore('syncQueue').clear();
+        tx.oncomplete = () => { setIsResetting(false); window.location.reload(); };
+      };
+    } catch (e) { console.error(e); setIsResetting(false); }
+  };
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
