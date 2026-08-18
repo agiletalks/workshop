@@ -447,13 +447,28 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
         return (
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4rem', width: '100%', alignItems: 'center' }}>
             <div style={{ textAlign: 'left' }}>
-              <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '2.5rem' }}>可用材料清單</h1>
-              <ul style={{ fontSize: '2.2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingLeft: '1.5rem' }}>
-                <li>20 根義大利麵</li>
-                <li>膠帶 (量足)</li>
-                <li>棉線 (量足)</li>
-                <li>1 顆棉花糖</li>
-              </ul>
+              <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '2.5rem' }}>可用材料與工具</h1>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                <div>
+                  <h3 style={{ color: 'var(--accent)', fontSize: '1.8rem', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>材料：</h3>
+                  <ul style={{ fontSize: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '1.5rem', margin: 0 }}>
+                    <li>義大利麵 x 20</li>
+                    <li>膠帶 x 100 cm</li>
+                    <li>棉線 x 100 cm</li>
+                    <li>棉花糖 x 1</li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 style={{ color: 'var(--accent)', fontSize: '1.8rem', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>工具：</h3>
+                  <ul style={{ fontSize: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '1.5rem', margin: 0 }}>
+                    <li>剪刀 x 1</li>
+                    <li>紙張 x 1疊</li>
+                    <li>簽字筆 x 1</li>
+                  </ul>
+                </div>
+              </div>
+
             </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <img 
