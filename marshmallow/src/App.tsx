@@ -9,8 +9,14 @@ function App() {
   
   // Home page fields
   const [joinCode, setJoinCode] = useState<string>('');
+  const [createCode, setCreateCode] = useState<string>('');
   const [newWSName, setNewWSName] = useState<string>('棉花糖敏捷挑戰工作坊');
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Parse parameters on load and when URL changes
+  useEffect(() => {
+    setCreateCode(generateJoinCode());
+  }, []);
 
   // Parse parameters on load and when URL changes
   useEffect(() => {
@@ -64,10 +70,21 @@ function App() {
   const handleCreateWorkshop = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newWSName.trim()) return;
+    if (!createCode.trim() || createCode.length !== 4) {
+      alert('專案代碼必須為 4 位大寫英文字母。');
+      return;
+    }
 
     setLoading(true);
     try {
-      const code = generateJoinCode();
+      const code = createCode.toUpperCase();
+      const existing = await findWorkshopByJoinCode(code);
+      if (existing) {
+        alert(`代碼 "${code}" 已被佔用，請更換另一個代碼。`);
+        setLoading(false);
+        return;
+      }
+      
       const ws = await createWorkshop(newWSName.trim(), code);
       navigateTo('projection', ws.id);
     } catch (err) {
@@ -184,10 +201,24 @@ function App() {
                 disabled={loading}
               />
             </div>
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">指定專案代碼 (Join Code - 4位大寫字母)</label>
+              <input
+                type="text"
+                className="form-input"
+                maxLength={4}
+                placeholder="例如：ABCD"
+                style={{ textTransform: 'uppercase', textAlign: 'center', fontWeight: 'bold', letterSpacing: '0.1em' }}
+                value={createCode}
+                onChange={(e) => setCreateCode(e.target.value.toUpperCase())}
+                required
+                disabled={loading}
+              />
+            </div>
             <button
               type="submit"
               className="btn btn-outline"
-              style={{ width: '100%', padding: '1rem', borderStyle: 'dashed', borderWidth: '2px' }}
+              style={{ width: '100%', padding: '1rem', borderStyle: 'dashed', borderWidth: '2px', marginTop: '0.5rem' }}
               disabled={loading}
             >
               {loading ? '建立中...' : '開立新工作坊 (Create)'}

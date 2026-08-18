@@ -374,60 +374,71 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
     switch (workshop.currentProjectionScreen) {
       case 'P01':
         return (
-          <div className="lobby-layout">
-            <div className="lobby-join-info">
-              <h2 style={{ fontSize: '2.5rem', marginBottom: '2rem' }}>掃描 QR CODE 加入挑戰</h2>
-              <div className="lobby-qr-container">
-                <img src={qrUrl} alt="QR Code Link" width="220" height="220" style={{ display: 'block' }} />
-              </div>
-              <div style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '0.5rem' }}>或瀏覽網址輸入工作坊代碼：</div>
-              <div className="lobby-join-code">{workshop.joinCode}</div>
-            </div>
-            
-            <div className="lobby-teams-status">
-              <div className="lobby-teams-title">
-                <span>已加入的團隊</span>
-                <span className="lobby-teams-count">{teams.length}</span>
-              </div>
-              <div className="lobby-teams-grid">
-                {teams.map((t) => (
-                  <div key={t.id} className="lobby-team-tag">
-                    {t.name}
-                  </div>
-                ))}
-                {teams.length === 0 && (
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '1.2rem', fontStyle: 'italic', gridColumn: '1 / -1', textAlign: 'center', padding: '3rem 0' }}>
-                    等待團隊加入中...
-                  </div>
-                )}
-              </div>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '55vh', textAlign: 'center' }}>
+            <span style={{ fontSize: '6rem', marginBottom: '1.5rem' }}>🍡</span>
+            <h1 style={{ fontSize: '4.5rem', color: 'var(--accent)', fontWeight: 800, margin: 0 }}>
+              棉花糖敏捷挑戰工作坊
+            </h1>
+            <p style={{ fontSize: '1.8rem', color: 'rgba(255, 255, 255, 0.7)', marginTop: '1.5rem' }}>
+              歡迎來到敏捷體驗式教學！請等待講師引導開始挑戰...
+            </p>
           </div>
         );
 
       case 'P02':
         return (
-          <div style={{ textAlign: 'left', maxWidth: '900px', margin: '0 auto' }}>
-            <h1 style={{ fontSize: '3.8rem', color: 'var(--accent)', marginBottom: '3rem', textAlign: 'center' }}>
-              THE MARSHMALLOW CHALLENGE
-            </h1>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              <div style={{ fontSize: '2.2rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <span style={{ color: 'var(--accent)', fontSize: '2.5rem' }}>①</span>
-                <span>使用提供的材料，建造一個「最高」的獨立結構。</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '3rem', width: '100%', alignItems: 'start' }}>
+            {/* Left side: Rules */}
+            <div style={{ textAlign: 'left' }}>
+              <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '2.5rem' }}>
+                THE MARSHMALLOW CHALLENGE
+              </h1>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                <div style={{ fontSize: '1.8rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--accent)', fontSize: '2.2rem' }}>①</span>
+                  <span>使用提供的材料，建造一個「最高」的獨立結構。</span>
+                </div>
+                {isRevealed(1) && (
+                  <div style={{ fontSize: '1.8rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--accent)', fontSize: '2.2rem' }}>②</span>
+                    <span>完整的棉花糖必須放在結構最高處。</span>
+                  </div>
+                )}
+                {isRevealed(2) && (
+                  <div style={{ fontSize: '1.8rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--accent)', fontSize: '2.2rem' }}>③</span>
+                    <span>結構最後必須能夠自行站立。</span>
+                  </div>
+                )}
               </div>
-              {isRevealed(1) && (
-                <div style={{ fontSize: '2.2rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--accent)', fontSize: '2.5rem' }}>②</span>
-                  <span>完整的棉花糖必須放在結構最高處。</span>
+            </div>
+
+            {/* Right side: Registration & QR Code */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
+              <h3 style={{ fontSize: '1.4rem', color: 'var(--accent)', marginBottom: '1rem', fontWeight: 700 }}>📱 掃描 QR Code 加入挑戰</h3>
+              <div style={{ display: 'inline-block', background: '#fff', padding: '0.75rem', borderRadius: '12px', marginBottom: '1rem', boxShadow: 'var(--shadow-md)' }}>
+                <img src={qrUrl} alt="QR Code Link" width="160" height="160" style={{ display: 'block' }} />
+              </div>
+              <div style={{ fontSize: '0.95rem', opacity: 0.7, marginBottom: '0.25rem' }}>網址輸入代碼：</div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fff', letterSpacing: '0.05em', margin: '0.15rem 0 1rem' }}>{workshop.joinCode}</div>
+              
+              {/* Joined teams list */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', textAlign: 'left' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                  <span>已加入的團隊</span>
+                  <span style={{ color: 'var(--accent)' }}>{teams.length} 組</span>
                 </div>
-              )}
-              {isRevealed(2) && (
-                <div style={{ fontSize: '2.2rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--accent)', fontSize: '2.5rem' }}>③</span>
-                  <span>結構最後必須能夠自行站立。</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
+                  {teams.map((t) => (
+                    <span key={t.id} style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.35rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      {t.name}
+                    </span>
+                  ))}
+                  {teams.length === 0 && (
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', fontSize: '0.9rem' }}>等待團隊註冊中...</span>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         );
