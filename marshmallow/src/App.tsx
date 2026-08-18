@@ -8,10 +8,26 @@ function App() {
   const [workshopId, setWorkshopId] = useState<string | null>(null);
   
   // Home page fields
-  const [joinCode, setJoinCode] = useState<string>('');
   const [createCode, setCreateCode] = useState<string>('');
   const [newWSName, setNewWSName] = useState<string>('棉花糖敏捷挑戰工作坊');
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Password fields
+  const [password, setPassword] = useState<string>('');
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    return sessionStorage.getItem('facilitator_unlocked') === 'true';
+  });
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === 'agile2026') {
+      setIsUnlocked(true);
+      sessionStorage.setItem('facilitator_unlocked', 'true');
+    } else {
+      alert('密碼錯誤！請輸入正確的引導講師密碼。');
+      setPassword('');
+    }
+  };
 
   // Parse parameters on load and when URL changes
   useEffect(() => {
@@ -24,7 +40,6 @@ function App() {
       const params = new URLSearchParams(window.location.search);
       const roleParam = params.get('role');
       const wsIdParam = params.get('wsId');
-      const joinCodeParam = params.get('joinCode');
 
       if (roleParam === 'projection' || roleParam === 'team') {
         setRole(roleParam);
@@ -36,10 +51,6 @@ function App() {
         setWorkshopId(wsIdParam);
       } else {
         setWorkshopId(null);
-      }
-
-      if (joinCodeParam) {
-        setJoinCode(joinCodeParam);
       }
     };
 
@@ -95,30 +106,6 @@ function App() {
     }
   };
 
-  // Join Workshop (Team)
-  const handleJoinWorkshop = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!joinCode.trim() || joinCode.length !== 4) {
-      alert('請輸入 4 位大寫英文字母的專案代碼。');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const ws = await findWorkshopByJoinCode(joinCode.toUpperCase());
-      if (ws) {
-        navigateTo('team', ws.id);
-      } else {
-        alert(`找不到代碼為 "${joinCode.toUpperCase()}" 的工作坊，請確認代碼是否正確。`);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('加入工作坊失敗，請重試。');
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
 
   // 2. Render Projection Screen
@@ -131,101 +118,100 @@ function App() {
     return <TeamScreen workshopId={workshopId} />;
   }
 
-  // 4. Render Default Setup Home Page
+  // 4. Render Password Login if locked
+  if (!isUnlocked) {
+    return (
+      <div className="role-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '1rem', background: 'var(--bg-app)' }}>
+        <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '2.5rem 2rem', textAlign: 'center' }}>
+          <span style={{ fontSize: '3rem' }}>🍡</span>
+          <h2 style={{ marginTop: '1.5rem', marginBottom: '0.5rem', fontWeight: 800 }}>工作坊引導主控登入</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>此頁面僅限講師操作。請輸入密碼以初始化工作坊。</p>
+          
+          <form onSubmit={handlePasswordSubmit}>
+            <div className="form-group" style={{ textAlign: 'left' }}>
+              <label className="form-label">講師密碼 (Password)</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="請輸入密碼"
+                style={{ textAlign: 'center', fontSize: '1.1rem' }}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.8rem', marginTop: '0.5rem' }}>
+              登入解鎖
+            </button>
+          </form>
+          
+          <div style={{ marginTop: '2rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            預設密碼為：agile2026
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 5. Render Default Setup Home Page (Only Facilitator Creation Card)
   return (
-    <div className="role-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', justifyContent: 'center', padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '500px', margin: '0 auto', padding: '4rem 1.5rem', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       
       {/* Banner / Header */}
-      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <span style={{ fontSize: '4.5rem' }}>🍡</span>
-        <h1 style={{ fontSize: '2.8rem', marginTop: '1rem', marginBottom: '0.5rem', fontWeight: 800 }}>
+      <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        <span style={{ fontSize: '4rem' }}>🍡</span>
+        <h1 style={{ fontSize: '2.4rem', marginTop: '1rem', marginBottom: '0.5rem', fontWeight: 800 }}>
           棉花糖敏捷挑戰工作坊
         </h1>
-        <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)' }}>
-          Marshmallow Agile Challenge Simulation Web Application
+        <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>
+          引導講師主控端 — 初始化工作坊專案
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '2rem' }}>
-        
-        {/* Card 1: Team Join */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', padding: '2.5rem 2rem' }}>
-          <h2 style={{ fontSize: '1.6rem', marginBottom: '0.5rem' }}>學員團隊端加入</h2>
-          <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', flex: 1 }}>
-            輸入講師螢幕上顯示的 4 位大寫英文字母工作坊代碼，加入挑戰並開始記錄版本日誌。
-          </p>
-          
-          <form onSubmit={handleJoinWorkshop} style={{ marginTop: 'auto' }}>
-            <div className="form-group">
-              <label className="form-label">專案代碼 (Join Code)</label>
-              <input
-                type="text"
-                className="form-input"
-                maxLength={4}
-                placeholder="例如：ABCD"
-                style={{ textTransform: 'uppercase', textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold', letterSpacing: '0.1em' }}
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                required
-                disabled={loading}
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              style={{ width: '100%', padding: '1rem' }}
+      {/* Card: Facilitator Create */}
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', padding: '2.5rem 2rem' }}>
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', textAlign: 'center' }}>建立全新工作坊</h2>
+        <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', textAlign: 'center' }}>
+          設定工作坊名稱與連線專案代碼，掌控投影畫面進度、操作兩輪挑戰計時器，並實時監控所有團隊的交付績效。
+        </p>
+
+        <form onSubmit={handleCreateWorkshop}>
+          <div className="form-group">
+            <label className="form-label">工作坊名稱 (Workshop Name)</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="例如：敏捷實戰工作坊"
+              value={newWSName}
+              onChange={(e) => setNewWSName(e.target.value)}
+              required
               disabled={loading}
-            >
-              {loading ? '連線中...' : '加入工作坊 (Join)'}
-            </button>
-          </form>
-        </div>
-
-        {/* Card 2: Facilitator Create */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', padding: '2.5rem 2rem' }}>
-          <h2 style={{ fontSize: '1.6rem', marginBottom: '0.5rem' }}>講師引導者主控端</h2>
-          <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', flex: 1 }}>
-            開立一個全新的工作坊，掌控投影畫面進度、操作兩輪挑戰計時器，並實時監控所有團隊的交付績效。
-          </p>
-
-          <form onSubmit={handleCreateWorkshop} style={{ marginTop: 'auto' }}>
-            <div className="form-group">
-              <label className="form-label">工作坊名稱 (Workshop Name)</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="請輸入工作坊名稱"
-                value={newWSName}
-                onChange={(e) => setNewWSName(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-            <div className="form-group" style={{ marginTop: '1rem' }}>
-              <label className="form-label">指定專案代碼 (Join Code - 4位大寫字母)</label>
-              <input
-                type="text"
-                className="form-input"
-                maxLength={4}
-                placeholder="例如：ABCD"
-                style={{ textTransform: 'uppercase', textAlign: 'center', fontWeight: 'bold', letterSpacing: '0.1em' }}
-                value={createCode}
-                onChange={(e) => setCreateCode(e.target.value.toUpperCase())}
-                required
-                disabled={loading}
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn btn-outline"
-              style={{ width: '100%', padding: '1rem', borderStyle: 'dashed', borderWidth: '2px', marginTop: '0.5rem' }}
+            />
+          </div>
+          <div className="form-group" style={{ marginTop: '1.25rem' }}>
+            <label className="form-label">指定專案代碼 (Join Code - 4位大寫字母)</label>
+            <input
+              type="text"
+              className="form-input"
+              maxLength={4}
+              placeholder="例如：ABCD"
+              style={{ textTransform: 'uppercase', textAlign: 'center', fontWeight: 'bold', letterSpacing: '0.1em', fontSize: '1.2rem' }}
+              value={createCode}
+              onChange={(e) => setCreateCode(e.target.value.toUpperCase())}
+              required
               disabled={loading}
-            >
-              {loading ? '建立中...' : '開立新工作坊 (Create)'}
-            </button>
-          </form>
-        </div>
-
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ width: '100%', padding: '1rem', marginTop: '1.5rem' }}
+            disabled={loading}
+          >
+            {loading ? '建立中...' : '初始化並開啟投影幕'}
+          </button>
+        </form>
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '3rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>

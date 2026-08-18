@@ -8,7 +8,6 @@ import {
 } from '../services/syncService';
 import { challengesData } from '../data/challengesData';
 import type { Workshop, Team, TeamVersion } from '../types';
-import { ProjectionView } from './ProjectionView';
 
 interface TeamScreenProps {
   workshopId: string;
@@ -23,6 +22,7 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
   // Registration fields
   const [teamName, setTeamName] = useState<string>('');
   const [recorderName, setRecorderName] = useState<string>('');
+  const [inputJoinCode, setInputJoinCode] = useState<string>('');
   const [isJoining, setIsJoining] = useState<boolean>(false);
 
   // Active challenge state (T05 vs T06 vs T07)
@@ -136,6 +136,18 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
   // Handle Team Register (T01)
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!inputJoinCode.trim() || inputJoinCode.length !== 4) {
+      alert('請輸入 4 位專案代碼。');
+      return;
+    }
+    if (!workshop) {
+      alert('正在讀取工作坊資訊，請稍候重試。');
+      return;
+    }
+    if (inputJoinCode.toUpperCase() !== workshop.joinCode) {
+      alert('專案代碼錯誤，請確認投影大螢幕上顯示的大寫四位字母！');
+      return;
+    }
     if (!teamName.trim() || !recorderName.trim()) {
       alert('請填寫完整團隊名稱與記錄員姓名。');
       return;
@@ -259,22 +271,18 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
     }
 
     return (
-      <div className="role-container team-view mobile-slide-view">
+      <div className="role-container team-view">
         <header className="team-header">
           <span className="team-header-name">
             {team ? `${team.name} (學員端)` : '棉花糖敏捷工作坊'}
           </span>
-          <span style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.15)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
-            👀 講師引導中
-          </span>
           {team && getSyncStatusBadge()}
         </header>
-        <div className="team-main" style={{ padding: '0.5rem', overflowY: 'auto' }}>
-          <div style={{ background: 'var(--primary)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '1rem', boxShadow: 'var(--shadow-lg)' }}>
-            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: '1rem', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-              {title} - {subtitle}
-            </div>
-            <ProjectionView workshopId={workshop.id} isReadOnly={true} />
+        <div className="team-main">
+          <div className="card attention-mode">
+            <div className="attention-icon">👀</div>
+            <h1 className="attention-headline">{title}</h1>
+            <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>{subtitle}</p>
           </div>
         </div>
       </div>
@@ -289,10 +297,24 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <span style={{ fontSize: '3rem' }}>🍡</span>
             <h2 style={{ marginTop: '1rem', marginBottom: '0.25rem' }}>加入工作坊挑戰</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>請登記您的團隊名稱與記錄員姓名</p>
+            <p style={{ color: 'var(--text-secondary)' }}>請輸入專案代碼並登記團隊資訊</p>
           </div>
           
           <form onSubmit={handleRegister}>
+            <div className="form-group">
+              <label className="form-label">專案代碼 (Join Code - 大寫 4 位字母)</label>
+              <input
+                type="text"
+                className="form-input"
+                maxLength={4}
+                placeholder="請輸入大螢幕上的代碼"
+                style={{ textTransform: 'uppercase', textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', letterSpacing: '0.1em' }}
+                value={inputJoinCode}
+                onChange={(e) => setInputJoinCode(e.target.value.toUpperCase())}
+                required
+              />
+            </div>
+
             <div className="form-group">
               <label className="form-label">團隊名稱 (Team Name)</label>
               <input
