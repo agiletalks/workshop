@@ -648,7 +648,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
             <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '3rem' }}>迭代式開發 (Iterative Development)</h1>
             
             <div className="process-visualizer">
-              <div className="process-step active-step">V1 (MVP)</div>
+              <div className="process-step active-step">V1</div>
               <span className="process-arrow">➔</span>
               <div className="process-step active-step">V2</div>
               <span className="process-arrow">➔</span>
