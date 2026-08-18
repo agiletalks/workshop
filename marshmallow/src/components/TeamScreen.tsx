@@ -270,8 +270,8 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
           {team && getSyncStatusBadge()}
         </header>
         <div className="team-main" style={{ padding: '0.5rem', overflowY: 'auto' }}>
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '1rem' }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
+          <div style={{ background: 'var(--primary)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '1rem', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: '1rem', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
               {title} - {subtitle}
             </div>
             <ProjectionView workshopId={workshop.id} isReadOnly={true} />

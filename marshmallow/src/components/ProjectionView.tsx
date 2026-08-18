@@ -390,7 +390,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
       case 'P02':
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '3rem', width: '100%', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isReadOnly ? '1fr' : '1.2fr 1fr', gap: '3rem', width: '100%', alignItems: 'start' }}>
             {/* Left side: Rules */}
             <div style={{ textAlign: 'left' }}>
               <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '2.5rem' }}>
@@ -417,32 +417,34 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
             </div>
 
             {/* Right side: Registration & QR Code */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
-              <h3 style={{ fontSize: '1.4rem', color: 'var(--accent)', marginBottom: '1rem', fontWeight: 700 }}>📱 掃描 QR Code 加入挑戰</h3>
-              <div style={{ display: 'inline-block', background: '#fff', padding: '0.75rem', borderRadius: '12px', marginBottom: '1rem', boxShadow: 'var(--shadow-md)' }}>
-                <img src={qrUrl} alt="QR Code Link" width="160" height="160" style={{ display: 'block' }} />
-              </div>
-              <div style={{ fontSize: '0.95rem', opacity: 0.7, marginBottom: '0.25rem' }}>網址輸入代碼：</div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fff', letterSpacing: '0.05em', margin: '0.15rem 0 1rem' }}>{workshop.joinCode}</div>
-              
-              {/* Joined teams list */}
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', textAlign: 'left' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
-                  <span>已加入的團隊</span>
-                  <span style={{ color: 'var(--accent)' }}>{teams.length} 組</span>
+            {!isReadOnly && (
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '1.4rem', color: 'var(--accent)', marginBottom: '1rem', fontWeight: 700 }}>📱 掃描 QR Code 加入挑戰</h3>
+                <div style={{ display: 'inline-block', background: '#fff', padding: '0.75rem', borderRadius: '12px', marginBottom: '1rem', boxShadow: 'var(--shadow-md)' }}>
+                  <img src={qrUrl} alt="QR Code Link" width="160" height="160" style={{ display: 'block' }} />
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
-                  {teams.map((t) => (
-                    <span key={t.id} style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.35rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      {t.name}
-                    </span>
-                  ))}
-                  {teams.length === 0 && (
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', fontSize: '0.9rem' }}>等待團隊註冊中...</span>
-                  )}
+                <div style={{ fontSize: '0.95rem', opacity: 0.7, marginBottom: '0.25rem' }}>網址輸入代碼：</div>
+                <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fff', letterSpacing: '0.05em', margin: '0.15rem 0 1rem' }}>{workshop.joinCode}</div>
+                
+                {/* Joined teams list */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                    <span>已加入的團隊</span>
+                    <span style={{ color: 'var(--accent)' }}>{teams.length} 組</span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
+                    {teams.map((t) => (
+                      <span key={t.id} style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.35rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        {t.name}
+                      </span>
+                    ))}
+                    {teams.length === 0 && (
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', fontSize: '0.9rem' }}>等待團隊註冊中...</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         );
 
