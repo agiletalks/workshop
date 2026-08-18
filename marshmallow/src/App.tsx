@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FacilitatorConsole } from './components/FacilitatorConsole';
 import { ProjectionView } from './components/ProjectionView';
 import { TeamScreen } from './components/TeamScreen';
 import { createWorkshop, findWorkshopByJoinCode } from './services/syncService';
 
 function App() {
-  const [role, setRole] = useState<'facilitator' | 'projection' | 'team' | null>(null);
+  const [role, setRole] = useState<'projection' | 'team' | null>(null);
   const [workshopId, setWorkshopId] = useState<string | null>(null);
   
   // Home page fields
@@ -21,7 +20,7 @@ function App() {
       const wsIdParam = params.get('wsId');
       const joinCodeParam = params.get('joinCode');
 
-      if (roleParam === 'facilitator' || roleParam === 'projection' || roleParam === 'team') {
+      if (roleParam === 'projection' || roleParam === 'team') {
         setRole(roleParam);
       } else {
         setRole(null);
@@ -44,7 +43,7 @@ function App() {
   }, []);
 
   // Update URL manually to support browser history without React Router
-  const navigateTo = (newRole: 'facilitator' | 'projection' | 'team', newWsId: string) => {
+  const navigateTo = (newRole: 'projection' | 'team', newWsId: string) => {
     const newUrl = `${window.location.origin}${window.location.pathname}?role=${newRole}&wsId=${newWsId}`;
     window.history.pushState({}, '', newUrl);
     setRole(newRole);
@@ -70,7 +69,7 @@ function App() {
     try {
       const code = generateJoinCode();
       const ws = await createWorkshop(newWSName.trim(), code);
-      navigateTo('facilitator', ws.id);
+      navigateTo('projection', ws.id);
     } catch (err) {
       console.error(err);
       alert('建立工作坊失敗，請重試。');
@@ -103,10 +102,7 @@ function App() {
     }
   };
 
-  // 1. Render Facilitator View
-  if (role === 'facilitator' && workshopId) {
-    return <FacilitatorConsole workshopId={workshopId} />;
-  }
+
 
   // 2. Render Projection Screen
   if (role === 'projection' && workshopId) {

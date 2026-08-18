@@ -1,7 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { subscribeToWorkshop, subscribeToTeams, subscribeToVersions } from '../services/syncService';
-import type { Workshop, Team, TeamVersion } from '../types';
-import { PROJECTION_SCREENS } from './FacilitatorConsole';
+import {
+  subscribeToWorkshop,
+  subscribeToTeams,
+  subscribeToVersions,
+  updateWorkshopState
+} from '../services/syncService';
+import type { Workshop, Team, TeamVersion, WorkshopStatus } from '../types';
+
+export const PROJECTION_SCREENS = [
+  { id: 'P01', title: 'P01 — Welcome / Join', state: 'LOBBY', maxReveal: 0 },
+  { id: 'P02', title: 'P02 — The Challenge', state: 'ROUND_1_BRIEFING', maxReveal: 3 }, // 0 to 3
+  { id: 'P03', title: 'P03 — Materials', state: 'ROUND_1_BRIEFING', maxReveal: 0 },
+  { id: 'P04', title: 'P04 — Ready?', state: 'ROUND_1_BRIEFING', maxReveal: 0 },
+  { id: 'P05', title: 'P05 — Round 1 Timer', state: 'ROUND_1_ACTIVE', maxReveal: 0 },
+  { id: 'P06', title: 'P06 — STOP', state: 'ROUND_1_FROZEN', maxReveal: 0 },
+  { id: 'P07', title: 'P07 — Working Product?', state: 'DEBRIEF_1', maxReveal: 1 },
+  { id: 'P08', title: 'P08 — What Were You Doing?', state: 'DEBRIEF_1', maxReveal: 1 },
+  { id: 'P09', title: 'P09 — Activity vs Progress', state: 'DEBRIEF_1', maxReveal: 3 },
+  { id: 'P10', title: 'P10 — Big-Bang Development', state: 'DEBRIEF_1', maxReveal: 1 },
+  { id: 'P11', title: 'P11 — Iterative Development', state: 'DEBRIEF_1', maxReveal: 0 },
+  { id: 'P12', title: 'P12 — Less Time', state: 'DEBRIEF_1', maxReveal: 3 },
+  { id: 'P13', title: 'P13 — New Way of Working', state: 'ITERATION_LEARNING', maxReveal: 2 },
+  { id: 'P14', title: 'P14 — Definition of Done', state: 'ITERATION_LEARNING', maxReveal: 2 },
+  { id: 'P15', title: 'P15 — Ready for Round 2', state: 'ROUND_2_BRIEFING', maxReveal: 0 },
+  { id: 'P16', title: 'P16 — Round 2 Live', state: 'ROUND_2_ACTIVE', maxReveal: 0 },
+  { id: 'P17', title: 'P17 — STOP', state: 'ROUND_2_FROZEN', maxReveal: 0 },
+  { id: 'P18', title: 'P18 — What Happened?', state: 'RESULTS', maxReveal: 0 },
+  { id: 'P19', title: 'P19 — Live Results Dashboard', state: 'RESULTS', maxReveal: 0 },
+  { id: 'P20', title: 'P20 — Who Was Most Successful?', state: 'SUCCESS_DEBRIEF', maxReveal: 0 },
+  { id: 'P21', title: 'P21 — Project Success', state: 'SUCCESS_DEBRIEF', maxReveal: 1 },
+  { id: 'P22', title: 'P22 — Product Success', state: 'SUCCESS_DEBRIEF', maxReveal: 0 },
+  { id: 'P23', title: 'P23 — Agile Manifesto #1', state: 'AGILE_MANIFESTO_LEARNING', maxReveal: 2 },
+  { id: 'P24', title: 'P24 — Agile Manifesto #2', state: 'AGILE_MANIFESTO_LEARNING', maxReveal: 2 },
+  { id: 'P25', title: 'P25 — Document Late', state: 'AGILE_MANIFESTO_LEARNING', maxReveal: 2 },
+  { id: 'P26', title: 'P26 — Agile Manifesto #3', state: 'AGILE_MANIFESTO_LEARNING', maxReveal: 2 },
+  { id: 'P27', title: 'P27 — Agile Manifesto #4', state: 'AGILE_MANIFESTO_LEARNING', maxReveal: 1 },
+  { id: 'P28', title: 'P28 — Agile Value Delivery Loop', state: 'CLOSING', maxReveal: 0 },
+  { id: 'P29', title: 'P29 — Final Reflection', state: 'CLOSING', maxReveal: 0 }
+];
 
 interface ProjectionProps {
   workshopId: string;
@@ -13,6 +49,11 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
   const [versions, setVersions] = useState<TeamVersion[]>([]);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  
+  // Refactored presenter controls states
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [round1Evidence, setRound1Evidence] = useState<string>('0');
+  const [isResetting, setIsResetting] = useState<boolean>(false);
 
   // Subscribe to updates
   useEffect(() => {
@@ -39,6 +80,26 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
       return;
     }
 
+    const triggerFreeze = async () => {
+      if (isRound1) {
+        await updateWorkshopState(workshopId, {
+          status: 'ROUND_1_FROZEN',
+          round1StartedAt: null,
+          round1RemainingMs: 0,
+          currentProjectionScreen: 'P06',
+          currentRevealIndex: 0
+        });
+      } else {
+        await updateWorkshopState(workshopId, {
+          status: 'ROUND_2_FROZEN',
+          round2StartedAt: null,
+          round2RemainingMs: 0,
+          currentProjectionScreen: 'P17',
+          currentRevealIndex: 0
+        });
+      }
+    };
+
     const updateTimer = () => {
       const startedAt = isRound1 ? workshop.round1StartedAt : workshop.round2StartedAt;
       const pausedAt = isRound1 ? workshop.round1PausedAt : workshop.round2PausedAt;
@@ -51,7 +112,12 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
         const elapsed = Date.now() - startedAt;
         const limit = remainingMs !== null ? remainingMs : totalSec * 1000;
         const currentRemaining = Math.max(0, limit - elapsed);
+        
         setTimeLeft(Math.ceil(currentRemaining / 1000));
+
+        if (currentRemaining <= 0) {
+          triggerFreeze();
+        }
       } else {
         setTimeLeft(totalSec);
       }
@@ -60,7 +126,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
     updateTimer();
     const intervalId = setInterval(updateTimer, 500);
     return () => clearInterval(intervalId);
-  }, [workshop]);
+  }, [workshop, workshopId]);
 
   // Sync selected team selection for Document Late (P25)
   useEffect(() => {
@@ -68,6 +134,14 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
       setSelectedTeamId(teams[0].id);
     }
   }, [teams, selectedTeamId]);
+
+  // Sync locally stored R1 evidence count
+  useEffect(() => {
+    const raw = localStorage.getItem(`ws_${workshopId}_r1_evidence`);
+    if (raw) {
+      setRound1Evidence(raw);
+    }
+  }, [workshopId]);
 
   if (!workshop) {
     return (
@@ -77,29 +151,247 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
     );
   }
 
+  const currentScreenIdx = PROJECTION_SCREENS.findIndex(s => s.id === workshop.currentProjectionScreen);
+  const currentScreen = PROJECTION_SCREENS[currentScreenIdx] || PROJECTION_SCREENS[0];
+
+  // ----------------------------------------------------
+  // PRESENTER ACTION HANDLERS
+  // ----------------------------------------------------
+  const handleNext = async () => {
+    if (workshop.currentRevealIndex < currentScreen.maxReveal) {
+      await updateWorkshopState(workshopId, {
+        currentRevealIndex: workshop.currentRevealIndex + 1
+      });
+      return;
+    }
+
+    if (currentScreenIdx < PROJECTION_SCREENS.length - 1) {
+      const nextScreen = PROJECTION_SCREENS[currentScreenIdx + 1];
+      const updates: Partial<Workshop> = {
+        currentProjectionScreen: nextScreen.id,
+        currentRevealIndex: 0
+      };
+
+      if (nextScreen.id === 'P05' && workshop.status !== 'ROUND_1_ACTIVE') {
+        updates.status = 'ROUND_1_ACTIVE';
+        updates.round1StartedAt = Date.now();
+        updates.round1RemainingMs = workshop.round1DurationSeconds * 1000;
+      } else if (nextScreen.id === 'P16' && workshop.status !== 'ROUND_2_ACTIVE') {
+        updates.status = 'ROUND_2_ACTIVE';
+        updates.round2StartedAt = Date.now();
+        updates.round2RemainingMs = workshop.round2DurationSeconds * 1000;
+      } else {
+        updates.status = nextScreen.state as WorkshopStatus;
+      }
+
+      await updateWorkshopState(workshopId, updates);
+    }
+  };
+
+  const handlePrev = async () => {
+    if (workshop.currentRevealIndex > 0) {
+      await updateWorkshopState(workshopId, {
+        currentRevealIndex: workshop.currentRevealIndex - 1
+      });
+      return;
+    }
+
+    if (currentScreenIdx > 0) {
+      const prevScreen = PROJECTION_SCREENS[currentScreenIdx - 1];
+      const updates: Partial<Workshop> = {
+        currentProjectionScreen: prevScreen.id,
+        currentRevealIndex: prevScreen.maxReveal,
+        status: prevScreen.state as WorkshopStatus
+      };
+      await updateWorkshopState(workshopId, updates);
+    }
+  };
+
+  const handleJumpToScreen = async (screenId: string) => {
+    const targetIdx = PROJECTION_SCREENS.findIndex(s => s.id === screenId);
+    if (targetIdx === -1) return;
+    const targetScreen = PROJECTION_SCREENS[targetIdx];
+
+    const updates: Partial<Workshop> = {
+      currentProjectionScreen: targetScreen.id,
+      currentRevealIndex: 0
+    };
+
+    if (targetScreen.id === 'P05') {
+      updates.status = 'ROUND_1_ACTIVE';
+      if (!workshop.round1StartedAt) {
+        updates.round1StartedAt = Date.now();
+        updates.round1RemainingMs = workshop.round1DurationSeconds * 1000;
+      }
+    } else if (targetScreen.id === 'P16') {
+      updates.status = 'ROUND_2_ACTIVE';
+      if (!workshop.round2StartedAt) {
+        updates.round2StartedAt = Date.now();
+        updates.round2RemainingMs = workshop.round2DurationSeconds * 1000;
+      }
+    } else {
+      updates.status = targetScreen.state as WorkshopStatus;
+    }
+
+    await updateWorkshopState(workshopId, updates);
+  };
+
+  const toggleTimer = async () => {
+    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
+    const isRound2 = workshop.status === 'ROUND_2_ACTIVE';
+
+    if (!isRound1 && !isRound2) return;
+
+    const startedAt = isRound1 ? workshop.round1StartedAt : workshop.round2StartedAt;
+    const remainingMs = isRound1 ? workshop.round1RemainingMs : workshop.round2RemainingMs;
+    const totalSec = isRound1 ? workshop.round1DurationSeconds : workshop.round2DurationSeconds;
+
+    const updates: Partial<Workshop> = {};
+
+    if (startedAt) {
+      const elapsed = Date.now() - startedAt;
+      const limit = remainingMs !== null ? remainingMs : totalSec * 1000;
+      const newRemaining = Math.max(0, limit - elapsed);
+
+      if (isRound1) {
+        updates.round1StartedAt = null;
+        updates.round1PausedAt = Date.now();
+        updates.round1RemainingMs = newRemaining;
+      } else {
+        updates.round2StartedAt = null;
+        updates.round2PausedAt = Date.now();
+        updates.round2RemainingMs = newRemaining;
+      }
+    } else {
+      if (isRound1) {
+        updates.round1StartedAt = Date.now();
+        updates.round1PausedAt = null;
+      } else {
+        updates.round2StartedAt = Date.now();
+        updates.round2PausedAt = null;
+      }
+    }
+
+    await updateWorkshopState(workshopId, updates);
+  };
+
+  const endRoundEarly = async () => {
+    const confirmEnd = window.confirm('確定要提前結束本輪挑戰嗎？這會直接凍結所有團隊的送出狀態。');
+    if (!confirmEnd) return;
+
+    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
+    if (isRound1) {
+      await updateWorkshopState(workshopId, {
+        status: 'ROUND_1_FROZEN',
+        round1StartedAt: null,
+        round1RemainingMs: 0,
+        currentProjectionScreen: 'P06',
+        currentRevealIndex: 0
+      });
+    } else {
+      await updateWorkshopState(workshopId, {
+        status: 'ROUND_2_FROZEN',
+        round2StartedAt: null,
+        round2RemainingMs: 0,
+        currentProjectionScreen: 'P17',
+        currentRevealIndex: 0
+      });
+    }
+  };
+
+  const handleSaveRound1Evidence = async () => {
+    const count = parseInt(round1Evidence, 10);
+    if (isNaN(count)) return;
+    
+    localStorage.setItem(`ws_${workshopId}_r1_evidence`, count.toString());
+    await updateWorkshopState(workshopId, {
+      currentRevealIndex: 1
+    });
+  };
+
+  const handleResetWorkshop = async () => {
+    const doubleConfirm = window.confirm('【警告】確定要重設此工作坊嗎？這將刪除所有團隊資料與版本紀錄！');
+    if (!doubleConfirm) return;
+
+    setIsResetting(true);
+    try {
+      await updateWorkshopState(workshopId, {
+        status: 'SETUP',
+        round1StartedAt: null,
+        round1PausedAt: null,
+        round1RemainingMs: null,
+        round2StartedAt: null,
+        round2PausedAt: null,
+        round2RemainingMs: null,
+        currentProjectionScreen: 'P01',
+        currentRevealIndex: 0
+      });
+
+      const DB_NAME = 'marshmallow_workshop_db';
+      const request = indexedDB.open(DB_NAME);
+      request.onsuccess = (e) => {
+        const idb = (e.target as any).result;
+        const tx = idb.transaction(['teams', 'versions', 'syncQueue'], 'readwrite');
+        tx.objectStore('teams').clear();
+        tx.objectStore('versions').clear();
+        tx.objectStore('syncQueue').clear();
+        tx.oncomplete = () => {
+          setIsResetting(false);
+          window.location.reload();
+        };
+      };
+    } catch (e) {
+      console.error(e);
+      setIsResetting(false);
+    }
+  };
+
+  // Keyboard navigation handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        document.activeElement?.tagName === 'SELECT'
+      ) {
+        return;
+      }
+
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrev();
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        setIsDrawerOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [workshop, teams, versions]);
+
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
 
-  // Helper to determine if an index is revealed
   const isRevealed = (index: number) => {
     return workshop.currentRevealIndex >= index;
   };
 
-  // Real-time calculation of Round 1 Evidence
   const getRound1EvidenceCount = () => {
     const raw = localStorage.getItem(`ws_${workshopId}_r1_evidence`);
     return raw ? parseInt(raw, 10) : 0;
   };
 
-  // Calculate Metrics for P19 Results Dashboard
   const calculateDashboardMetrics = () => {
     return teams.map(t => {
       const teamVersions = versions.filter(v => v.teamId === t.id && v.syncStatus !== 'error');
       
-      // 1. Time to First Value: Round 2 start -> Version 1 Done
       let timeToFirstValue = '—';
       if (workshop.round2StartedAt) {
         const v1 = teamVersions.find(v => v.versionNumber === 1);
@@ -110,28 +402,22 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
         }
       }
 
-      // 2. Versions Done
       const versionsDone = teamVersions.length;
 
-      // 3. Avg Cycle Time
       let avgCycleTime = '—';
       if (teamVersions.length > 0) {
         let totalCycleTimeMs = 0;
         let validCyclesCount = 0;
-
-        // Sort versions by versionNumber to correctly compute sequential cycles
         const sortedVersions = [...teamVersions].sort((a, b) => a.versionNumber - b.versionNumber);
 
         sortedVersions.forEach((v) => {
           let cycleStart = workshop.round2StartedAt || 0;
           if (v.versionNumber > 1) {
-            // Started when previous version finished
             const prev = sortedVersions.find(p => p.versionNumber === v.versionNumber - 1);
             if (prev) {
               cycleStart = prev.completedAt;
             }
           }
-
           if (cycleStart > 0) {
             totalCycleTimeMs += (v.completedAt - cycleStart);
             validCyclesCount++;
@@ -155,7 +441,6 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
 
   const dashboardData = calculateDashboardMetrics();
 
-  // Get current team's version history for Document Late (P25)
   const getSelectedTeamHistory = () => {
     const team = teams.find(t => t.id === selectedTeamId);
     if (!team) return [];
@@ -183,11 +468,9 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
 
   const selectedTeamHistory = getSelectedTeamHistory();
 
-  // Generate QR Code joining link
   const joinUrl = `${window.location.origin}${window.location.pathname}?wsId=${workshopId}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(joinUrl)}`;
 
-  // Safe assets mapping (using materials.png/material.jpg mapping per section 6 instructions)
   const materialImgUrl = '/assets/workshop/material.jpg';
   const outcomeImgUrl = '/assets/workshop/outcome.png';
 
@@ -237,14 +520,12 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
                 <span style={{ color: 'var(--accent)', fontSize: '2.5rem' }}>①</span>
                 <span>使用提供的材料，建造一個「最高」的獨立結構。</span>
               </div>
-              
               {isRevealed(1) && (
                 <div style={{ fontSize: '2.2rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <span style={{ color: 'var(--accent)', fontSize: '2.5rem' }}>②</span>
                   <span>完整的棉花糖必須放在結構最高處。</span>
                 </div>
               )}
-              
               {isRevealed(2) && (
                 <div style={{ fontSize: '2.2rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <span style={{ color: 'var(--accent)', fontSize: '2.5rem' }}>③</span>
@@ -266,19 +547,12 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
                 <li>棉線 (量足)</li>
                 <li>1 顆棉花糖</li>
               </ul>
-              <div style={{ marginTop: '2rem', fontSize: '1.2rem', color: 'rgba(255, 255, 255, 0.5)', borderLeft: '3px solid var(--accent)', paddingLeft: '1rem' }}>
-                請注意：材料有限，不提供額外的補充材料。
-              </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <img 
                 src={materialImgUrl} 
                 alt="Materials" 
                 style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: '12px', boxShadow: 'var(--shadow-lg)' }} 
-                onError={(e) => {
-                  // Suppress error if file does not exist yet
-                  (e.target as any).style.display = 'none';
-                }}
               />
             </div>
           </div>
@@ -317,9 +591,9 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
         const r1WorkingCount = getRound1EvidenceCount();
         return (
           <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '3.5rem', marginBottom: '3rem' }}>現在有多少組，已經有一個真正可以使用的產品？</h1>
-            {isRevealed(1) && (
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '3rem', borderRadius: '24px', display: 'inline-block', width: '100%' }}>
+            <h1 style={{ fontSize: '3.2rem', marginBottom: '2.5rem' }}>現在有多少組，已經有一個真正可以使用的產品？</h1>
+            {isRevealed(1) ? (
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '2.5rem', borderRadius: '24px', display: 'inline-block', width: '100%' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'center' }}>
                   <div style={{ textAlign: 'left' }}>
                     <h2 style={{ fontSize: '2.2rem', color: 'var(--accent)', marginBottom: '1.5rem' }}>
@@ -336,6 +610,27 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
                       style={{ maxWidth: '100%', maxHeight: '35vh', borderRadius: '12px', boxShadow: 'var(--shadow-md)' }} 
                     />
                   </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2.5rem 4rem', borderRadius: '16px', display: 'inline-block', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <h3 style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '1.25rem', fontSize: '1.4rem' }}>登記第一輪合格產品組數：</h3>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    min="0"
+                    max={teams.length}
+                    value={round1Evidence}
+                    onChange={(e) => setRound1Evidence(e.target.value)}
+                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '0.6rem 1rem', fontSize: '1.6rem', width: '100px', borderRadius: '8px', textAlign: 'center', outline: 'none' }}
+                  />
+                  <button 
+                    className="btn btn-accent" 
+                    style={{ padding: '0.8rem 1.8rem', fontSize: '1.1rem' }}
+                    onClick={handleSaveRound1Evidence}
+                  >
+                    確認登記並顯示
+                  </button>
                 </div>
               </div>
             )}
@@ -512,7 +807,6 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
         const activeTeamCount = teams.filter(t => Date.now() - t.lastSeenAt < 15000).length;
         const totalVersionsDone = versions.filter(v => v.syncStatus !== 'error').length;
         
-        // Count teams on each version/challenge
         const versionDistribution = Array(11).fill(0);
         teams.forEach(t => {
           const seq = t.currentChallengeSequence;
@@ -677,7 +971,6 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
           </div>
         );
 
-      // Manifesto Layouts (P23 - P27)
       case 'P23':
         return (
           <div className="manifesto-layout">
@@ -877,12 +1170,21 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
     }
   };
 
+  const isTimerActive = workshop.status === 'ROUND_1_ACTIVE' || workshop.status === 'ROUND_2_ACTIVE';
+  const isTimerPaused = (workshop.status === 'ROUND_1_ACTIVE' && workshop.round1PausedAt) ||
+                       (workshop.status === 'ROUND_2_ACTIVE' && workshop.round2PausedAt);
+
   return (
-    <div className="role-container projection-view">
+    <div className="role-container projection-view" style={{ paddingBottom: '7.5rem' }}>
       <div className="projection-header">
-        <div className="projection-title">棉花糖敏捷挑戰工作坊</div>
+        <div className="projection-title" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span>國泰金控 敏捷挑戰工作坊</span>
+          <span style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.15)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '4px', textTransform: 'uppercase' }}>
+            {workshop.status}
+          </span>
+        </div>
         <div style={{ fontSize: '1.2rem', opacity: 0.6 }}>
-          {PROJECTION_SCREENS.find(s => s.id === workshop.currentProjectionScreen)?.title}
+          {currentScreen.title}
         </div>
       </div>
 
@@ -895,9 +1197,136 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId }) => {
           專案代碼：<strong>{workshop.joinCode}</strong> | 學員連結：{joinUrl}
         </div>
         <div>
-          AGILE TALKS © 2026
+          AGILE TALKS © 2026 | 按「M」鍵開合團隊監控抽屜
         </div>
       </div>
+
+      {/* ==========================================================================
+         PRESENTER BOTTOM CONTROLLER BAR (Subtle, slides up on hover)
+         ========================================================================== */}
+      <div className="presenter-bottom-bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', justifyContent: 'space-between', width: '100%' }}>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button 
+              className="btn btn-outline btn-control-sm"
+              onClick={handlePrev}
+              disabled={currentScreenIdx === 0 && workshop.currentRevealIndex === 0}
+              title="上一步 (鍵盤 左方向鍵)"
+            >
+              ◀ Prev
+            </button>
+            <span style={{ fontSize: '0.9rem', minWidth: '80px', textAlign: 'center', color: '#fff', fontWeight: 600 }}>
+              {currentScreen.id} ({workshop.currentRevealIndex}/{currentScreen.maxReveal})
+            </span>
+            <button 
+              className="btn btn-accent btn-control-sm"
+              onClick={handleNext}
+              disabled={currentScreenIdx === PROJECTION_SCREENS.length - 1 && workshop.currentRevealIndex === currentScreen.maxReveal}
+              title="下一步 (鍵盤 右方向鍵)"
+            >
+              Next ▶
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>快速跳轉：</span>
+            <select
+              className="presenter-select"
+              value={workshop.currentProjectionScreen}
+              onChange={(e) => handleJumpToScreen(e.target.value)}
+            >
+              {PROJECTION_SCREENS.map(s => (
+                <option key={s.id} value={s.id}>{s.id} - {s.title.substring(0, 15)}...</option>
+              ))}
+            </select>
+          </div>
+
+          {isTimerActive && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.06)', padding: '0.35rem 0.75rem', borderRadius: '8px' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--accent)', fontSize: '1.15rem' }}>
+                ⏱ {formatTime(timeLeft)}
+              </span>
+              <button className="btn btn-outline btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={toggleTimer}>
+                {isTimerPaused ? '啟動' : '暫停'}
+              </button>
+              <button className="btn btn-danger btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', background: 'var(--error)' }} onClick={endRoundEarly}>
+                結束
+              </button>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button 
+              className={`btn btn-outline btn-control-sm ${isDrawerOpen ? 'active-control' : ''}`}
+              onClick={() => setIsDrawerOpen(prev => !prev)}
+              title="開合團隊監控面板 (鍵盤 M 鍵)"
+            >
+              📊 團隊監控 {isDrawerOpen ? '▲' : '▼'}
+            </button>
+            <button 
+              className="btn btn-outline btn-control-sm btn-danger-hover" 
+              onClick={handleResetWorkshop}
+              disabled={isResetting}
+              title="重設工作坊所有數據"
+            >
+              ↻ 重設
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ==========================================================================
+         PRESENTER RIGHT MONITOR DRAWER (Slides in from right)
+         ========================================================================== */}
+      <div className={`presenter-right-drawer ${isDrawerOpen ? 'open' : ''}`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>
+          <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.15rem' }}>📊 團隊即時狀態監控</h3>
+          <button 
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '1.25rem', cursor: 'pointer' }}
+            onClick={() => setIsDrawerOpen(false)}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', maxHeight: 'calc(100vh - 120px)' }}>
+          {teams.map((t) => {
+            const teamVersions = versions.filter(v => v.teamId === t.id && v.syncStatus !== 'error');
+            const isOnline = Date.now() - t.lastSeenAt < 15000;
+            const isStale = Date.now() - t.lastSeenAt >= 15000 && Date.now() - t.lastSeenAt < 60000;
+
+            return (
+              <div key={t.id} className="drawer-team-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{t.name}</span>
+                  {isOnline ? (
+                    <span className="indicator indicator-online">● 連線中</span>
+                  ) : isStale ? (
+                    <span className="indicator indicator-stale">● 離線</span>
+                  ) : (
+                    <span className="indicator indicator-offline">● 斷線</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem' }}>
+                  <span>關卡：<strong>{t.currentChallengeSequence} / 10</strong></span>
+                  <span>已交付：<strong>{teamVersions.length} 版</strong></span>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem' }}>
+                  記錄員：{t.recorderName}
+                </div>
+              </div>
+            );
+          })}
+          {teams.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '3rem 0', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', fontSize: '0.9rem' }}>
+              尚未有團隊登記加入...
+            </div>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 };
