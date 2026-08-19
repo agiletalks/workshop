@@ -520,3 +520,40 @@ export async function findWorkshopByJoinCode(joinCode: string): Promise<Workshop
   return null;
 }
 
+// 9. Update Team R1 Activities (Mobile tag submissions)
+export async function updateTeamR1Activities(team: Team, activities: string[]): Promise<Team> {
+  const updatedTeam: Team = {
+    ...team,
+    r1Activities: activities,
+    lastSeenAt: Date.now()
+  };
+
+  const localIDB = await getIDB();
+  await localIDB.put('teams', updatedTeam);
+
+  // Update teams list cache
+  const allTeams = await localIDB.getAll('teams');
+  notifyTeams(allTeams.filter(t => t.workshopId === team.workshopId));
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const teamRef = doc(db, 'workshops', team.workshopId, 'teams', team.id);
+      await updateDoc(teamRef, {
+        r1Activities: activities,
+        lastSeenAt: Date.now()
+      });
+    } catch (e) {
+      console.error('Failed to sync team R1 activities:', e);
+    }
+  } else {
+    // Broadcast for multi-tab simulator
+    mockChannel.postMessage({
+      type: 'TEAM_JOINED',
+      payload: updatedTeam,
+      senderId: team.id
+    });
+  }
+
+  return updatedTeam;
+}
+

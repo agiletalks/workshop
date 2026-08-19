@@ -43,6 +43,7 @@ export interface Team {
   currentChallengeSequence: number; // 1-based index (1 to 10)
   joinedAt: number;
   lastSeenAt: number;
+  r1Activities?: string[];
 }
 
 export interface TeamVersion {

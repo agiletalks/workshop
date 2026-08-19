@@ -4,7 +4,8 @@ import {
   subscribeToTeams,
   subscribeToVersions,
   joinTeam,
-  submitVersionRecord
+  submitVersionRecord,
+  updateTeamR1Activities
 } from '../services/syncService';
 import { challengesData } from '../data/challengesData';
 import type { Workshop, Team, TeamVersion } from '../types';
@@ -38,6 +39,10 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
   
   // Online/Offline tracking
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+
+  // Tag cloud input states
+  const [r1Activities, setR1Activities] = useState<string[]>([]);
+  const [customActivity, setCustomActivity] = useState<string>('');
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -84,11 +89,20 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
   useEffect(() => {
     if (team) {
       const updated = teams.find(t => t.id === team.id);
-      if (updated && updated.currentChallengeSequence !== team.currentChallengeSequence) {
+      if (updated) {
         setTeam(updated);
       }
     }
-  }, [teams, team]);
+  }, [teams, team?.id]);
+
+  // Sync local activities input state with latest team data
+  useEffect(() => {
+    if (team?.r1Activities) {
+      setR1Activities(team.r1Activities);
+    } else {
+      setR1Activities([]);
+    }
+  }, [team?.r1Activities]);
 
   // Synchronized Timer for Team screen
   useEffect(() => {
@@ -244,7 +258,6 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
     'SETUP',
     'ROUND_1_BRIEFING',
     'ROUND_1_FROZEN',
-    'DEBRIEF_1',
     'ITERATION_LEARNING',
     'ROUND_2_BRIEFING',
     'ROUND_2_FROZEN',
@@ -283,6 +296,135 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
             <div className="attention-icon">👀</div>
             <h1 className="attention-headline">{title}</h1>
             <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>{subtitle}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // T08 — Debrief 1 Tag Submission
+  if (workshop.status === 'DEBRIEF_1' && team) {
+    const presetActivities = ['討論', '規劃', '設計', '分工', '製作零件', '嘗試不同方法', '黏土', '折麵', '站立測試'];
+    
+    const handleAddPreset = async (act: string) => {
+      if (r1Activities.includes(act)) return;
+      if (r1Activities.length >= 5) {
+        alert('最多只能選擇 5 個活動喔！');
+        return;
+      }
+      const next = [...r1Activities, act];
+      setR1Activities(next);
+      await updateTeamR1Activities(team, next);
+    };
+
+    const handleAddCustom = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const val = customActivity.trim();
+      if (!val) return;
+      if (val.length > 8) {
+        alert('每個標籤字數請在 8 個字以內！');
+        return;
+      }
+      if (r1Activities.includes(val)) return;
+      if (r1Activities.length >= 5) {
+        alert('最多只能選擇 5 個活動喔！');
+        return;
+      }
+      const next = [...r1Activities, val];
+      setR1Activities(next);
+      setCustomActivity('');
+      await updateTeamR1Activities(team, next);
+    };
+
+    const handleRemove = async (act: string) => {
+      const next = r1Activities.filter(a => a !== act);
+      setR1Activities(next);
+      await updateTeamR1Activities(team, next);
+    };
+
+    return (
+      <div className="role-container team-view">
+        <header className="team-header">
+          <span className="team-header-name">{team.name} (學員端)</span>
+          {getSyncStatusBadge()}
+        </header>
+        <div className="team-main" style={{ justifyContent: 'flex-start' }}>
+          <div className="card">
+            <h2 style={{ marginBottom: '0.5rem' }}>剛才六分鐘，你們在做什麼？</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: 1.4 }}>
+              請選擇或輸入你們剛才完成第一輪挑戰中花費最多時間的活動（最多 5 個），大螢幕上將會即時匯總所有小組的結果！
+            </p>
+
+            {/* Current Tags */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>已選擇的活動 ({r1Activities.length}/5)：</div>
+              {r1Activities.length === 0 ? (
+                <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', padding: '0.75rem', background: 'hsl(0, 0%, 96%)', borderRadius: '8px', textAlign: 'center', border: '1px dashed #ddd' }}>
+                  尚未選擇，請點選下方推薦標籤或自行輸入
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {r1Activities.map((act) => (
+                    <span key={act} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'var(--primary)', color: '#fff', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.95rem', fontWeight: 600 }}>
+                      {act}
+                      <button onClick={() => handleRemove(act)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.1rem', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Preset Tags */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>推薦活動：</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {presetActivities.map((act) => {
+                  const isSelected = r1Activities.includes(act);
+                  return (
+                    <button
+                      key={act}
+                      onClick={() => handleAddPreset(act)}
+                      disabled={isSelected || r1Activities.length >= 5}
+                      style={{
+                        padding: '0.4rem 0.8rem',
+                        borderRadius: '20px',
+                        border: '1px solid',
+                        borderColor: isSelected ? 'var(--primary)' : '#ddd',
+                        background: isSelected ? 'rgba(255, 152, 0, 0.1)' : '#fff',
+                        color: isSelected ? 'var(--primary)' : 'var(--text-primary)',
+                        fontSize: '0.9rem',
+                        cursor: 'pointer',
+                        fontWeight: isSelected ? 600 : 400
+                      }}
+                    >
+                      {act} {isSelected ? '✓' : '+'}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Tag Form */}
+            <form onSubmit={handleAddCustom} style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="輸入其他活動（限 8 字）"
+                value={customActivity}
+                onChange={(e) => setCustomActivity(e.target.value)}
+                maxLength={8}
+                disabled={r1Activities.length >= 5}
+                style={{ flex: 1, margin: 0 }}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!customActivity.trim() || r1Activities.length >= 5}
+                style={{ padding: '0 1.25rem', whiteSpace: 'nowrap' }}
+              >
+                新增
+              </button>
+            </form>
           </div>
         </div>
       </div>
