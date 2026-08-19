@@ -1028,30 +1028,27 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       case 'P19':
         return (
           <div style={{ width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
-            <h1 style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '0.5rem', fontWeight: 800 }}>
+            <h1 style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '2.5rem', fontWeight: 800 }}>
               儀表板
             </h1>
-            <p style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '1.5rem' }}>
-              這份數據展示了各組在面對頻繁需求變更時的交付效能指標，不代表團隊間的排名。
-            </p>
             
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', margin: 0, tableLayout: 'fixed' }}>
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '1.1rem', fontWeight: 700, width: '25%', whiteSpace: 'nowrap' }}>團隊名稱</th>
-                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '1.1rem', fontWeight: 700, width: '28%' }}>首個價值交付時間 (Time to First Value)</th>
-                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '1.1rem', fontWeight: 700, width: '22%' }}>交付版本數量 (Versions Done)</th>
-                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '1.1rem', fontWeight: 700, width: '25%' }}>平均週期時間 (Avg Cycle Time)</th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '25%', whiteSpace: 'nowrap' }}>團隊名稱</th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '28%' }}>首個價值交付時間 (Time to First Value)</th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '22%' }}>交付版本數量 (Versions Done)</th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '25%' }}>平均週期時間 (Avg Cycle Time)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dashboardData.map((d, idx) => (
                     <tr key={idx} style={{ borderBottom: idx === dashboardData.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                      <td style={{ padding: '0.85rem 1.25rem', fontWeight: 700, fontSize: '1.25rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</td>
-                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.25rem', color: '#e0e0e0' }}>{d.timeToFirstValue}</td>
-                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent)' }}>{d.versionsDone}</td>
-                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.25rem', color: '#e0e0e0' }}>{d.avgCycleTime}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontWeight: 700, fontSize: '1.05rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.05rem', color: '#e0e0e0' }}>{d.timeToFirstValue}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent)' }}>{d.versionsDone}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.05rem', color: '#e0e0e0' }}>{d.avgCycleTime}</td>
                     </tr>
                   ))}
                   {dashboardData.length === 0 && (
