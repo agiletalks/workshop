@@ -1205,7 +1205,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
               <div>
                 <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-mono)' }}>Responding to Change</div>
                 <div style={{ fontSize: '2.4rem', fontWeight: 700, color: '#fff', marginTop: '0.25rem', lineHeight: 1.3 }}>
-                  多久可以反映變更需求？
+                  多快可以反映變更需求？
                 </div>
               </div>
 
