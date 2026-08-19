@@ -1037,9 +1037,18 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                     <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '25%', whiteSpace: 'nowrap' }}>團隊名稱</th>
-                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '28%' }}>首個價值交付時間 (Time to First Value)</th>
-                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '22%' }}>交付版本數量 (Versions Done)</th>
-                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '25%' }}>平均週期時間 (Avg Cycle Time)</th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '28%' }}>
+                      首次交付時間
+                      <div style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: 500, marginTop: '0.2rem' }}>(Time to First Value)</div>
+                    </th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '22%' }}>
+                      交付版本數量
+                      <div style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: 500, marginTop: '0.2rem' }}>(Versions Done)</div>
+                    </th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 700, width: '25%' }}>
+                      平均週期時間
+                      <div style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: 500, marginTop: '0.2rem' }}>(Avg Cycle Time)</div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
