@@ -274,7 +274,7 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
       <div className="role-container team-view">
         <header className="team-header">
           <span className="team-header-name">
-            {team ? `${team.name} (學員端)` : '棉花糖敏捷工作坊'}
+            {team ? `${team.name} (學員端)` : (workshop?.name || '棉花糖敏捷工作坊')}
           </span>
           {team && getSyncStatusBadge()}
         </header>

@@ -382,23 +382,49 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
     switch (workshop.currentProjectionScreen) {
       case 'P01':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '55vh', textAlign: 'center' }}>
-            <span style={{ fontSize: '6rem', marginBottom: '1.5rem' }}>🍡</span>
-            <h1 style={{ fontSize: '4.5rem', color: 'var(--accent)', fontWeight: 800, margin: 0 }}>
-              棉花糖敏捷挑戰工作坊
-            </h1>
-            <p style={{ fontSize: '1.8rem', color: 'rgba(255, 255, 255, 0.7)', marginTop: '1.5rem' }}>
-              歡迎來到敏捷體驗式教學！請等待講師引導開始挑戰...
-            </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '3rem', width: '100%', alignItems: 'center', minHeight: '55vh' }}>
+            {/* Left side: Welcome */}
+            <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <h1 style={{ fontSize: '4.5rem', color: 'var(--accent)', fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
+                {workshop.name}
+              </h1>
+            </div>
+
+            {/* Right side: Registration & QR Code (Shown to both Facilitator and Projector) */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
+              <h3 style={{ fontSize: '1.4rem', color: 'var(--accent)', marginBottom: '1rem', fontWeight: 700 }}>📱 掃描 QR Code 加入挑戰</h3>
+              <div style={{ display: 'inline-block', background: '#fff', padding: '0.75rem', borderRadius: '12px', marginBottom: '1rem', boxShadow: 'var(--shadow-md)' }}>
+                <img src={qrUrl} alt="QR Code Link" width="160" height="160" style={{ display: 'block' }} />
+              </div>
+              <div style={{ fontSize: '0.95rem', opacity: 0.7, marginBottom: '0.25rem' }}>網址輸入代碼：</div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fff', letterSpacing: '0.05em', margin: '0.15rem 0 1rem' }}>{workshop.joinCode}</div>
+              
+              {/* Joined teams list */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', textAlign: 'left' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                  <span>已加入的團隊</span>
+                  <span style={{ color: 'var(--accent)' }}>{teams.length} 組</span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
+                  {teams.map((t) => (
+                    <span key={t.id} style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.35rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      {t.name}
+                    </span>
+                  ))}
+                  {teams.length === 0 && (
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', fontSize: '0.9rem' }}>等待團隊註冊中...</span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         );
 
       case 'P02':
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: isReadOnly ? '1fr' : '1.2fr 1fr', gap: '3rem', width: '100%', alignItems: 'start' }}>
-            {/* Left side: Rules */}
-            <div style={{ textAlign: 'left' }}>
-              <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '55vh', width: '100%' }}>
+            <div style={{ maxWidth: '800px', width: '100%', textAlign: 'left', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '3rem', borderRadius: '24px' }}>
+              <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '2.5rem', textAlign: 'center' }}>
                 THE MARSHMALLOW CHALLENGE
               </h1>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
@@ -420,36 +446,6 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
                 )}
               </div>
             </div>
-
-            {/* Right side: Registration & QR Code */}
-            {!isReadOnly && (
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
-                <h3 style={{ fontSize: '1.4rem', color: 'var(--accent)', marginBottom: '1rem', fontWeight: 700 }}>📱 掃描 QR Code 加入挑戰</h3>
-                <div style={{ display: 'inline-block', background: '#fff', padding: '0.75rem', borderRadius: '12px', marginBottom: '1rem', boxShadow: 'var(--shadow-md)' }}>
-                  <img src={qrUrl} alt="QR Code Link" width="160" height="160" style={{ display: 'block' }} />
-                </div>
-                <div style={{ fontSize: '0.95rem', opacity: 0.7, marginBottom: '0.25rem' }}>網址輸入代碼：</div>
-                <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fff', letterSpacing: '0.05em', margin: '0.15rem 0 1rem' }}>{workshop.joinCode}</div>
-                
-                {/* Joined teams list */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', textAlign: 'left' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
-                    <span>已加入的團隊</span>
-                    <span style={{ color: 'var(--accent)' }}>{teams.length} 組</span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
-                    {teams.map((t) => (
-                      <span key={t.id} style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.35rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        {t.name}
-                      </span>
-                    ))}
-                    {teams.length === 0 && (
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', fontSize: '0.9rem' }}>等待團隊註冊中...</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         );
 
@@ -603,13 +599,46 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
       case 'P09':
         return (
-          <div style={{ maxWidth: '950px', textAlign: 'left' }}>
-            <h1 style={{ fontSize: '3.8rem', color: 'var(--accent)', marginBottom: '3rem', textAlign: 'center' }}>忙碌 vs 進度</h1>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ fontSize: '2.2rem', fontWeight: 600 }}>1. Everyone was busy. (每個人都很忙碌)</div>
-              {isRevealed(1) && <div style={{ fontSize: '2.2rem', fontWeight: 600 }}>2. But did we have a product? (但我們有產品嗎？)</div>}
-              {isRevealed(2) && <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--error)' }}>3. Activity ≠ Progress (忙碌不等於進度)</div>}
-              {isRevealed(3) && <div style={{ fontSize: '2.8rem', fontWeight: 800, color: 'var(--success)' }}>4. Working Product = Evidence of Progress (可工作產品才是進度唯一的實證)</div>}
+          <div style={{ maxWidth: '1000px', width: '100%', margin: '0 auto' }}>
+            <h1 style={{ fontSize: '3.8rem', color: 'var(--accent)', marginBottom: '3.5rem', textAlign: 'center' }}>忙碌 vs 進度</h1>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem', alignItems: 'stretch' }}>
+              
+              {/* Row 1, Column 1: Card 1 */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '2.25rem 2rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'left' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>Everyone was busy.</div>
+                <div style={{ fontSize: '1.3rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.6rem' }}>每個人都很忙碌</div>
+              </div>
+
+              {/* Row 1, Column 2: Card 2 */}
+              {isRevealed(1) ? (
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '2.25rem 2rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'left' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>But did we have a product?</div>
+                  <div style={{ fontSize: '1.3rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.6rem' }}>但我們有產品嗎？</div>
+                </div>
+              ) : (
+                <div />
+              )}
+
+              {/* Row 2, Column 1: Card 3 */}
+              {isRevealed(2) ? (
+                <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '2px solid var(--error)', padding: '2.25rem 2rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'left' }}>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fff' }}>Activity ≠ Progress</div>
+                  <div style={{ fontSize: '1.3rem', color: '#ff8a80', fontWeight: 600, marginTop: '0.6rem' }}>忙碌不等於進度</div>
+                </div>
+              ) : (
+                <div />
+              )}
+
+              {/* Row 2, Column 2: Card 4 */}
+              {isRevealed(3) ? (
+                <div style={{ background: 'rgba(255, 215, 0, 0.04)', border: '2px solid var(--accent)', padding: '2.25rem 2rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'left', boxShadow: '0 0 25px rgba(255, 215, 0, 0.06)' }}>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fff', lineHeight: 1.25 }}>Working Product = Evidence of Progress</div>
+                  <div style={{ fontSize: '1.3rem', color: 'var(--accent)', fontWeight: 600, marginTop: '0.6rem' }}>看進度要看可用的產品</div>
+                </div>
+              ) : (
+                <div />
+              )}
+
             </div>
           </div>
         );
@@ -669,13 +698,50 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
       case 'P12':
         return (
-          <div style={{ maxWidth: '850px', textAlign: 'left' }}>
-            <h1 style={{ fontSize: '3.8rem', color: 'var(--accent)', marginBottom: '3rem', textAlign: 'center' }}>第二輪挑戰規則</h1>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ fontSize: '2.2rem', fontWeight: 600 }}>1. 第一輪你們有 6 分鐘。</div>
-              {isRevealed(1) && <div style={{ fontSize: '2.2rem', fontWeight: 600 }}>2. 第二輪......</div>}
-              {isRevealed(2) && <div style={{ fontSize: '3.5rem', fontWeight: 800, color: 'var(--accent)' }}>3. 只有 10 分鐘！</div>}
-              {isRevealed(3) && <div style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--success)' }}>4. But the rules have changed. (但是工作規則改變了)</div>}
+          <div style={{ maxWidth: '800px', width: '100%', margin: '0 auto', textAlign: 'left' }}>
+            <h1 style={{ fontSize: '3.8rem', color: 'var(--accent)', marginBottom: '3.5rem', textAlign: 'center' }}>第二輪挑戰規則</h1>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', paddingLeft: '2.5rem', borderLeft: '3px solid rgba(255,255,255,0.1)' }}>
+              
+              {/* Step 1 */}
+              <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'rgba(255,255,255,0.35)', minWidth: '40px', fontFamily: 'var(--font-mono)' }}>01</span>
+                <div>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>第一輪你們有 6 分鐘。</div>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              {isRevealed(1) && (
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'rgba(255,255,255,0.35)', minWidth: '40px', fontFamily: 'var(--font-mono)' }}>02</span>
+                  <div>
+                    <div style={{ fontSize: '2.2rem', fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>第二輪......</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3 */}
+              {isRevealed(2) && (
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent)', minWidth: '40px', fontFamily: 'var(--font-mono)' }}>03</span>
+                  <div>
+                    <div style={{ fontSize: '2.8rem', fontWeight: 800, color: 'var(--accent)' }}>只有 10 分鐘！</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4 */}
+              {isRevealed(3) && (
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent)', minWidth: '40px', fontFamily: 'var(--font-mono)' }}>04</span>
+                  <div>
+                    <div style={{ fontSize: '2.6rem', fontWeight: 800, color: '#fff', lineHeight: 1.3 }}>But the rules have changed.</div>
+                    <div style={{ fontSize: '1.6rem', color: 'rgba(255,255,255,0.7)', marginTop: '0.4rem', fontWeight: 500 }}>但是工作規則改變了</div>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         );
@@ -855,14 +921,41 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
       case 'P20':
         return (
-          <div style={{ textAlign: 'center' }}>
-            <h1 style={{ fontSize: '4.5rem', color: 'var(--accent)', marginBottom: '2rem' }}>
+          <div style={{ width: '100%', maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '4.5rem', color: 'var(--accent)', marginBottom: '3.5rem', fontWeight: 800 }}>
               哪個團隊最成功？
             </h1>
-            <p style={{ fontSize: '2rem', maxWidth: '800px', margin: '0 auto', lineHeight: 1.6 }}>
-              是做出最高結構的團隊？是交付版本最多的團隊？還是材料耗費最省的團隊？<br />
-              我們該如何定義「成功」？
-            </p>
+            
+            {/* 3-Column Choices */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '3rem', margin: '0 auto 4rem' }}>
+              <div style={{ padding: '1rem' }}>
+                <div style={{ fontSize: '4.2rem', marginBottom: '1rem' }}>📐</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
+                  是做出最高結構的團隊？
+                </div>
+              </div>
+              
+              <div style={{ padding: '1rem' }}>
+                <div style={{ fontSize: '4.2rem', marginBottom: '1rem' }}>📦</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
+                  是交付版本最多的團隊？
+                </div>
+              </div>
+              
+              <div style={{ padding: '1rem' }}>
+                <div style={{ fontSize: '4.2rem', marginBottom: '1rem' }}>💰</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
+                  還是材料耗費最省的團隊？
+                </div>
+              </div>
+            </div>
+
+            {/* Core Question */}
+            <div style={{ borderTop: '2px dashed rgba(255,255,255,0.15)', paddingTop: '3rem', display: 'inline-block', width: '80%' }}>
+              <h2 style={{ fontSize: '2.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 800, margin: 0 }}>
+                我們該如何定義「成功」？
+              </h2>
+            </div>
           </div>
         );
 
@@ -1117,7 +1210,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       {!isReadOnly && (
         <div className="projection-header">
           <div className="projection-title" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span>棉花糖敏捷挑戰工作坊</span>
+            {workshop.currentProjectionScreen !== 'P01' && <span>{workshop.name}</span>}
             <span style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.15)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '4px', textTransform: 'uppercase' }}>
               {workshop.status}
             </span>

@@ -6,10 +6,11 @@ import { createWorkshop, findWorkshopByJoinCode } from './services/syncService';
 function App() {
   const [role, setRole] = useState<'projection' | 'team' | null>(null);
   const [workshopId, setWorkshopId] = useState<string | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
   
   // Home page fields
   const [createCode, setCreateCode] = useState<string>('');
-  const [newWSName, setNewWSName] = useState<string>('棉花糖敏捷挑戰工作坊');
+  const [newWSName, setNewWSName] = useState<string>('平地起高樓大挑戰');
   const [loading, setLoading] = useState<boolean>(false);
 
   // Password fields
@@ -40,6 +41,7 @@ function App() {
       const params = new URLSearchParams(window.location.search);
       const roleParam = params.get('role');
       const wsIdParam = params.get('wsId');
+      const readOnlyParam = params.get('readOnly') === 'true' || params.get('isReadOnly') === 'true';
 
       if (roleParam === 'projection' || roleParam === 'team') {
         setRole(roleParam);
@@ -52,6 +54,8 @@ function App() {
       } else {
         setWorkshopId(null);
       }
+
+      setIsReadOnly(readOnlyParam);
     };
 
     handleUrlParams();
@@ -110,7 +114,7 @@ function App() {
 
   // 2. Render Projection Screen
   if (role === 'projection' && workshopId) {
-    return <ProjectionView workshopId={workshopId} />;
+    return <ProjectionView workshopId={workshopId} isReadOnly={isReadOnly} />;
   }
 
   // 3. Render Team Device Screen
