@@ -1,25 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
 
 :root {
-  /* Color Palette - Cathay Financial Holding Style (Green & Golden Yellow) */
-  --bg-app: hsl(145, 12%, 97%);
-  --bg-card: hsl(0, 0%, 100%);
-  --text-primary: hsl(222, 47%, 11%);
-  --text-secondary: hsl(210, 10%, 40%);
-  --text-muted: hsl(210, 10%, 60%);
-  --border-color: hsl(145, 12%, 90%);
+  /* Color Palette - 023 Illustration Style (Clean White, Charcoal, Vibrant Orange & Red) */
+  --bg-app: hsl(0, 0%, 98%); /* Clean off-white */
+  --bg-card: hsl(0, 0%, 100%); /* White card */
+  --text-primary: hsl(0, 0%, 11%); /* Dark Charcoal (#1C1C1C) */
+  --text-secondary: hsl(0, 0%, 40%); /* Gray text */
+  --text-muted: hsl(0, 0%, 60%);
+  --border-color: hsl(0, 0%, 90%); /* Light gray border */
   
-  --primary: hsl(149, 90%, 28%); /* Cathay Green */
-  --primary-hover: hsl(149, 90%, 22%);
-  --accent: hsl(45, 100%, 50%); /* Cathay Golden Yellow */
-  --accent-hover: hsl(45, 100%, 45%);
+  --primary: hsl(38, 100%, 50%); /* Vibrant Orange (#FF9800 / #FFA500) */
+  --primary-hover: hsl(38, 100%, 43%);
+  --accent: hsl(355, 78%, 56%); /* Vibrant Red (#E63946) */
+  --accent-hover: hsl(355, 78%, 48%);
   
   --success: hsl(142, 70%, 45%);
   --success-light: hsl(142, 70%, 95%);
-  --error: hsl(0, 84%, 60%);
-  --error-light: hsl(0, 84%, 97%);
-  --warning: hsl(45, 93%, 47%);
-  --warning-light: hsl(45, 93%, 95%);
+  --error: hsl(355, 78%, 56%); /* Match accent red */
+  --error-light: hsl(355, 78%, 97%);
+  --warning: hsl(38, 100%, 50%); /* Match primary orange */
+  --warning-light: hsl(38, 100%, 95%);
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -196,7 +196,7 @@ p {
    PROJECTION SCREEN STYLES (Target 1920x1080 viewport, no scroll)
    ========================================================================== */
 .projection-view {
-  background-color: var(--primary); /* Dark theme for presentation */
+  background-color: #121212; /* Dark theme for presentation */
   color: hsl(210, 20%, 98%);
   min-height: 100vh;
   display: flex;

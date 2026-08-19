@@ -191,13 +191,13 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
     if (raw) setRound1Evidence(raw);
   }, [workshopId]);
 
-  if (!workshop) {
-    return (
-      <div className="role-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'var(--primary)', color: '#fff' }}>
-        <h2>讀取工作坊中...</h2>
-      </div>
-    );
-  }
+    if (!workshop) {
+      return (
+        <div className="role-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#121212', color: '#fff' }}>
+          <h2>讀取工作坊中...</h2>
+        </div>
+      );
+    }
 
   const currentScreenIdx = PROJECTION_SCREENS.findIndex(s => s.id === workshop.currentProjectionScreen);
   const currentScreen = PROJECTION_SCREENS[currentScreenIdx] || PROJECTION_SCREENS[0];
