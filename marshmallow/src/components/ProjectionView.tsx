@@ -985,38 +985,40 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
       case 'P19':
         return (
-          <div style={{ width: '100%', maxWidth: '1100px' }}>
-            <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '1rem' }}>工作坊數據儀表板 (Live Results)</h1>
-            <p style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '2rem' }}>
+          <div style={{ width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
+            <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>工作坊數據儀表板 (Live Results)</h1>
+            <p style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '1.5rem' }}>
               這份數據展示了各組在面對頻繁需求變更時的交付效能指標，不代表團隊間的排名。
             </p>
-            <table className="dashboard-table">
-              <thead>
-                <tr>
-                  <th>團隊名稱</th>
-                  <th>Time to First Value (首個價值交付時間)</th>
-                  <th>Versions Done (交付版本數量)</th>
-                  <th>Avg Cycle Time (平均週期時間)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dashboardData.map((d, idx) => (
-                  <tr key={idx}>
-                    <td style={{ fontWeight: 'bold' }}>{d.name}</td>
-                    <td>{d.timeToFirstValue}</td>
-                    <td style={{ color: 'var(--accent)', fontWeight: 'bold' }}>{d.versionsDone}</td>
-                    <td>{d.avgCycleTime}</td>
-                  </tr>
-                ))}
-                {dashboardData.length === 0 && (
+            <div style={{ maxHeight: '48vh', overflowY: 'auto', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', paddingRight: '0.5rem' }}>
+              <table className="dashboard-table" style={{ margin: 0 }}>
+                <thead>
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '3rem' }}>
-                      無團隊數據紀錄。
-                    </td>
+                    <th>團隊名稱</th>
+                    <th>Time to First Value (首個價值交付時間)</th>
+                    <th>Versions Done (交付版本數量)</th>
+                    <th>Avg Cycle Time (平均週期時間)</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {dashboardData.map((d, idx) => (
+                    <tr key={idx}>
+                      <td style={{ fontWeight: 'bold' }}>{d.name}</td>
+                      <td>{d.timeToFirstValue}</td>
+                      <td style={{ color: 'var(--accent)', fontWeight: 'bold' }}>{d.versionsDone}</td>
+                      <td>{d.avgCycleTime}</td>
+                    </tr>
+                  ))}
+                  {dashboardData.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '3rem' }}>
+                        無團隊數據紀錄。
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         );
 

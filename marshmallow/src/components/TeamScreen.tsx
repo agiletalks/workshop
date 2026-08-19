@@ -333,14 +333,14 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
   // Render attention screen (T04 / T08)
   if (showAttentionMode) {
     let title = '請看大螢幕';
-    let subtitle = '引導講師正在講解課程，請暫停手邊討論並專注於主投影幕。';
+    let subtitle = '請專注看前方大螢幕投影。';
 
     if (workshop.status === 'ROUND_1_FROZEN') {
       title = '第一輪挑戰結束';
-      subtitle = '時間到！手放開，請專注看大螢幕，與講師一起進行第一輪回顧。';
+      subtitle = '時間到！手放開，請專注看大螢幕。';
     } else if (workshop.status === 'ROUND_2_FROZEN' || workshop.status === 'RESULTS' || workshop.status === 'COMPLETED') {
-      title = '工作坊挑戰完成';
-      subtitle = `恭喜！你們一共交付了 ${teamVersions.length} 個產品版本。現在請專注大螢幕查看即時效能指標。`;
+      title = '挑戰結束';
+      subtitle = `恭喜！本輪共交付 ${teamVersions.length} 個版本，請看大螢幕查看各組數據指標。`;
     }
 
     return (
@@ -412,7 +412,7 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
           <div className="card">
             <h2 style={{ marginBottom: '0.5rem' }}>剛才六分鐘，你們在做什麼？</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: 1.4 }}>
-              請選擇或輸入你們剛才完成第一輪挑戰中花費最多時間的活動（最多 5 個），大螢幕上將會即時匯總所有小組的結果！
+              請選擇剛才第一輪中，你們最花時間的活動（最多 5 個，大螢幕將即時呈現統計結果）：
             </p>
 
             {/* Current Tags */}
