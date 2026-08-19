@@ -1180,18 +1180,35 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
       case 'P29':
         return (
-          <div style={{ maxWidth: '900px', textAlign: 'left', margin: '0 auto' }}>
-            <h1 style={{ fontSize: '3.5rem', color: 'var(--accent)', marginBottom: '3.5rem', textAlign: 'center' }}>明天回到工作現場：</h1>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              <div style={{ fontSize: '2.2rem', fontWeight: 600 }}>
-                1. 我們多久才會產生第一個真正可用的成果？ (Time to Value)
+          <div style={{ maxWidth: '850px', width: '100%', margin: '0 auto', textAlign: 'left' }}>
+            <h1 style={{ fontSize: '3.8rem', color: 'var(--accent)', marginBottom: '3.5rem', textAlign: 'center', fontWeight: 800 }}>在我公司：</h1>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', paddingLeft: '2.5rem', borderLeft: '3px solid rgba(255,255,255,0.1)' }}>
+              
+              {/* Question 1 */}
+              <div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-mono)' }}>Time to Value</div>
+                <div style={{ fontSize: '2.4rem', fontWeight: 700, color: '#fff', marginTop: '0.25rem', lineHeight: 1.3 }}>
+                  我們多久才會產生第一個真正可用的成果？
+                </div>
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 600 }}>
-                2. 我們如何知道自己真的有進展？ (Evidence of Progress)
+
+              {/* Question 2 */}
+              <div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-mono)' }}>Evidence of Progress</div>
+                <div style={{ fontSize: '2.4rem', fontWeight: 700, color: '#fff', marginTop: '0.25rem', lineHeight: 1.3 }}>
+                  我們如何知道自己真的有進展？
+                </div>
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 600 }}>
-                3. 市場改變之後，我們多久能交出下一個版本？ (Responding to Change)
+
+              {/* Question 3 */}
+              <div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-mono)' }}>Responding to Change</div>
+                <div style={{ fontSize: '2.4rem', fontWeight: 700, color: '#fff', marginTop: '0.25rem', lineHeight: 1.3 }}>
+                  市場改變之後，我們多久能交出下一個版本？
+                </div>
               </div>
+
             </div>
           </div>
         );
