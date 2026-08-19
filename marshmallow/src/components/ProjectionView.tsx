@@ -234,7 +234,13 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       if (!workshop.round1StartedAt) { updates.round1StartedAt = Date.now(); updates.round1RemainingMs = workshop.round1DurationSeconds * 1000; }
     } else if (targetScreen.id === 'P16') {
       updates.status = 'ROUND_2_ACTIVE';
-      if (!workshop.round2StartedAt) { updates.round2StartedAt = Date.now(); updates.round2RemainingMs = workshop.round2DurationSeconds * 1000; }
+      if (!workshop.round2StartedAt) { 
+        updates.round2StartedAt = Date.now(); 
+        updates.round2RemainingMs = workshop.round2DurationSeconds * 1000; 
+      }
+      if (!workshop.round2FirstStartedAt) {
+        updates.round2FirstStartedAt = updates.round2StartedAt || Date.now();
+      }
     } else {
       updates.status = targetScreen.state as WorkshopStatus;
     }
@@ -257,7 +263,13 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       else { updates.round2StartedAt = null; updates.round2PausedAt = Date.now(); updates.round2RemainingMs = newRemaining; }
     } else {
       if (isRound1) { updates.round1StartedAt = Date.now(); updates.round1PausedAt = null; }
-      else { updates.round2StartedAt = Date.now(); updates.round2PausedAt = null; }
+      else { 
+        updates.round2StartedAt = Date.now(); 
+        updates.round2PausedAt = null; 
+        if (!workshop.round2FirstStartedAt) {
+          updates.round2FirstStartedAt = Date.now();
+        }
+      }
     }
     await updateWorkshopState(workshopId, updates);
   };
@@ -300,7 +312,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
     if (!doubleConfirm) return;
     setIsResetting(true);
     try {
-      await updateWorkshopState(workshopId, { status: 'SETUP', round1StartedAt: null, round1PausedAt: null, round1RemainingMs: null, round2StartedAt: null, round2PausedAt: null, round2RemainingMs: null, currentProjectionScreen: 'P01', currentRevealIndex: 0 });
+      await updateWorkshopState(workshopId, { status: 'SETUP', round1StartedAt: null, round1PausedAt: null, round1RemainingMs: null, round2StartedAt: null, round2PausedAt: null, round2RemainingMs: null, round2FirstStartedAt: null, currentProjectionScreen: 'P01', currentRevealIndex: 0 });
       const DB_NAME = 'marshmallow_workshop_db';
       const request = indexedDB.open(DB_NAME);
       request.onsuccess = (e) => {
@@ -331,10 +343,11 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       const teamVersions = versions.filter(v => v.teamId === t.id && v.syncStatus !== 'error');
       
       let timeToFirstValue = '—';
-      if (workshop.round2StartedAt) {
+      const round2StartEpoch = workshop.round2FirstStartedAt || workshop.round2StartedAt;
+      if (round2StartEpoch) {
         const v1 = teamVersions.find(v => v.versionNumber === 1);
         if (v1) {
-          const diffMs = v1.completedAt - workshop.round2StartedAt;
+          const diffMs = v1.completedAt - round2StartEpoch;
           const diffSec = Math.floor(diffMs / 1000);
           timeToFirstValue = `${Math.floor(diffSec / 60)}分${diffSec % 60}秒`;
         }
@@ -349,7 +362,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         const sortedVersions = [...teamVersions].sort((a, b) => a.versionNumber - b.versionNumber);
 
         sortedVersions.forEach((v) => {
-          let cycleStart = workshop.round2StartedAt || 0;
+          let cycleStart = round2StartEpoch || 0;
           if (v.versionNumber > 1) {
             const prev = sortedVersions.find(p => p.versionNumber === v.versionNumber - 1);
             if (prev) {
@@ -388,8 +401,9 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       .sort((a, b) => a.versionNumber - b.versionNumber);
 
     return teamVersions.map((v) => {
+      const round2StartEpoch = workshop.round2FirstStartedAt || workshop.round2StartedAt;
       const start = v.versionNumber === 1 
-        ? (workshop.round2StartedAt || v.createdAt) 
+        ? (round2StartEpoch || v.createdAt) 
         : (teamVersions.find(p => p.versionNumber === v.versionNumber - 1)?.completedAt || v.createdAt);
       
       const cycleSec = Math.round((v.completedAt - start) / 1000);
@@ -895,9 +909,6 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         );
 
       case 'P16': {
-        const activeTeamCount = teams.filter(t => Date.now() - t.lastSeenAt < 15000).length;
-        const totalVersionsDone = versions.filter(v => v.syncStatus !== 'error').length;
-        
         const versionDistribution = Array(11).fill(0);
         teams.forEach(t => {
           const seq = t.currentChallengeSequence;
@@ -909,54 +920,37 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         const isR2Paused = workshop.round2PausedAt !== null;
 
         return (
-          <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
-            <h1 style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '2rem', fontWeight: 800, textAlign: 'center' }}>
+          <div style={{ width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
+            <h1 style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '2.5rem', fontWeight: 800, textAlign: 'center' }}>
               RESPOND TO THE MARKET
             </h1>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr', gap: '2.5rem', alignItems: 'stretch' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '3rem', alignItems: 'stretch' }}>
               
               {/* Column 1: Countdown Timer & Action Controls */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.3rem', color: 'rgba(255,255,255,0.6)', margin: 0 }}>⏱ 剩餘時間</h3>
-                <div className={`timer-huge ${timeLeft <= 30 ? 'frozen' : ''}`} style={{ fontSize: '6.5rem', margin: '1rem 0' }}>
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2.5rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1.4rem', color: 'rgba(255,255,255,0.6)', margin: 0 }}>⏱ 剩餘時間</h3>
+                <div className={`timer-huge ${timeLeft <= 30 ? 'frozen' : ''}`} style={{ fontSize: '7.5rem', margin: '1.5rem 0' }}>
                   {formatTime(timeLeft)}
                 </div>
                 {!isReadOnly && (
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', width: '100%' }}>
-                    <button className="btn btn-outline btn-control-sm" style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem', opacity: 0.5 }} onClick={toggleTimer}>
+                  <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', width: '100%' }}>
+                    <button className="btn btn-outline btn-control-sm" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem', opacity: 0.5 }} onClick={toggleTimer}>
                       {isR2Paused ? '▶ 繼續' : '⏸ 暫停'}
                     </button>
-                    <button className="btn btn-outline btn-control-sm" style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem', opacity: 0.5 }} onClick={handleRewind}>
+                    <button className="btn btn-outline btn-control-sm" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem', opacity: 0.5 }} onClick={handleRewind}>
                       ↩ 重設
                     </button>
-                    <button className="btn btn-outline btn-control-sm btn-danger-hover" style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem', opacity: 0.5 }} onClick={endRoundEarly}>
+                    <button className="btn btn-outline btn-control-sm btn-danger-hover" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem', opacity: 0.5 }} onClick={endRoundEarly}>
                       ⏹ 中止
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Column 2: Core Key Metrics */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'space-between' }}>
-                <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                  <div style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '0.5rem' }}>目前連線團隊</div>
-                  <div style={{ fontSize: '4.2rem', fontWeight: 800, color: 'var(--accent)' }}>
-                    {activeTeamCount} <span style={{ fontSize: '1.8rem', fontWeight: 500, opacity: 0.5 }}>/ {teams.length}</span>
-                  </div>
-                </div>
-                
-                <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                  <div style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '0.5rem' }}>已交付版本總數</div>
-                  <div style={{ fontSize: '4.5rem', fontWeight: 800, color: 'var(--success)' }}>
-                    {totalVersionsDone}
-                  </div>
-                </div>
-              </div>
-
-              {/* Column 3: Team Progress Distribution */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ color: 'var(--accent)', fontSize: '1.3rem', marginBottom: '1.5rem', marginTop: 0, fontWeight: 700 }}>
+              {/* Column 2: Team Progress Distribution */}
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem 2.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ color: 'var(--accent)', fontSize: '1.4rem', marginBottom: '1.5rem', marginTop: 0, fontWeight: 700 }}>
                   📈 團隊進度分佈 (各版本挑戰中組數)
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1, justifyContent: 'center' }}>
@@ -964,12 +958,12 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
                     const count = versionDistribution[v] || 0;
                     const barPercent = teams.length > 0 ? (count / teams.length) * 100 : 0;
                     return (
-                      <div key={v} style={{ display: 'flex', alignItems: 'center', gap: '1rem', lineHeight: 1.2 }}>
-                        <span style={{ minWidth: '35px', fontWeight: 600, fontSize: '0.95rem', color: 'rgba(255,255,255,0.6)' }}>C{v}</span>
-                        <div style={{ flex: 1, height: '12px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', overflow: 'hidden' }}>
+                      <div key={v} style={{ display: 'flex', alignItems: 'center', gap: '1rem', lineHeight: 1.25 }}>
+                        <span style={{ minWidth: '35px', fontWeight: 600, fontSize: '1rem', color: 'rgba(255,255,255,0.6)' }}>C{v}</span>
+                        <div style={{ flex: 1, height: '14px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', overflow: 'hidden' }}>
                           <div style={{ width: `${barPercent}%`, height: '100%', background: 'var(--accent)', borderRadius: '9999px', transition: 'width 0.5s ease' }}></div>
                         </div>
-                        <span style={{ minWidth: '25px', textAlign: 'right', fontWeight: 'bold', fontSize: '0.95rem', color: count > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.4)' }}>
+                        <span style={{ minWidth: '25px', textAlign: 'right', fontWeight: 'bold', fontSize: '1rem', color: count > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.4)' }}>
                           {count}
                         </span>
                       </div>

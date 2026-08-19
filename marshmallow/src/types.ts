@@ -28,6 +28,7 @@ export interface Workshop {
   round2StartedAt: number | null; // epoch timestamp in ms
   round2PausedAt: number | null;  // epoch timestamp in ms
   round2RemainingMs: number | null; // cached remaining time when paused
+  round2FirstStartedAt: number | null; // persistent epoch timestamp of first round 2 start
   currentProjectionScreen: string; // P01, P02, etc.
   currentRevealIndex: number; // For progressive reveals on teaching slides
   challengeSetId: string;

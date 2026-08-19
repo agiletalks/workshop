@@ -355,6 +355,7 @@ export async function createWorkshop(name: string, joinCode: string): Promise<Wo
     round2StartedAt: null,
     round2PausedAt: null,
     round2RemainingMs: null,
+    round2FirstStartedAt: null,
     currentProjectionScreen: 'P01',
     currentRevealIndex: 0,
     challengeSetId: 'marshmallow_agile_10',
