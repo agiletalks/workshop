@@ -45,6 +45,9 @@ function App() {
 
       if (roleParam === 'projection' || roleParam === 'team') {
         setRole(roleParam);
+      } else if (wsIdParam) {
+        // Default to student team view if wsId is present but role is not specified
+        setRole('team');
       } else {
         setRole(null);
       }
