@@ -892,7 +892,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
           </div>
         );
 
-      case 'P16':
+      case 'P16': {
         const activeTeamCount = teams.filter(t => Date.now() - t.lastSeenAt < 15000).length;
         const totalVersionsDone = versions.filter(v => v.syncStatus !== 'error').length;
         
@@ -907,49 +907,67 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         const isR2Paused = workshop.round2PausedAt !== null;
 
         return (
-          <div style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '3rem', opacity: 0.8 }}>RESPOND TO THE MARKET</h1>
-            <div className={`timer-huge ${timeLeft <= 30 ? 'frozen' : ''}`}>{formatTime(timeLeft)}</div>
+          <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+            <h1 style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '2rem', fontWeight: 800, textAlign: 'center' }}>
+              RESPOND TO THE MARKET
+            </h1>
             
-            {!isReadOnly && (
-              <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginTop: '1rem', marginBottom: '2rem' }}>
-                <button className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem' }} onClick={toggleTimer}>
-                  {isR2Paused ? '▶ 繼續計時' : '⏸ 暫停計時'}
-                </button>
-                <button className="btn btn-outline" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem' }} onClick={handleRewind}>
-                  ↩ 重設時間
-                </button>
-                <button className="btn btn-danger" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem', background: 'var(--error)', borderColor: 'var(--error)' }} onClick={endRoundEarly}>
-                  ⏹ 提前中止
-                </button>
-              </div>
-            )}
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', marginTop: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'center' }}>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem 2rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ fontSize: '1.1rem', opacity: 0.6 }}>目前連線團隊</div>
-                  <div style={{ fontSize: '3.5rem', fontWeight: 800, color: 'var(--accent)' }}>{activeTeamCount} / {teams.length}</div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem 2rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ fontSize: '1.1rem', opacity: 0.6 }}>已交付版本總數</div>
-                  <div style={{ fontSize: '3.5rem', fontWeight: 800, color: 'var(--success)' }}>{totalVersionsDone}</div>
-                </div>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr', gap: '2.5rem', alignItems: 'stretch' }}>
               
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                <h3 style={{ color: 'var(--accent)', fontSize: '1.4rem', marginBottom: '1.5rem' }}>團隊進度分佈</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              {/* Column 1: Countdown Timer & Action Controls */}
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1.3rem', color: 'rgba(255,255,255,0.6)', margin: 0 }}>⏱ 剩餘時間</h3>
+                <div className={`timer-huge ${timeLeft <= 30 ? 'frozen' : ''}`} style={{ fontSize: '6.5rem', margin: '1rem 0' }}>
+                  {formatTime(timeLeft)}
+                </div>
+                {!isReadOnly && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', maxWidth: '200px' }}>
+                    <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '1.1rem' }} onClick={toggleTimer}>
+                      {isR2Paused ? '▶ 繼續計時' : '⏸ 暫停計時'}
+                    </button>
+                    <button className="btn btn-outline" style={{ width: '100%', padding: '0.75rem', fontSize: '1.1rem' }} onClick={handleRewind}>
+                      ↩ 重設時間
+                    </button>
+                    <button className="btn btn-danger" style={{ width: '100%', padding: '0.75rem', fontSize: '1.1rem', background: 'var(--error)', borderColor: 'var(--error)' }} onClick={endRoundEarly}>
+                      ⏹ 提前中止
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Column 2: Core Key Metrics */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <div style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '0.5rem' }}>目前連線團隊</div>
+                  <div style={{ fontSize: '4.2rem', fontWeight: 800, color: 'var(--accent)' }}>
+                    {activeTeamCount} <span style={{ fontSize: '1.8rem', fontWeight: 500, opacity: 0.5 }}>/ {teams.length}</span>
+                  </div>
+                </div>
+                
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <div style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '0.5rem' }}>已交付版本總數</div>
+                  <div style={{ fontSize: '4.5rem', fontWeight: 800, color: 'var(--success)' }}>
+                    {totalVersionsDone}
+                  </div>
+                </div>
+              </div>
+
+              {/* Column 3: Team Progress Distribution */}
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ color: 'var(--accent)', fontSize: '1.3rem', marginBottom: '1.5rem', marginTop: 0, fontWeight: 700 }}>
+                  📈 團隊進度分佈 (各版本挑戰中組數)
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1, justifyContent: 'center' }}>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => {
-                    const count = versionDistribution[v];
+                    const count = versionDistribution[v] || 0;
                     const barPercent = teams.length > 0 ? (count / teams.length) * 100 : 0;
                     return (
-                      <div key={v} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <span style={{ minWidth: '40px', fontWeight: 'bold' }}>C{v}</span>
-                        <div style={{ flex: 1, height: '14px', background: 'rgba(255,255,255,0.1)', borderRadius: '9999px', overflow: 'hidden' }}>
+                      <div key={v} style={{ display: 'flex', alignItems: 'center', gap: '1rem', lineHeight: 1.2 }}>
+                        <span style={{ minWidth: '35px', fontWeight: 600, fontSize: '0.95rem', color: 'rgba(255,255,255,0.6)' }}>C{v}</span>
+                        <div style={{ flex: 1, height: '12px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', overflow: 'hidden' }}>
                           <div style={{ width: `${barPercent}%`, height: '100%', background: 'var(--accent)', borderRadius: '9999px', transition: 'width 0.5s ease' }}></div>
                         </div>
-                        <span style={{ minWidth: '30px', textAlign: 'right', fontWeight: 'bold', color: count > 0 ? 'var(--accent)' : 'inherit' }}>
+                        <span style={{ minWidth: '25px', textAlign: 'right', fontWeight: 'bold', fontSize: '0.95rem', color: count > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.4)' }}>
                           {count}
                         </span>
                       </div>
@@ -957,9 +975,11 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
                   })}
                 </div>
               </div>
+
             </div>
           </div>
         );
+      }
 
       case 'P17':
         return (
