@@ -643,62 +643,52 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         const maxFreq = uniqueTags.length > 0 ? Math.max(...Object.values(tagFrequencies)) : 1;
 
         return (
-          <div style={{ maxWidth: '950px', width: '100%', margin: '0 auto', textAlign: 'left' }}>
-            <h1 style={{ fontSize: '3.5rem', color: 'var(--accent)', marginBottom: '3rem', textAlign: 'center', fontWeight: 800 }}>剛才六分鐘，你們在做什麼？</h1>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '3rem', marginTop: '1rem', alignItems: 'start' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 700, padding: '2rem', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', lineHeight: 1.5 }}>
-                  <span style={{ color: 'var(--primary)', display: 'block', marginBottom: '0.75rem' }}>如果還沒有可運作的產品：</span>
-                  <div style={{ fontSize: '1.4rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500, lineHeight: 1.6 }}>
-                    我們是否有產出任何價值？還是把時間花在了計畫與零件的製作？
-                  </div>
+          <div style={{ maxWidth: '850px', width: '100%', margin: '0 auto', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '3.5rem', color: 'var(--accent)', marginBottom: '3rem', fontWeight: 800 }}>剛才六分鐘，你們在做什麼？</h1>
+            <div style={{ padding: '2.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px dashed rgba(255,255,255,0.1)', minHeight: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+              {uniqueTags.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.4)', fontSize: '1.3rem', fontWeight: 500 }}>
+                  等待學員輸入活動關鍵字... 💬
                 </div>
-              </div>
-              <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)', minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                {uniqueTags.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.4)', fontSize: '1.3rem', fontWeight: 500 }}>
-                    等待學員輸入活動關鍵字... 💬
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem 1.5rem', justifyContent: 'center', alignItems: 'center', padding: '0.5rem' }}>
-                    {uniqueTags.map((tag) => {
-                      const freq = tagFrequencies[tag];
-                      const weight = freq / maxFreq; // 0 to 1
-                      const fontSize = `${1.4 + weight * 1.6}rem`;
-                      
-                      let color = 'rgba(255,255,255,0.6)';
-                      if (weight === 1) {
-                        color = 'var(--accent)'; // Red
-                      } else if (weight > 0.5) {
-                        color = 'var(--primary)'; // Orange
-                      } else if (weight > 0.2) {
-                        color = '#ffffff'; // White
-                      }
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem 2rem', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+                  {uniqueTags.map((tag) => {
+                    const freq = tagFrequencies[tag];
+                    const weight = freq / maxFreq; // 0 to 1
+                    const fontSize = `${1.6 + weight * 1.8}rem`;
+                    
+                    let color = 'rgba(255,255,255,0.6)';
+                    if (weight === 1) {
+                      color = 'var(--accent)'; // Red
+                    } else if (weight > 0.5) {
+                      color = 'var(--primary)'; // Orange
+                    } else if (weight > 0.2) {
+                      color = '#ffffff'; // White
+                    }
 
-                      return (
-                        <span
-                          key={tag}
-                          style={{
-                            fontSize,
-                            fontWeight: weight > 0.4 ? 800 : 500,
-                            color,
-                            transition: 'all 0.3s ease',
-                            display: 'inline-block',
-                            padding: '0.2rem 0.5rem'
-                          }}
-                        >
-                          {tag}
-                          {freq > 1 && (
-                            <span style={{ fontSize: '0.85rem', verticalAlign: 'super', marginLeft: '2px', opacity: 0.65, fontWeight: 'bold' }}>
-                              {freq}
-                            </span>
-                          )}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                    return (
+                      <span
+                        key={tag}
+                        style={{
+                          fontSize,
+                          fontWeight: weight > 0.4 ? 800 : 500,
+                          color,
+                          transition: 'all 0.3s ease',
+                          display: 'inline-block',
+                          padding: '0.2rem 0.5rem'
+                        }}
+                      >
+                        {tag}
+                        {freq > 1 && (
+                          <span style={{ fontSize: '0.9rem', verticalAlign: 'super', marginLeft: '2px', opacity: 0.65, fontWeight: 'bold' }}>
+                            {freq}
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         );
