@@ -64,29 +64,36 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
     const unsubTeams = subscribeToTeams(workshopId, setTeams);
     const unsubVersions = subscribeToVersions(workshopId, setVersions);
 
-    // Restore team session if saved locally
-    const savedTeamId = localStorage.getItem(`ws_${workshopId}_teamId`);
-    if (savedTeamId) {
-      // Fetch latest team info
-      const DB_NAME = 'marshmallow_workshop_db';
-      const req = indexedDB.open(DB_NAME);
-      req.onsuccess = (e) => {
-        const idb = (e.target as any).result;
-        const tx = idb.transaction('teams', 'readonly');
-        tx.objectStore('teams').get(savedTeamId).then((t: Team | undefined) => {
-          if (t) {
-            setTeam(t);
-          }
-        });
-      };
-    }
-
     return () => {
       unsubWS();
       unsubTeams();
       unsubVersions();
     };
   }, [workshopId]);
+
+  // Restore team session and screenState from local storage using synced teams list
+  useEffect(() => {
+    const savedTeamId = localStorage.getItem(`ws_${workshopId}_teamId`);
+    if (savedTeamId && teams.length > 0 && !team) {
+      const found = teams.find(t => t.id === savedTeamId);
+      if (found) {
+        setTeam(found);
+        
+        // Restore screen state
+        const savedScreenState = localStorage.getItem(`ws_${workshopId}_screenState`);
+        if (savedScreenState === 'T05' || savedScreenState === 'T06' || savedScreenState === 'T07') {
+          setScreenState(savedScreenState);
+        }
+      }
+    }
+  }, [teams, team, workshopId]);
+
+  // Save screenState to localStorage whenever it changes
+  useEffect(() => {
+    if (team) {
+      localStorage.setItem(`ws_${workshopId}_screenState`, screenState);
+    }
+  }, [screenState, team, workshopId]);
 
   // Sync active team state with teams collection
   useEffect(() => {
@@ -175,6 +182,13 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
       const newTeam = await joinTeam(workshopId, teamName, recorderName);
       setTeam(newTeam);
       localStorage.setItem(`ws_${workshopId}_teamId`, newTeam.id);
+      
+      const savedScreenState = localStorage.getItem(`ws_${workshopId}_screenState`);
+      if (savedScreenState === 'T05' || savedScreenState === 'T06' || savedScreenState === 'T07') {
+        setScreenState(savedScreenState);
+      } else {
+        setScreenState('T05');
+      }
     } catch (e) {
       console.error(e);
       alert('加入失敗，請重試。');
@@ -651,8 +665,16 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
 
           <div className="team-main" style={{ justifyContent: 'flex-start', overflowY: 'auto' }}>
             
+            {/* Show Challenge Title and Description so they can read it while filling DoD */}
+            <div style={{ background: 'rgba(255,152,0,0.04)', border: '1px solid rgba(255,152,0,0.15)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', width: '100%', boxSizing: 'border-box' }}>
+              <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.15rem', color: 'var(--accent)', fontWeight: 800 }}>{currentChallenge.title}</h3>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                {currentChallenge.description}
+              </p>
+            </div>
+
             {/* Checklist 1: Acceptance Criteria */}
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.5rem', width: '100%' }}>
               <span className="form-label" style={{ fontSize: '0.95rem' }}>1. 逐項實測產品驗收條件 (自我檢驗)：</span>
               <div className="checklist">
                 {currentChallenge.acceptanceCriteria.map((ac, idx) => (

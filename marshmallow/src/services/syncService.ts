@@ -377,6 +377,48 @@ export async function createWorkshop(name: string, joinCode: string): Promise<Wo
 
 // 6. Join Team (Team Recorder)
 export async function joinTeam(workshopId: string, teamName: string, recorderName: string): Promise<Team> {
+  const localIDB = await getIDB();
+  
+  // 1. Check local IndexedDB first for a matching team in this workshop
+  const allTeamsLocal = await localIDB.getAll('teams');
+  const matchedLocal = allTeamsLocal.find(t => 
+    t.workshopId === workshopId &&
+    t.name.trim().toLowerCase() === teamName.trim().toLowerCase() &&
+    t.recorderName.trim().toLowerCase() === recorderName.trim().toLowerCase()
+  );
+
+  if (matchedLocal) {
+    console.log('[Sync Service] Reconnecting to existing team (Local DB):', matchedLocal);
+    return matchedLocal;
+  }
+
+  // 2. Check Firestore if Firebase is configured
+  if (isFirebaseConfigured && db) {
+    try {
+      const colRef = collection(db, 'workshops', workshopId, 'teams');
+      const snap = await getDocs(colRef);
+      let firestoreMatched: Team | null = null;
+      snap.forEach((docSnap) => {
+        const t = docSnap.data() as Team;
+        if (
+          t.name.trim().toLowerCase() === teamName.trim().toLowerCase() &&
+          t.recorderName.trim().toLowerCase() === recorderName.trim().toLowerCase()
+        ) {
+          firestoreMatched = t;
+        }
+      });
+      
+      if (firestoreMatched) {
+        console.log('[Sync Service] Reconnecting to existing team (Firestore):', firestoreMatched);
+        await localIDB.put('teams', firestoreMatched);
+        return firestoreMatched;
+      }
+    } catch (e) {
+      console.error('[Sync Service] Error checking existing teams in Firestore:', e);
+    }
+  }
+
+  // 3. Create new Team if no match found
   const newTeam: Team = {
     id: `team_${Math.random().toString(36).substring(2, 9)}`,
     workshopId,
@@ -387,7 +429,6 @@ export async function joinTeam(workshopId: string, teamName: string, recorderNam
     lastSeenAt: Date.now()
   };
 
-  const localIDB = await getIDB();
   await localIDB.put('teams', newTeam);
 
   // Read all teams to update layout
