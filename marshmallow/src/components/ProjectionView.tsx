@@ -15,8 +15,8 @@ export const PROJECTION_SCREENS = [
   { id: 'P03', title: 'P03 — Materials', state: 'ROUND_1_BRIEFING', maxReveal: 0 },
   { id: 'P05', title: 'P05 — Round 1 Timer', state: 'ROUND_1_ACTIVE', maxReveal: 0 },
   { id: 'P06', title: 'P06 — STOP', state: 'ROUND_1_FROZEN', maxReveal: 0 },
-  { id: 'P07', title: 'P07 — Working Product?', state: 'DEBRIEF_1', maxReveal: 1 },
-  { id: 'P08', title: 'P08 — What Were You Doing?', state: 'DEBRIEF_1', maxReveal: 1 },
+  { id: 'P07', title: 'P07 — What Were You Doing?', state: 'DEBRIEF_1', maxReveal: 1 },
+  { id: 'P08', title: 'P08 — Working Product?', state: 'DEBRIEF_1', maxReveal: 1 },
   { id: 'P09', title: 'P09 — Activity vs Progress', state: 'DEBRIEF_1', maxReveal: 3 },
   { id: 'P10', title: 'P10 — Big-Bang Development', state: 'DEBRIEF_1', maxReveal: 1 },
   { id: 'P11', title: 'P11 — Iterative Development', state: 'DEBRIEF_1', maxReveal: 0 },
@@ -575,63 +575,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
           </div>
         );
 
-      case 'P07':
-        const r1WorkingCount = getRound1EvidenceCount();
-        return (
-          <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '3.2rem', marginBottom: '2.5rem' }}>現在有多少組，已經有一個真正可以使用的產品？</h1>
-            {isRevealed(1) ? (
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '2.5rem', borderRadius: '24px', display: 'inline-block', width: '100%' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'center' }}>
-                  <div style={{ textAlign: 'left' }}>
-                    <h2 style={{ fontSize: '2.2rem', color: 'var(--accent)', marginBottom: '1.5rem' }}>
-                      符合合格定義：可以自行站立 + 棉花糖位於頂端
-                    </h2>
-                    <div style={{ fontSize: '6rem', fontWeight: 800, color: '#fff' }}>
-                      {r1WorkingCount} <span style={{ fontSize: '2.5rem', fontWeight: 500, opacity: 0.5 }}>/ {teams.length} 組</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <img 
-                      src={outcomeImgUrl} 
-                      alt="Outcome Example" 
-                      style={{ maxWidth: '100%', maxHeight: '35vh', borderRadius: '12px', boxShadow: 'var(--shadow-md)' }} 
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : isReadOnly ? (
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2.5rem 4rem', borderRadius: '16px', display: 'inline-block', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                <h3 style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '1.5rem', fontWeight: 500 }}>
-                  ⏳ 等待講師統計並登記合格組數結果...
-                </h3>
-              </div>
-            ) : (
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2.5rem 4rem', borderRadius: '16px', display: 'inline-block', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                <h3 style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '1.25rem', fontSize: '1.4rem' }}>登記第一輪合格產品組數：</h3>
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', alignItems: 'center' }}>
-                  <input
-                    type="number"
-                    min="0"
-                    max={teams.length}
-                    value={round1Evidence}
-                    onChange={(e) => setRound1Evidence(e.target.value)}
-                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '0.6rem 1rem', fontSize: '1.6rem', width: '100px', borderRadius: '8px', textAlign: 'center', outline: 'none' }}
-                  />
-                  <button 
-                    className="btn btn-accent" 
-                    style={{ padding: '0.8rem 1.8rem', fontSize: '1.1rem' }}
-                    onClick={handleSaveRound1Evidence}
-                  >
-                    確認登記並顯示
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-
-      case 'P08': {
+      case 'P07': {
         const allActivities = teams.flatMap(t => t.r1Activities || []);
         const tagFrequencies = allActivities.reduce((acc, curr) => {
           const key = curr.trim();
@@ -690,6 +634,63 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
                 </div>
               )}
             </div>
+          </div>
+        );
+      }
+
+      case 'P08': {
+        const r1WorkingCount = getRound1EvidenceCount();
+        return (
+          <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '3.2rem', marginBottom: '2.5rem' }}>有多少組「已經做好了」？</h1>
+            {isRevealed(1) ? (
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '2.5rem', borderRadius: '24px', display: 'inline-block', width: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'center' }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <h2 style={{ fontSize: '2.2rem', color: 'var(--accent)', marginBottom: '1.5rem' }}>
+                      符合合格定義：可以自行站立 + 棉花糖位於頂端
+                    </h2>
+                    <div style={{ fontSize: '6rem', fontWeight: 800, color: '#fff' }}>
+                      {r1WorkingCount} <span style={{ fontSize: '2.5rem', fontWeight: 500, opacity: 0.5 }}>/ {teams.length} 組</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <img 
+                      src={outcomeImgUrl} 
+                      alt="Outcome Example" 
+                      style={{ maxWidth: '100%', maxHeight: '35vh', borderRadius: '12px', boxShadow: 'var(--shadow-md)' }} 
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : isReadOnly ? (
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2.5rem 4rem', borderRadius: '16px', display: 'inline-block', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <h3 style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '1.5rem', fontWeight: 500 }}>
+                  ⏳ 等待講師統計並登記合格組數結果...
+                </h3>
+              </div>
+            ) : (
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2.5rem 4rem', borderRadius: '16px', display: 'inline-block', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <h3 style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '1.25rem', fontSize: '1.4rem' }}>登記第一輪合格產品組數：</h3>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    min="0"
+                    max={teams.length}
+                    value={round1Evidence}
+                    onChange={(e) => setRound1Evidence(e.target.value)}
+                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '0.6rem 1rem', fontSize: '1.6rem', width: '100px', borderRadius: '8px', textAlign: 'center', outline: 'none' }}
+                  />
+                  <button 
+                    className="btn btn-accent" 
+                    style={{ padding: '0.8rem 1.8rem', fontSize: '1.1rem' }}
+                    onClick={handleSaveRound1Evidence}
+                  >
+                    確認登記並顯示
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
       }
