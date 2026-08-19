@@ -327,7 +327,8 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
     'COMPLETED'
   ];
 
-  const showAttentionMode = teachingStates.includes(workshop.status);
+  const isDebriefWithoutTags = workshop.status === 'DEBRIEF_1' && workshop.currentProjectionScreen !== 'P07';
+  const showAttentionMode = teachingStates.includes(workshop.status) || isDebriefWithoutTags;
 
   // Render attention screen (T04 / T08)
   if (showAttentionMode) {
