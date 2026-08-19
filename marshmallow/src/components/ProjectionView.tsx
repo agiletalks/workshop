@@ -1029,7 +1029,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         return (
           <div style={{ width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
             <h1 style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '0.5rem', fontWeight: 800 }}>
-              工作坊數據儀表板 (Live Results)
+              儀表板
             </h1>
             <p style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '1.5rem' }}>
               這份數據展示了各組在面對頻繁需求變更時的交付效能指標，不代表團隊間的排名。
