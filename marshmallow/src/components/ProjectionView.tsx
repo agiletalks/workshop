@@ -540,15 +540,15 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
             <div className={`timer-huge ${timeLeft <= 30 ? 'frozen' : ''}`}>{formatTime(timeLeft)}</div>
             <h2 style={{ fontSize: '2.8rem', color: 'var(--accent)' }}>建造最高且能自行站立的結構</h2>
             {!isReadOnly && (
-              <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginTop: '2rem' }}>
-                <button className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem' }} onClick={toggleTimer}>
-                  {isR1Paused ? '▶ 繼續計時' : '⏸ 暫停計時'}
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1.5rem' }}>
+                <button className="btn btn-outline btn-control-sm" style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem', opacity: 0.5 }} onClick={toggleTimer}>
+                  {isR1Paused ? '▶ 繼續' : '⏸ 暫停'}
                 </button>
-                <button className="btn btn-outline" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem' }} onClick={handleRewind}>
-                  ↩ 重設時間
+                <button className="btn btn-outline btn-control-sm" style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem', opacity: 0.5 }} onClick={handleRewind}>
+                  ↩ 重設
                 </button>
-                <button className="btn btn-danger" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem', background: 'var(--error)', borderColor: 'var(--error)' }} onClick={endRoundEarly}>
-                  ⏹ 提前中止
+                <button className="btn btn-outline btn-control-sm btn-danger-hover" style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem', opacity: 0.5 }} onClick={endRoundEarly}>
+                  ⏹ 中止
                 </button>
               </div>
             )}
@@ -921,15 +921,15 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
                   {formatTime(timeLeft)}
                 </div>
                 {!isReadOnly && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', maxWidth: '200px' }}>
-                    <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '1.1rem' }} onClick={toggleTimer}>
-                      {isR2Paused ? '▶ 繼續計時' : '⏸ 暫停計時'}
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', width: '100%' }}>
+                    <button className="btn btn-outline btn-control-sm" style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem', opacity: 0.5 }} onClick={toggleTimer}>
+                      {isR2Paused ? '▶ 繼續' : '⏸ 暫停'}
                     </button>
-                    <button className="btn btn-outline" style={{ width: '100%', padding: '0.75rem', fontSize: '1.1rem' }} onClick={handleRewind}>
-                      ↩ 重設時間
+                    <button className="btn btn-outline btn-control-sm" style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem', opacity: 0.5 }} onClick={handleRewind}>
+                      ↩ 重設
                     </button>
-                    <button className="btn btn-danger" style={{ width: '100%', padding: '0.75rem', fontSize: '1.1rem', background: 'var(--error)', borderColor: 'var(--error)' }} onClick={endRoundEarly}>
-                      ⏹ 提前中止
+                    <button className="btn btn-outline btn-control-sm btn-danger-hover" style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem', opacity: 0.5 }} onClick={endRoundEarly}>
+                      ⏹ 中止
                     </button>
                   </div>
                 )}
@@ -991,14 +991,55 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
       case 'P18':
         return (
-          <div style={{ maxWidth: '900px', textAlign: 'left', margin: '0 auto' }}>
-            <h1 style={{ fontSize: '3.5rem', color: 'var(--accent)', marginBottom: '3rem', textAlign: 'center' }}>挑戰回顧</h1>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 600 }}>• <strong>第一輪 (傳統開發)</strong>：原本預期有 18 分鐘，但在第 6 分鐘被緊急中斷（因為沒有任何可運作產品，被限期整改）。</div>
-              <div style={{ fontSize: '2rem', fontWeight: 600 }}>• <strong>第二輪 (敏捷開發)</strong>：剩餘的 12 分鐘被砍掉 2 分鐘（只剩 10 分鐘），並被要求以每分鐘為單位、進行頻繁的迭代交付。</div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 700, color: 'var(--accent)', marginTop: '1rem', textAlign: 'center' }}>
-                第二輪中，你們做出了什麼樣的產品演進？交付效能發生了什麼改變？
+          <div style={{ maxWidth: '1000px', width: '100%', margin: '0 auto', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '3.6rem', color: 'var(--accent)', marginBottom: '3rem', fontWeight: 800 }}>
+              挑戰回顧
+            </h1>
+            
+            {/* Comparison Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem', marginBottom: '3rem', alignItems: 'stretch' }}>
+              
+              {/* Round 1 Card */}
+              <div style={{ background: 'rgba(239, 68, 68, 0.03)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '2rem', borderRadius: '20px', textAlign: 'left' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
+                  <span style={{ fontSize: '2.5rem' }}>🐌</span>
+                  <h2 style={{ fontSize: '1.8rem', color: '#fff', margin: 0, fontWeight: 700 }}>
+                    第一輪：傳統開發
+                  </h2>
+                </div>
+                <div style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div>⏳ 預期時長：18 分鐘</div>
+                  <div style={{ color: 'var(--error)', fontWeight: 'bold' }}>⚠️ 實際狀況：第 6 分鐘被緊急中斷</div>
+                  <div style={{ fontSize: '1.1rem', opacity: 0.8, paddingLeft: '1.5rem', borderLeft: '2px solid rgba(239, 68, 68, 0.3)' }}>
+                    因沒有產出任何可運作的產品，被市場限期整改。
+                  </div>
+                </div>
               </div>
+
+              {/* Round 2 Card */}
+              <div style={{ background: 'rgba(34, 197, 94, 0.03)', border: '1px solid rgba(34, 197, 94, 0.2)', padding: '2rem', borderRadius: '20px', textAlign: 'left' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
+                  <span style={{ fontSize: '2.5rem' }}>⚡</span>
+                  <h2 style={{ fontSize: '1.8rem', color: '#fff', margin: 0, fontWeight: 700 }}>
+                    第二輪：敏捷開發
+                  </h2>
+                </div>
+                <div style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div>⏳ 挑戰時長：只剩 10 分鐘 (被縮減 2 分鐘)</div>
+                  <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>🚀 工作方式：頻繁迭代交付</div>
+                  <div style={{ fontSize: '1.1rem', opacity: 0.8, paddingLeft: '1.5rem', borderLeft: '2px solid rgba(34, 197, 94, 0.3)' }}>
+                    每分鐘發佈一次 Acceptance Criteria，進行高頻交付與驗收。
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom Highlight Question */}
+            <div style={{ background: 'rgba(255, 215, 0, 0.04)', border: '1px dashed var(--accent)', padding: '1.75rem 2.5rem', borderRadius: '16px', display: 'inline-block', width: '100%', boxSizing: 'border-box' }}>
+              <h2 style={{ fontSize: '1.8rem', color: 'var(--accent)', margin: 0, fontWeight: 700, lineHeight: 1.5 }}>
+                第二輪中，你們做出了什麼樣的產品演進？交付效能發生了什麼改變？
+              </h2>
             </div>
           </div>
         );
