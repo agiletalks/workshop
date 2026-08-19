@@ -23,7 +23,10 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
   // Registration fields
   const [teamName, setTeamName] = useState<string>('');
   const [recorderName, setRecorderName] = useState<string>('');
-  const [inputJoinCode, setInputJoinCode] = useState<string>('');
+  const [inputJoinCode, setInputJoinCode] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return (params.get('code') || '').toUpperCase();
+  });
   const [isJoining, setIsJoining] = useState<boolean>(false);
 
   // Active challenge state (T05 vs T06 vs T07)

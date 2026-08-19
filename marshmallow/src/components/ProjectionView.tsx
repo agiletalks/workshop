@@ -406,7 +406,9 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
   const selectedTeamHistory = getSelectedTeamHistory();
 
-  const joinUrl = `${window.location.origin}${window.location.pathname}?wsId=${workshopId}`;
+  const joinUrl = workshop 
+    ? `${window.location.origin}${window.location.pathname}?wsId=${workshopId}&code=${workshop.joinCode}` 
+    : `${window.location.origin}${window.location.pathname}?wsId=${workshopId}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(joinUrl)}`;
 
   const materialImgUrl = '/assets/workshop/material.jpg';
