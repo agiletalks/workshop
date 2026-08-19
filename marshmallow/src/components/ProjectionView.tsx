@@ -848,47 +848,124 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
 
       case 'P15':
         return (
-          <div style={{ textAlign: 'center' }}>
-            <h2 style={{ fontSize: '2.5rem', opacity: 0.7 }}>第二輪市場挑戰</h2>
-            <h1 style={{ fontSize: '5.5rem', color: 'var(--accent)', margin: '1rem 0 2rem' }}>RESPOND TO THE MARKET</h1>
-            <div style={{ background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', padding: '2.5rem 5rem', borderRadius: '20px', display: 'inline-block' }}>
-              {isReadOnly ? (
-                <>
-                  <div style={{ fontSize: '1.5rem', opacity: 0.6 }}>挑戰時間</div>
-                  <div style={{ fontSize: '5rem', fontWeight: 800, color: '#fff' }}>
-                    {Math.floor(workshop.round2DurationSeconds / 60)} 分鐘
-                  </div>
-                </>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ fontSize: '1.5rem', opacity: 0.6 }}>挑戰時間 (可調整)</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <button 
-                      className="btn btn-outline" 
-                      style={{ fontSize: '2rem', padding: '0.2rem 1.2rem', minWidth: '50px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: '8px', cursor: 'pointer' }}
-                      onClick={async () => {
-                        const next = Math.max(60, workshop.round2DurationSeconds - 60);
-                        await updateWorkshopState(workshopId, { round2DurationSeconds: next, round2RemainingMs: next * 1000 });
-                      }}
-                    >
-                      -
-                    </button>
-                    <span style={{ fontSize: '5rem', fontWeight: 800, color: 'var(--accent)', minWidth: '180px', display: 'inline-block' }}>
-                      {Math.floor(workshop.round2DurationSeconds / 60)} 分鐘
-                    </span>
-                    <button 
-                      className="btn btn-outline" 
-                      style={{ fontSize: '2rem', padding: '0.2rem 1.2rem', minWidth: '50px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: '8px', cursor: 'pointer' }}
-                      onClick={async () => {
-                        const next = workshop.round2DurationSeconds + 60;
-                        await updateWorkshopState(workshopId, { round2DurationSeconds: next, round2RemainingMs: next * 1000 });
-                      }}
-                    >
-                      +
-                    </button>
-                  </div>
+          <div style={{ width: '100%', maxWidth: '1150px', margin: '0 auto', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '2.5rem', fontWeight: 800 }}>
+              第二輪挑戰準備
+            </h1>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '3rem', alignItems: 'center' }}>
+              
+              {/* Left Column: Round 2 Settings & Intro */}
+              <div style={{ textAlign: 'left' }}>
+                <h2 style={{ fontSize: '2rem', color: '#fff', marginBottom: '0.5rem' }}>RESPOND TO THE MARKET</h2>
+                <p style={{ fontSize: '1.1rem', opacity: 0.6, marginBottom: '2rem' }}>
+                  請各位學員準備好手機，本輪挑戰將採取高頻迭代、頻繁交付的方式進行驗收。
+                </p>
+                
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.15)', padding: '2rem', borderRadius: '20px', display: 'inline-block', width: '100%' }}>
+                  {isReadOnly ? (
+                    <div>
+                      <div style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '0.5rem' }}>⏱️ 挑戰時間</div>
+                      <div style={{ fontSize: '4.5rem', fontWeight: 800, color: 'var(--accent)' }}>
+                        {Math.floor(workshop.round2DurationSeconds / 60)} 分鐘
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                      <div style={{ fontSize: '1.2rem', opacity: 0.6 }}>⏱️ 挑戰時間 (可增減)</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <button 
+                          className="btn btn-outline" 
+                          style={{ fontSize: '1.8rem', padding: '0.1rem 1rem', minWidth: '45px', borderRadius: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: '#fff' }}
+                          onClick={async () => {
+                            const next = Math.max(60, workshop.round2DurationSeconds - 60);
+                            await updateWorkshopState(workshopId, { round2DurationSeconds: next, round2RemainingMs: next * 1000 });
+                          }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: '4rem', fontWeight: 800, color: 'var(--accent)', minWidth: '150px', display: 'inline-block', textAlign: 'center' }}>
+                          {Math.floor(workshop.round2DurationSeconds / 60)} 分鐘
+                        </span>
+                        <button 
+                          className="btn btn-outline" 
+                          style={{ fontSize: '1.8rem', padding: '0.1rem 1rem', minWidth: '45px', borderRadius: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: '#fff' }}
+                          onClick={async () => {
+                            const next = workshop.round2DurationSeconds + 60;
+                            await updateWorkshopState(workshopId, { round2DurationSeconds: next, round2RemainingMs: next * 1000 });
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Right Column: Student Phone Screenshot Example Mockup */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ fontSize: '1.15rem', fontWeight: 'bold', color: 'var(--accent)', marginBottom: '1rem', textShadow: '0 0 10px rgba(230,57,70,0.2)' }}>
+                  📱 學員手機端畫面範例 (DoD 交付與驗收)
+                </div>
+                
+                {/* Mock phone outer frame */}
+                <div style={{
+                  width: '320px',
+                  background: '#151515',
+                  border: '8px solid #282828',
+                  borderRadius: '32px',
+                  padding: '1.25rem 1rem',
+                  boxShadow: '0 15px 35px rgba(0,0,0,0.5)',
+                  textAlign: 'left',
+                  boxSizing: 'border-box'
+                }}>
+                  {/* Phone Speaker Notch */}
+                  <div style={{ width: '80px', height: '12px', background: '#282828', borderRadius: '6px', margin: '-0.5rem auto 1rem', display: 'block' }}></div>
+                  
+                  {/* Header */}
+                  <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.5rem', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600 }}>第一組 (學員端)</span>
+                    <span style={{ fontSize: '0.7rem', background: 'rgba(34,197,94,0.1)', color: 'var(--success)', padding: '0.15rem 0.4rem', borderRadius: '10px', fontWeight: 600 }}>● 連線中</span>
+                  </div>
+
+                  {/* Challenge Badge and Info */}
+                  <div style={{ display: 'inline-block', background: 'var(--accent)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '4px', marginBottom: '0.5rem' }}>
+                    挑戰 1 / 10
+                  </div>
+                  <h4 style={{ fontSize: '0.95rem', margin: '0 0 0.5rem 0', color: '#fff', fontWeight: 700 }}>DoD 驗收基準與交付：</h4>
+                  
+                  {/* Mock DoD Checklist */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#ddd' }}>
+                      <input type="checkbox" checked readOnly style={{ accentColor: 'var(--accent)' }} /> 結構可以自行站立
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#ddd' }}>
+                      <input type="checkbox" checked readOnly style={{ accentColor: 'var(--accent)' }} /> 棉花糖位於最頂端
+                    </label>
+                  </div>
+
+                  {/* Mock Change Record Input */}
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.25rem', fontWeight: 600 }}>✏️ 改變紀錄 (Change Log)</div>
+                    <div style={{ fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '0.4rem 0.6rem', color: '#fff', fontStyle: 'italic' }}>
+                      加寬底座結構，並用兩根細繩固定立柱...
+                    </div>
+                  </div>
+
+                  {/* Mock Confirmed Checkbox */}
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--accent)', marginBottom: '0.75rem', lineHeight: 1.3 }}>
+                    <input type="checkbox" checked readOnly style={{ marginTop: '2px', accentColor: 'var(--accent)' }} />
+                    <span>已於大螢幕或實體確認產品符合驗收條件</span>
+                  </label>
+
+                  {/* Mock Submit Button */}
+                  <button style={{ width: '100%', padding: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold', background: 'var(--accent)', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'default' }}>
+                    送出驗收 (取得下一關)
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
         );
