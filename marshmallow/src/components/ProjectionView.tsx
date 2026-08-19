@@ -1189,7 +1189,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
               <div>
                 <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-mono)' }}>Time to Value</div>
                 <div style={{ fontSize: '2.4rem', fontWeight: 700, color: '#fff', marginTop: '0.25rem', lineHeight: 1.3 }}>
-                  我們多久才會產生第一個真正可用的成果？
+                  多久看到第一版？
                 </div>
               </div>
 
@@ -1197,7 +1197,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
               <div>
                 <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-mono)' }}>Evidence of Progress</div>
                 <div style={{ fontSize: '2.4rem', fontWeight: 700, color: '#fff', marginTop: '0.25rem', lineHeight: 1.3 }}>
-                  我們如何知道自己真的有進展？
+                  怎麼知道有進展？
                 </div>
               </div>
 
@@ -1205,7 +1205,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
               <div>
                 <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-mono)' }}>Responding to Change</div>
                 <div style={{ fontSize: '2.4rem', fontWeight: 700, color: '#fff', marginTop: '0.25rem', lineHeight: 1.3 }}>
-                  市場改變之後，我們多久能交出下一個版本？
+                  多久可以反映變更需求？
                 </div>
               </div>
 
