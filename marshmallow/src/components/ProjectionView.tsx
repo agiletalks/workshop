@@ -1028,32 +1028,35 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       case 'P19':
         return (
           <div style={{ width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
-            <h1 style={{ fontSize: '3.2rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>工作坊數據儀表板 (Live Results)</h1>
+            <h1 style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '0.5rem', fontWeight: 800 }}>
+              工作坊數據儀表板 (Live Results)
+            </h1>
             <p style={{ fontSize: '1.2rem', opacity: 0.6, marginBottom: '1.5rem' }}>
               這份數據展示了各組在面對頻繁需求變更時的交付效能指標，不代表團隊間的排名。
             </p>
-            <div style={{ maxHeight: '48vh', overflowY: 'auto', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', paddingRight: '0.5rem' }}>
-              <table className="dashboard-table" style={{ margin: 0 }}>
+            
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', margin: 0, tableLayout: 'fixed' }}>
                 <thead>
-                  <tr>
-                    <th>團隊名稱</th>
-                    <th>Time to First Value (首個價值交付時間)</th>
-                    <th>Versions Done (交付版本數量)</th>
-                    <th>Avg Cycle Time (平均週期時間)</th>
+                  <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '1.1rem', fontWeight: 700, width: '25%', whiteSpace: 'nowrap' }}>團隊名稱</th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '1.1rem', fontWeight: 700, width: '28%' }}>首個價值交付時間 (Time to First Value)</th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '1.1rem', fontWeight: 700, width: '22%' }}>交付版本數量 (Versions Done)</th>
+                    <th style={{ padding: '0.85rem 1.25rem', textAlign: 'left', color: 'var(--accent)', fontSize: '1.1rem', fontWeight: 700, width: '25%' }}>平均週期時間 (Avg Cycle Time)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dashboardData.map((d, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontWeight: 'bold' }}>{d.name}</td>
-                      <td>{d.timeToFirstValue}</td>
-                      <td style={{ color: 'var(--accent)', fontWeight: 'bold' }}>{d.versionsDone}</td>
-                      <td>{d.avgCycleTime}</td>
+                    <tr key={idx} style={{ borderBottom: idx === dashboardData.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                      <td style={{ padding: '0.85rem 1.25rem', fontWeight: 700, fontSize: '1.25rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.25rem', color: '#e0e0e0' }}>{d.timeToFirstValue}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent)' }}>{d.versionsDone}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.25rem', color: '#e0e0e0' }}>{d.avgCycleTime}</td>
                     </tr>
                   ))}
                   {dashboardData.length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '3rem' }}>
+                      <td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '1.1rem' }}>
                         無團隊數據紀錄。
                       </td>
                     </tr>
