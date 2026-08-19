@@ -1028,9 +1028,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       case 'P19':
         return (
           <div style={{ width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
-            <h1 style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '2.5rem', fontWeight: 800 }}>
-              儀表板
-            </h1>
+
             
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', margin: 0, tableLayout: 'fixed' }}>
