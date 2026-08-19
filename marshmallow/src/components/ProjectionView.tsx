@@ -343,14 +343,11 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       const teamVersions = versions.filter(v => v.teamId === t.id && v.syncStatus !== 'error');
       
       let timeToFirstValue = '—';
-      const round2StartEpoch = workshop.round2FirstStartedAt || workshop.round2StartedAt;
-      if (round2StartEpoch) {
-        const v1 = teamVersions.find(v => v.versionNumber === 1);
-        if (v1) {
-          const diffMs = v1.completedAt - round2StartEpoch;
-          const diffSec = Math.floor(diffMs / 1000);
-          timeToFirstValue = `${Math.floor(diffSec / 60)}分${diffSec % 60}秒`;
-        }
+      const v1 = teamVersions.find(v => v.versionNumber === 1);
+      if (v1 && v1.challengeStartedAt) {
+        const diffMs = v1.completedAt - v1.challengeStartedAt;
+        const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+        timeToFirstValue = `${Math.floor(diffSec / 60)}分${diffSec % 60}秒`;
       }
 
       const versionsDone = teamVersions.length;
@@ -359,18 +356,10 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       if (teamVersions.length > 0) {
         let totalCycleTimeMs = 0;
         let validCyclesCount = 0;
-        const sortedVersions = [...teamVersions].sort((a, b) => a.versionNumber - b.versionNumber);
 
-        sortedVersions.forEach((v) => {
-          let cycleStart = round2StartEpoch || 0;
-          if (v.versionNumber > 1) {
-            const prev = sortedVersions.find(p => p.versionNumber === v.versionNumber - 1);
-            if (prev) {
-              cycleStart = prev.completedAt;
-            }
-          }
-          if (cycleStart > 0) {
-            totalCycleTimeMs += (v.completedAt - cycleStart);
+        teamVersions.forEach((v) => {
+          if (v.challengeStartedAt && v.completedAt > v.challengeStartedAt) {
+            totalCycleTimeMs += (v.completedAt - v.challengeStartedAt);
             validCyclesCount++;
           }
         });
@@ -401,12 +390,8 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
       .sort((a, b) => a.versionNumber - b.versionNumber);
 
     return teamVersions.map((v) => {
-      const round2StartEpoch = workshop.round2FirstStartedAt || workshop.round2StartedAt;
-      const start = v.versionNumber === 1 
-        ? (round2StartEpoch || v.createdAt) 
-        : (teamVersions.find(p => p.versionNumber === v.versionNumber - 1)?.completedAt || v.createdAt);
-      
-      const cycleSec = Math.round((v.completedAt - start) / 1000);
+      const start = v.challengeStartedAt || v.createdAt;
+      const cycleSec = Math.max(0, Math.round((v.completedAt - start) / 1000));
       const cycleLabel = `${Math.floor(cycleSec / 60)}分${cycleSec % 60}秒`;
 
       return {
