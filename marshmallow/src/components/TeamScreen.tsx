@@ -251,6 +251,65 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
     return `${m}:${s}`;
   };
 
+  // T01 — Team Join Registration
+  if (!team) {
+    return (
+      <div className="role-container team-view" style={{ justifyContent: 'center' }}>
+        <div className="card" style={{ maxWidth: '450px', margin: '0 auto', width: '100%' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <span style={{ fontSize: '3rem' }}>🍡</span>
+            <h2 style={{ marginTop: '1rem', marginBottom: '0.25rem' }}>加入工作坊挑戰</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>請輸入專案代碼並登記團隊資訊</p>
+          </div>
+          
+          <form onSubmit={handleRegister}>
+            <div className="form-group">
+              <label className="form-label">專案代碼 (Join Code - 大寫 4 位字母)</label>
+              <input
+                type="text"
+                className="form-input"
+                maxLength={4}
+                placeholder="請輸入大螢幕上的代碼"
+                style={{ textTransform: 'uppercase', textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', letterSpacing: '0.1em' }}
+                value={inputJoinCode}
+                onChange={(e) => setInputJoinCode(e.target.value.toUpperCase())}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">團隊名稱 (Team Name)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="例如：敏捷極客組"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">記錄員姓名 (Recorder Name)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="負責填寫版本日誌的人員"
+                value={recorderName}
+                onChange={(e) => setRecorderName(e.target.value)}
+                required
+              />
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isJoining}>
+              {isJoining ? '加入中...' : '登記並加入'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   // ----------------------------------------------------
   // ATTENTION MODE / TEACHING SCREENS ROUTING
   // ----------------------------------------------------
@@ -431,64 +490,7 @@ export const TeamScreen: React.FC<TeamScreenProps> = ({ workshopId }) => {
     );
   }
 
-  // T01 — Team Join Registration
-  if (!team) {
-    return (
-      <div className="role-container team-view" style={{ justifyContent: 'center' }}>
-        <div className="card" style={{ maxWidth: '450px', margin: '0 auto', width: '100%' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <span style={{ fontSize: '3rem' }}>🍡</span>
-            <h2 style={{ marginTop: '1rem', marginBottom: '0.25rem' }}>加入工作坊挑戰</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>請輸入專案代碼並登記團隊資訊</p>
-          </div>
-          
-          <form onSubmit={handleRegister}>
-            <div className="form-group">
-              <label className="form-label">專案代碼 (Join Code - 大寫 4 位字母)</label>
-              <input
-                type="text"
-                className="form-input"
-                maxLength={4}
-                placeholder="請輸入大螢幕上的代碼"
-                style={{ textTransform: 'uppercase', textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', letterSpacing: '0.1em' }}
-                value={inputJoinCode}
-                onChange={(e) => setInputJoinCode(e.target.value.toUpperCase())}
-                required
-              />
-            </div>
 
-            <div className="form-group">
-              <label className="form-label">團隊名稱 (Team Name)</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="例如：敏捷極客組"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">記錄員姓名 (Recorder Name)</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="負責填寫版本日誌的人員"
-                value={recorderName}
-                onChange={(e) => setRecorderName(e.target.value)}
-                required
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isJoining}>
-              {isJoining ? '加入中...' : '登記並加入'}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   // T02 — Waiting Room
   if (workshop.status === 'LOBBY') {
