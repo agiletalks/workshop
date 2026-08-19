@@ -106,11 +106,11 @@ export const challengesData: Challenge[] = [
     challengeSetId: 'marshmallow_agile_10',
     sequence: 8,
     title: 'Challenge 8 — New Customer Need',
-    description: '新的客戶族群出現了，他們希望產品除了高度之外，還能承載額外物件。在結構上增加一個可承載指定輕量物件的位置。',
+    description: '新的客戶族群出現了，他們希望產品除了高度之外，還能承載額外物件。請向講師索取「指定物件」，並在結構上增加一個可承載該物件的位置。',
     acceptanceCriteria: [
       '原有結構仍可自行站立。',
       '棉花糖仍完整位於最高點。',
-      '指定物件可以放置於結構上至少 5 秒。',
+      '向講師索取的指定物件可以穩固放置於結構上至少 5 秒。',
       '不得由人扶持。'
     ],
     learningIntent: '模擬新客群帶來的新需求，體驗 Customer Collaboration 與需求演化。',
@@ -120,14 +120,14 @@ export const challengesData: Challenge[] = [
     id: 'challenge_9',
     challengeSetId: 'marshmallow_agile_10',
     sequence: 9,
-    title: 'Challenge 9 — Optimize the Product',
-    description: '產品已經有多項能力，現在市場要求更好的整體表現。團隊自行選擇一個目前最值得改善的產品指標，進行一次最佳化。',
+    title: 'Challenge 9 — Team Signature on Second Marshmallow',
+    description: '客戶對個人化與團隊協作提出新要求。請向講師索取第二個棉花糖，所有團隊成員必須在第二個棉花糖上簽名，並將其穩固放置於結構上。',
     acceptanceCriteria: [
-      '團隊必須先選定一項指標。',
-      '新版本在該指標上必須優於 Version 8。',
-      '其他必要 Done 條件仍須成立。'
+      '每個小組成員皆已在第二個棉花糖上簽名。',
+      '第二個棉花糖穩固放置於結構上，放手後維持至少 5 秒。',
+      '結構仍可自行站立，且第一個棉花糖仍位於最頂端。'
     ],
-    learningIntent: '體驗 Product Decision。市場機會很多，但團隊資源有限；敏捷需要取捨與聚焦，而不是同時最佳化所有事情。',
+    learningIntent: '體驗額外負載與團隊協作。在不破壞既有 Working Product 的基礎下，以敏捷精神安全融入全新突發的市場需求。',
     isActive: true
   },
   {
@@ -135,13 +135,14 @@ export const challengesData: Challenge[] = [
     challengeSetId: 'marshmallow_agile_10',
     sequence: 10,
     title: 'Challenge 10 — Release Ready',
-    description: '市場準備正式驗收最終產品。交付目前最佳、可以立即展示給客戶的版本。',
+    description: '市場準備正式驗收最終產品。交付目前最佳、可以立即展示給客戶的版本，並完成全組團隊大合照。',
     acceptanceCriteria: [
       '結構可以自行站立。',
       '棉花糖完整位於最高點。',
       '維持站立至少 10 秒。',
       '完成最終高度測量。',
       '完成剩餘材料盤點。',
+      '團隊與最終產品完成一張大合照。',
       '完成最終 Version Record。'
     ],
     learningIntent: '體驗 Definition of Done 與 Potentially Releasable Increment。最後一刻不是第一次測試產品是否能用；團隊一路上每個版本都應該是 Done，而最後一版只是目前為止最新、最完整的 Increment。',
