@@ -1054,10 +1054,10 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
                 <tbody>
                   {dashboardData.map((d, idx) => (
                     <tr key={idx} style={{ borderBottom: idx === dashboardData.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                      <td style={{ padding: '0.85rem 1.25rem', fontWeight: 700, fontSize: '1.05rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</td>
-                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.05rem', color: '#e0e0e0' }}>{d.timeToFirstValue}</td>
-                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent)' }}>{d.versionsDone}</td>
-                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.05rem', color: '#e0e0e0' }}>{d.avgCycleTime}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontWeight: 700, fontSize: '1.05rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left' }}>{d.name}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.05rem', color: '#e0e0e0', textAlign: 'left' }}>{d.timeToFirstValue}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent)', textAlign: 'left' }}>{d.versionsDone}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '1.05rem', color: '#e0e0e0', textAlign: 'left' }}>{d.avgCycleTime}</td>
                     </tr>
                   ))}
                   {dashboardData.length === 0 && (
