@@ -6,12 +6,13 @@ import {
   updateWorkshopState
 } from '../services/syncService';
 import type { Workshop, Team, TeamVersion, WorkshopStatus } from '../types';
+import { synthMusic } from '../services/audioService';
 
 export const PROJECTION_SCREENS = [
   { id: 'P01', title: 'P01 — Welcome / Join', state: 'LOBBY', maxReveal: 0 },
   { id: 'P02', title: 'P02 — The Challenge', state: 'ROUND_1_BRIEFING', maxReveal: 3 }, // 0 to 3
-  { id: 'P03', title: 'P03 — Materials', state: 'ROUND_1_BRIEFING', maxReveal: 0 },
   { id: 'P04', title: 'P04 — Ready?', state: 'ROUND_1_BRIEFING', maxReveal: 0 },
+  { id: 'P03', title: 'P03 — Materials', state: 'ROUND_1_BRIEFING', maxReveal: 0 },
   { id: 'P05', title: 'P05 — Round 1 Timer', state: 'ROUND_1_ACTIVE', maxReveal: 0 },
   { id: 'P06', title: 'P06 — STOP', state: 'ROUND_1_FROZEN', maxReveal: 0 },
   { id: 'P07', title: 'P07 — Working Product?', state: 'DEBRIEF_1', maxReveal: 1 },
@@ -172,7 +173,10 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         const isRound1TimeUp = isRound1 && (currentRemaining <= 720000);
         const isRound2TimeUp = !isRound1 && (currentRemaining <= 0);
         
-        if (isRound1TimeUp || isRound2TimeUp) triggerFreeze();
+        if (isRound1TimeUp || isRound2TimeUp) {
+          synthMusic.playEndChime();
+          triggerFreeze();
+        }
       } else {
         setTimeLeft(totalSec);
       }
@@ -181,6 +185,28 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
     const intervalId = setInterval(updateTimer, 500);
     return () => clearInterval(intervalId);
   }, [workshop, workshopId]);
+
+  // Sync background music with timer status
+  useEffect(() => {
+    if (!workshop) return;
+    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
+    const isRound2 = workshop.status === 'ROUND_2_ACTIVE';
+    
+    const startedAt = isRound1 ? workshop.round1StartedAt : workshop.round2StartedAt;
+    const pausedAt = isRound1 ? workshop.round1PausedAt : workshop.round2PausedAt;
+
+    const isTimerRunning = (isRound1 || isRound2) && startedAt && !pausedAt;
+
+    if (isTimerRunning) {
+      synthMusic.startBGM();
+    } else {
+      synthMusic.stopBGM();
+    }
+
+    return () => {
+      synthMusic.stopBGM();
+    };
+  }, [workshop?.status, workshop?.round1StartedAt, workshop?.round1PausedAt, workshop?.round2StartedAt, workshop?.round2PausedAt]);
 
   useEffect(() => {
     if (teams.length > 0 && !selectedTeamId) setSelectedTeamId(teams[0].id);
@@ -240,9 +266,29 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
     await updateWorkshopState(workshopId, updates);
   };
 
+  const handleRewind = async () => {
+    const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
+    const isRound2 = workshop.status === 'ROUND_2_ACTIVE';
+    if (!isRound1 && !isRound2) return;
+    
+    const updates: Partial<Workshop> = {};
+    if (isRound1) {
+      updates.round1StartedAt = null;
+      updates.round1PausedAt = Date.now();
+      updates.round1RemainingMs = workshop.round1DurationSeconds * 1000;
+    } else {
+      updates.round2StartedAt = null;
+      updates.round2PausedAt = Date.now();
+      updates.round2RemainingMs = workshop.round2DurationSeconds * 1000;
+    }
+    await updateWorkshopState(workshopId, updates);
+  };
+
   const endRoundEarly = async () => {
     const confirmEnd = window.confirm('確定要提前結束本輪挑戰嗎？這會直接凍結所有團隊的送出狀態。');
     if (!confirmEnd) return;
+    synthMusic.stopBGM();
+    synthMusic.playEndChime();
     const isRound1 = workshop.status === 'ROUND_1_ACTIVE';
     if (isRound1) {
       await updateWorkshopState(workshopId, { status: 'ROUND_1_FROZEN', round1StartedAt: null, round1RemainingMs: 0, currentProjectionScreen: 'P06', currentRevealIndex: 0 });
@@ -430,7 +476,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <span style={{ color: 'var(--accent)', fontSize: '2.2rem' }}>①</span>
-                  <span>使用提供的材料，建造一個「最高」的獨立結構。</span>
+                  <span>使用提供的材料，建造一個「最高且能自行站立」的結構。</span>
                 </div>
                 {isRevealed(1) && (
                   <div style={{ fontSize: '1.8rem', fontWeight: 600, display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -490,7 +536,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         return (
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ fontSize: '2.5rem', opacity: 0.7 }}>我們的目標</h2>
-            <h1 style={{ fontSize: '5.5rem', color: 'var(--accent)', margin: '1rem 0 2rem' }}>建造最高的獨立結構</h1>
+            <h1 style={{ fontSize: '5.5rem', color: 'var(--accent)', margin: '1rem 0 2rem' }}>建造最高且能自行站立的結構</h1>
             <div style={{ background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', padding: '2.5rem 5rem', borderRadius: '20px', display: 'inline-block' }}>
               <div style={{ fontSize: '1.5rem', opacity: 0.6 }}>挑戰時間</div>
               <div style={{ fontSize: '5rem', fontWeight: 800, color: '#fff' }}>18 分鐘</div>
@@ -499,11 +545,25 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         );
 
       case 'P05':
+        const isR1Paused = workshop.round1PausedAt !== null;
         return (
           <div style={{ textAlign: 'center' }}>
             <h1 style={{ fontSize: '3.5rem', opacity: 0.8, letterSpacing: '0.1em' }}>MARSHMALLOW CHALLENGE</h1>
             <div className={`timer-huge ${timeLeft <= 30 ? 'frozen' : ''}`}>{formatTime(timeLeft)}</div>
-            <h2 style={{ fontSize: '2.8rem', color: 'var(--accent)' }}>建立最高的獨立結構</h2>
+            <h2 style={{ fontSize: '2.8rem', color: 'var(--accent)' }}>建造最高且能自行站立的結構</h2>
+            {!isReadOnly && (
+              <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginTop: '2rem' }}>
+                <button className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem' }} onClick={toggleTimer}>
+                  {isR1Paused ? '▶ 繼續計時' : '⏸ 暫停計時'}
+                </button>
+                <button className="btn btn-outline" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem' }} onClick={handleRewind}>
+                  ↩ 重設時間
+                </button>
+                <button className="btn btn-danger" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem', background: 'var(--error)', borderColor: 'var(--error)' }} onClick={endRoundEarly}>
+                  ⏹ 提前中止
+                </button>
+              </div>
+            )}
           </div>
         );
 
@@ -848,8 +908,43 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
             <h2 style={{ fontSize: '2.5rem', opacity: 0.7 }}>第二輪市場挑戰</h2>
             <h1 style={{ fontSize: '5.5rem', color: 'var(--accent)', margin: '1rem 0 2rem' }}>RESPOND TO THE MARKET</h1>
             <div style={{ background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', padding: '2.5rem 5rem', borderRadius: '20px', display: 'inline-block' }}>
-              <div style={{ fontSize: '1.5rem', opacity: 0.6 }}>挑戰時間</div>
-              <div style={{ fontSize: '5rem', fontWeight: 800, color: '#fff' }}>10 分鐘</div>
+              {isReadOnly ? (
+                <>
+                  <div style={{ fontSize: '1.5rem', opacity: 0.6 }}>挑戰時間</div>
+                  <div style={{ fontSize: '5rem', fontWeight: 800, color: '#fff' }}>
+                    {Math.floor(workshop.round2DurationSeconds / 60)} 分鐘
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ fontSize: '1.5rem', opacity: 0.6 }}>挑戰時間 (可調整)</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <button 
+                      className="btn btn-outline" 
+                      style={{ fontSize: '2rem', padding: '0.2rem 1.2rem', minWidth: '50px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: '8px', cursor: 'pointer' }}
+                      onClick={async () => {
+                        const next = Math.max(60, workshop.round2DurationSeconds - 60);
+                        await updateWorkshopState(workshopId, { round2DurationSeconds: next, round2RemainingMs: next * 1000 });
+                      }}
+                    >
+                      -
+                    </button>
+                    <span style={{ fontSize: '5rem', fontWeight: 800, color: 'var(--accent)', minWidth: '180px', display: 'inline-block' }}>
+                      {Math.floor(workshop.round2DurationSeconds / 60)} 分鐘
+                    </span>
+                    <button 
+                      className="btn btn-outline" 
+                      style={{ fontSize: '2rem', padding: '0.2rem 1.2rem', minWidth: '50px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: '8px', cursor: 'pointer' }}
+                      onClick={async () => {
+                        const next = workshop.round2DurationSeconds + 60;
+                        await updateWorkshopState(workshopId, { round2DurationSeconds: next, round2RemainingMs: next * 1000 });
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -866,10 +961,26 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
           }
         });
 
+        const isR2Paused = workshop.round2PausedAt !== null;
+
         return (
-          <div style={{ width: '100%', maxWidth: '1000px' }}>
+          <div style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
             <h1 style={{ fontSize: '3rem', opacity: 0.8 }}>RESPOND TO THE MARKET</h1>
             <div className={`timer-huge ${timeLeft <= 30 ? 'frozen' : ''}`}>{formatTime(timeLeft)}</div>
+            
+            {!isReadOnly && (
+              <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginTop: '1rem', marginBottom: '2rem' }}>
+                <button className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem' }} onClick={toggleTimer}>
+                  {isR2Paused ? '▶ 繼續計時' : '⏸ 暫停計時'}
+                </button>
+                <button className="btn btn-outline" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem' }} onClick={handleRewind}>
+                  ↩ 重設時間
+                </button>
+                <button className="btn btn-danger" style={{ padding: '0.6rem 1.5rem', fontSize: '1.2rem', background: 'var(--error)', borderColor: 'var(--error)' }} onClick={endRoundEarly}>
+                  ⏹ 提前中止
+                </button>
+              </div>
+            )}
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', marginTop: '1.5rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'center' }}>
@@ -1344,16 +1455,40 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
               </div>
 
               {isTimerActive && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.06)', padding: '0.35rem 0.75rem', borderRadius: '8px' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--accent)', fontSize: '1.15rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.06)', padding: '0.35rem 0.75rem', borderRadius: '8px' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--accent)', fontSize: '1.15rem', marginRight: '0.25rem' }}>
                     ⏱ {formatTime(timeLeft)}
                   </span>
                   <button className="btn btn-outline btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={toggleTimer}>
                     {isTimerPaused ? '啟動' : '暫停'}
                   </button>
-                  <button className="btn btn-danger btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', background: 'var(--error)' }} onClick={endRoundEarly}>
-                    結束
+                  <button className="btn btn-outline btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={handleRewind}>
+                    重設
                   </button>
+                  <button className="btn btn-danger btn-control-sm" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', background: 'var(--error)' }} onClick={endRoundEarly}>
+                    中止
+                  </button>
+                </div>
+              )}
+
+              {(workshop.currentProjectionScreen === 'P15' || workshop.currentProjectionScreen === 'P16') && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.06)', padding: '0.35rem 0.75rem', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>第二輪時長：</span>
+                  <select
+                    className="presenter-select"
+                    style={{ width: '90px', padding: '0.15rem', fontSize: '0.8rem', background: '#222', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px' }}
+                    value={workshop.round2DurationSeconds}
+                    onChange={async (e) => {
+                      const next = parseInt(e.target.value, 10);
+                      await updateWorkshopState(workshopId, { round2DurationSeconds: next, round2RemainingMs: next * 1000 });
+                    }}
+                  >
+                    <option value={300}>5 分鐘</option>
+                    <option value={480}>8 分鐘</option>
+                    <option value={600}>10 分鐘</option>
+                    <option value={720}>12 分鐘</option>
+                    <option value={900}>15 分鐘</option>
+                  </select>
                 </div>
               )}
 
