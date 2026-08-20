@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Hub - 提示詞工具箱</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        /* Custom scrollbar for prompt previews */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-indigo-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900">Prompt Hub</h1>
+                    <p class="text-xs text-slate-500 font-medium">快捷複製與整理提示詞工具箱</p>
+                </div>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="relative w-full sm:w-80">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </span>
+                <input type="text" id="searchInput" oninput="filterPrompts()" placeholder="搜尋提示詞..." class="w-full pl-10 pr-4 py-2 bg-slate-100 hover:bg-slate-200/70 focus:bg-white text-sm border border-transparent focus:border-indigo-500 rounded-lg focus:outline-none transition-colors duration-200">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
+        <!-- Dashboard Intro -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">我的提示詞清單</h2>
+            <p class="text-slate-600 text-sm">點擊卡片右上角的「複製」按鈕即可快速複製提示詞，或使用搜尋欄快速篩選。</p>
+        </div>
+
+        <!-- Prompts Grid -->
+        <div id="promptsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Dynamic items will be injected here by Javascript -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden flex-col items-center justify-center py-12 text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 stroke-current" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-lg font-medium">找不到相符的提示詞</p>
+            <p class="text-sm text-slate-500 mt-1">請嘗試輸入其他關鍵字</p>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-10 opacity-0 bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-lg shadow-xl flex items-center gap-2 transition-all duration-300 pointer-events-none z-50">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span>已成功複製到剪貼簿！</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-400">
+        <p>© 2026 Prompt Hub. Created for workflow enhancement.</p>
+    </footer>
+
+    <script>
+        // Data structure containing prompts. Easy to add more items here.
+        const promptsData = [
+            {
+                id: "transcript-editor",
+                title: "訪談逐字稿整理 Prompt",
+                description: "將語音辨識產生的原始逐字稿（含口語、錯字、多角色混雜等）整理成易讀且忠於原意、保留口語原貌的格式，並直接輸出為易於閱讀的純文字格式。",
+                content: `# 訪談逐字稿整理 Prompt
+
+你是一位專業的「訪談逐字稿編輯助手」。
+
+我接下來會提供一段由語音辨識系統產生的原始逐字稿。內容可能包含：
+
+* 沒有標點
+* 訪談者與受訪者混在一起
+* 同音字或辨識錯字
+* 重複詞、口吃、語助詞
+* 英文專有名詞辨識錯誤
+* 斷句錯誤
+* 部分語意不完整
+
+你的任務是將它整理成「容易閱讀，但忠於原始內容」的訪談逐字稿。
+
+## 一、整理規則
+
+1. 區分角色
+
+   * 將對話區分為「訪談者」與「受訪者」。
+   * 提問、追問、確認、總結前一句或切換問題者，通常為訪談者。
+   * 回答問題、描述經驗、說明專案或表達觀點者，通常為受訪者。
+   * 每次角色切換時，建立新的對話段落。
+   * 若角色不完全確定，依上下文做最合理判斷，不需詢問我。
+
+2. 做最低限度校正
+
+   * 補上標點與合理斷句。
+   * 修正明顯的同音字、錯別字與語音辨識錯誤。
+   * 修正常見英文名稱，例如 AI、ChatGPT、Google、Reporting Line。
+   * 明顯口吃或無意義重複可適度刪除，例如「這個這個這個」整理為「這個」。
+
+3. 保留口語原貌
+
+   * 保留有意義的口語詞，例如「其實、就是、然後、對、OK、好」。
+   * 不要將口語回答改寫成正式書面語。
+   * 不要讓說話者的表達比原本更完整、更漂亮或更有邏輯。
+   * 若句子沒有說完，以「……」保留未完成狀態。
+
+4. 忠於原始內容
+
+   * 不摘要。
+   * 不分析。
+   * 不補充。
+   * 不改變問答順序。
+   * 不加入原文沒有的資訊。
+   * 不自行推論或補完說話者未說出的意思。
+   * 不整理成會議紀錄、文章、結論或洞察。
+
+5. 專有名詞處理
+
+   * 若課程、證照、組織或人名無法確認正確拼法，保留原始辨識結果或最接近原音的寫法。
+   * 不要自行猜測成其他名稱。
+
+## 二、角色判斷範例
+
+原始內容：
+
+「那這個AI助教做好以後是給誰用 是給我們學員 那這個學員是參加什麼課程 參加CFB課程」
+
+整理後：
+
+訪談者：
+那這個 AI 助教做好以後，是給誰使用？
+
+受訪者：
+是給我們的學員。
+
+訪談者：
+那這些學員是參加什麼課程？
+
+受訪者：
+參加 CFB 課程。
+
+## 三、輸出格式
+
+請直接輸出「純文字內容」，不要將內容包在 Markdown 的代碼區塊（code block）中，也不要在前後加入額外的說明或引言。
+
+使用以下結構來區分說話者，並在每個說話者之間空一行：
+
+訪談者：
+[對話內容]
+
+受訪者：
+[對話內容]
+
+## 四、段落原則
+
+同一位說話者連續發言時，放在同一個段落中。
+
+若同一人的發言內容較長，可以在其段落內進行自然換行分段。
+
+只有說話者改變時，才建立新的發言區塊（空一行並加上角色標示）。
+
+## 五、開始處理
+
+以下是原始語音辨識逐字稿：
+
+【請貼上原始逐字稿】`
+            },
+            {
+                id: "project-vision-generator",
+                title: "專案願景制定 Prompt (Envisioning)",
+                description: "依據敏捷專案管理願景制定的六大維度（目標用戶、用戶痛點/卡點、專案範圍/定位、核心功能/特色、獨特價值/區隔點、成效衡量指標），分析訪談逐字稿並生成專案願景說明書。",
+                content: `# 專案願景制定 Prompt (Envisioning Prompt)
+
+你是一位專業的「敏捷產品經理與商業分析師」。你的任務是閱讀一段「專案訪談逐字稿」，從中分析、整理並推導出該專案的「願景說明書（Envisioning Statement）」。
+
+請根據以下由敏捷專案管理定義的六大願景核心維度，對逐字稿進行深度的萃取與分析：
+
+1. **目標用戶 (Users / 幫誰的忙？)**
+   - 我們的目標使用者是誰？請具體描述其角色特徵、工作情境或生活形態。
+
+2. **用戶痛點與卡點 (Users' Needs / 他們遇到什麼困難？)**
+   - 他們在日常或工作上面臨什麼主要困難與卡點？需要我們解決什麼痛點？
+
+3. **專案範圍與定位 (Scope / 我們打算怎麼幫他們？)**
+   - 我們的產品或服務範圍是什麼？如何定位這個解決方案？（例如：一台能通勤又能運動的腳踏車，讓通勤=運動）
+
+4. **核心功能與特色 (Key Features / 我們的解決方案長什麼樣？)**
+   - 大致提供哪些具體功能、特色或成品？這些功能如何對應並解決上述痛點？
+
+5. **獨特價值與區隔點 (Discriminator / 為什麼會選擇我們？)**
+   - 我們有什麼獨特價值與優勢？相較於市面上其他做法或競爭對手，我們的區隔點是什麼？
+
+6. **成效衡量指標 (Measurements / 怎麼知道有幫上忙？)**
+   - 如果這個解決方案成功了，我們會看到什麼具體成果或行為改變？這些指標要如何衡量？
+
+---
+
+## 輸出格式規範
+請直接以繁體中文（zh-Hant）輸出結構化的純文字內容。不要使用 Markdown 的代碼區塊（code block）包裹整個輸出，直接輸出以下結構：
+
+# [專案名稱/主題] 專案願景說明書
+
+## 一、 目標用戶 (Users)
+[在此描述目標用戶]
+
+## 二、 用戶痛點與卡點 (Users' Needs)
+[在此描述痛點與卡點]
+
+## 三、 專案範圍與定位 (Scope)
+[在此描述產品或服務範圍]
+
+## 四、 核心功能與特色 (Key Features)
+[在此列出大致的功能與特色]
+
+## 五、 獨特價值與區隔點 (Discriminator)
+[在此說明區隔點與為什麼選我們]
+
+## 六、 成效衡量指標 (Measurements)
+[在此列出如何定義成功與衡量成效的指標]
+
+---
+
+## 輸入資料
+
+以下是專案訪談的原始逐字稿：
+【請在此貼上專案訪談逐字稿】`
+            }
+        ];
+
+        // Render Prompts function
+        function renderPrompts(data) {
+            const grid = document.getElementById('promptsGrid');
+            const emptyState = document.getElementById('emptyState');
+            grid.innerHTML = '';
+
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            } else {
+                emptyState.classList.remove('flex');
+                emptyState.classList.add('hidden');
+            }
+
+            data.forEach((prompt, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-[500px]";
+                
+                card.innerHTML = `
+                    <!-- Card Header -->
+                    <div class="p-5 border-b border-slate-100 flex justify-between items-start gap-4">
+                        <div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 mb-2">
+                                Prompt #${index + 1}
+                            </span>
+                            <h3 class="text-lg font-bold text-slate-900">${escapeHtml(prompt.title)}</h3>
+                        </div>
+                        <button onclick="copyToClipboard('${prompt.id}', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <svg class="w-3.5 h-3.5 button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                            </svg>
+                            <span class="button-text">複製</span>
+                        </button>
+                    </div>
+
+                    <!-- Card Body / Description -->
+                    <div class="px-5 py-3 bg-slate-50/50 border-b border-slate-100">
+                        <p class="text-xs text-slate-500 leading-relaxed">${escapeHtml(prompt.description)}</p>
+                    </div>
+
+                    <!-- Card Code Preview -->
+                    <div class="p-5 flex-grow overflow-hidden flex flex-col relative">
+                        <div class="flex items-center justify-between text-xs text-slate-400 mb-2 font-mono">
+                            <span>PROMPT CONTENT</span>
+                            <span>${prompt.content.split('\n').length} lines</span>
+                        </div>
+                        <div class="flex-grow overflow-y-auto bg-slate-950 text-slate-300 p-4 rounded-xl font-mono text-xs leading-normal custom-scrollbar select-all">
+                            <pre class="whitespace-pre-wrap break-all">${escapeHtml(prompt.content)}</pre>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Copy utility
+        function copyToClipboard(id, buttonEl) {
+            const prompt = promptsData.find(p => p.id === id);
+            if (!prompt) return;
+
+            navigator.clipboard.writeText(prompt.content).then(() => {
+                // Show Success Toast
+                showToast();
+
+                // Button Feedback
+                const btnText = buttonEl.querySelector('.button-text');
+                const btnIcon = buttonEl.querySelector('.button-icon');
+                
+                buttonEl.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                buttonEl.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                btnText.textContent = '已複製';
+                
+                // Change icon to checkmark
+                const originalIconHtml = btnIcon.innerHTML;
+                btnIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>';
+
+                setTimeout(() => {
+                    buttonEl.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                    buttonEl.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    btnText.textContent = '複製';
+                    btnIcon.innerHTML = originalIconHtml;
+                }, 2000);
+            }).catch(err => {
+                console.error('無法複製文字: ', err);
+            });
+        }
+
+        // Toast handling
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-10', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-10', 'opacity-0');
+            }, 3000);
+        }
+
+        // Filter search logic
+        function filterPrompts() {
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+            const filtered = promptsData.filter(prompt => {
+                return prompt.title.toLowerCase().includes(searchVal) || 
+                       prompt.description.toLowerCase().includes(searchVal) || 
+                       prompt.content.toLowerCase().includes(searchVal);
+            });
+            renderPrompts(filtered);
+        }
+
+        // HTML escaping helper
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"']/g, function (s) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[s];
+            });
+        }
+
+        // Init load
+        renderPrompts(promptsData);
+    </script>
+</body>
+</html>
