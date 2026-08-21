@@ -21,7 +21,7 @@ function App() {
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'agile2026') {
+    if (password === 'agile-2026') {
       setIsUnlocked(true);
       sessionStorage.setItem('facilitator_unlocked', 'true');
     } else {

@@ -31,6 +31,49 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
+    <!-- Password Protection Overlay -->
+    <div id="password-gate" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; z-index: 99999; transition: opacity 0.3s ease; font-family: system-ui, -apple-system, sans-serif;">
+        <div style="background-color: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 32px; max-width: 380px; width: 100%; margin: 16px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); color: #f3f4f6;">
+            <div style="font-size: 40px; margin-bottom: 16px;">🔑</div>
+            <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 8px; color: #ffffff;">請輸入存取密碼</h2>
+            <p style="color: #9ca3af; font-size: 13px; line-height: 1.5; margin-bottom: 24px;">本專案受密碼保護，請輸入正確密碼以進入工作坊網頁。</p>
+            <form id="password-form" onsubmit="handleGateSubmit(event)">
+                <input type="password" id="gate-password-input" style="width: 100%; box-sizing: border-box; padding: 12px; background-color: #1f2937; border: 1px solid #374151; border-radius: 8px; color: #ffffff; text-align: center; font-size: 14px; outline: none; margin-bottom: 16px; transition: border-color 0.2s;" placeholder="請輸入密碼" required autofocus>
+                <button type="submit" style="width: 100%; padding: 12px; background-color: #f59e0b; border: none; border-radius: 8px; color: #0b0f19; font-weight: bold; font-size: 14px; cursor: pointer; transition: background-color 0.2s;">確認進入</button>
+            </form>
+            <p id="gate-error-msg" style="color: #ef4444; font-size: 12px; margin-top: 12px; height: 16px; opacity: 0; transition: opacity 0.2s; margin-bottom: 0;">密碼錯誤，請重試！</p>
+        </div>
+    </div>
+    
+    <script>
+        (function() {
+            if (sessionStorage.getItem('workshop_unlocked') === 'true') {
+                document.getElementById('password-gate').style.display = 'none';
+            }
+        })();
+
+        function handleGateSubmit(e) {
+            e.preventDefault();
+            const password = document.getElementById('gate-password-input').value;
+            const errorMsg = document.getElementById('gate-error-msg');
+            
+            if (password === 'agile-2026') {
+                sessionStorage.setItem('workshop_unlocked', 'true');
+                const gate = document.getElementById('password-gate');
+                gate.style.opacity = '0';
+                setTimeout(() => {
+                    gate.style.display = 'none';
+                }, 300);
+            } else {
+                errorMsg.style.opacity = '1';
+                document.getElementById('gate-password-input').value = '';
+                setTimeout(() => {
+                    errorMsg.style.opacity = '0';
+                }, 3000);
+            }
+        }
+    </script>
+
     <!-- Header -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
