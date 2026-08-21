@@ -1,0 +1,63 @@
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const rootDir = path.join(__dirname, '..');
+const distDir = path.join(rootDir, 'dist');
+const distWorkshopDir = path.join(distDir, 'workshop');
+const distEnvisionDir = path.join(distWorkshopDir, 'envision');
+
+console.log('=== Starting Workshop Suite Build ===');
+
+// Helper to recursively copy directories
+function copyFolderSync(from, to) {
+  if (!fs.existsSync(to)) {
+    fs.mkdirSync(to, { recursive: true });
+  }
+  fs.readdirSync(from).forEach(element => {
+    const stat = fs.lstatSync(path.join(from, element));
+    if (stat.isFile()) {
+      fs.copyFileSync(path.join(from, element), path.join(to, element));
+    } else if (stat.isDirectory()) {
+      copyFolderSync(path.join(from, element), path.join(to, element));
+    }
+  });
+}
+
+// 1. Clean existing dist folder
+try {
+  if (fs.existsSync(distDir)) {
+    console.log('Cleaning existing dist directory...');
+    fs.rmSync(distDir, { recursive: true, force: true });
+  }
+} catch (err) {
+  console.warn('Warning during clean phase:', err.message);
+}
+
+// 2. Build marshmallow project
+console.log('Building marshmallow project...');
+try {
+  execSync('npm run build', {
+    cwd: path.join(rootDir, 'marshmallow'),
+    stdio: 'inherit',
+    shell: process.platform === 'win32' ? 'cmd.exe' : true
+  });
+  console.log('✓ Marshmallow project built successfully.');
+} catch (err) {
+  console.error('Error: Failed to build marshmallow project.');
+  process.exit(1);
+}
+
+// 3. Copy envision files to dist/workshop/envision
+console.log('Copying envision static files...');
+try {
+  const envisionSrc = path.join(rootDir, 'envision');
+  copyFolderSync(envisionSrc, distEnvisionDir);
+  console.log('✓ Envision static files copied successfully.');
+} catch (err) {
+  console.error('Error: Failed to copy envision files:', err.message);
+  process.exit(1);
+}
+
+console.log('=== Build Completed Successfully ===');
+console.log(`Build output is ready at: ${distDir}`);

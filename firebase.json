@@ -11,8 +11,8 @@
     ],
     "rewrites": [
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "/workshop/marshmallow/**",
+        "destination": "/workshop/marshmallow/index.html"
       }
     ]
   }
