@@ -15,6 +15,7 @@ function copyFolderSync(from, to) {
     fs.mkdirSync(to, { recursive: true });
   }
   fs.readdirSync(from).forEach(element => {
+    if (element === '.git' || element === '.gitignore' || element === 'node_modules') return;
     const stat = fs.lstatSync(path.join(from, element));
     if (stat.isFile()) {
       fs.copyFileSync(path.join(from, element), path.join(to, element));
@@ -71,6 +72,18 @@ try {
   }
 } catch (err) {
   console.error('Error: Failed to copy root index.html:', err.message);
+  process.exit(1);
+}
+
+// 5. Copy hook files to dist/workshop/hook
+console.log('Copying hook static files...');
+try {
+  const hookSrc = path.join(rootDir, 'hook');
+  const hookDist = path.join(distWorkshopDir, 'hook');
+  copyFolderSync(hookSrc, hookDist);
+  console.log('✓ Hook static files copied successfully.');
+} catch (err) {
+  console.error('Error: Failed to copy hook files:', err.message);
   process.exit(1);
 }
 
