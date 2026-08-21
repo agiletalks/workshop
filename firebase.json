@@ -3,6 +3,7 @@
     "rules": "firestore.rules"
   },
   "hosting": {
+    "site": "agiletalks",
     "public": "dist",
     "ignore": [
       "firebase.json",
