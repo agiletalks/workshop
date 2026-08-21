@@ -4,6 +4,6 @@
   "scripts": {
     "install:all": "npm install --prefix marshmallow",
     "build": "node scripts/build-all.js",
-    "deploy": "firebase deploy"
+    "deploy": "npx --prefix marshmallow firebase deploy"
   }
 }
