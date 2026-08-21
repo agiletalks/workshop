@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 const rootDir = path.join(__dirname, '..');
 const distDir = path.join(rootDir, 'dist');
 const distWorkshopDir = path.join(distDir, 'workshop');
-const distEnvisionDir = path.join(distWorkshopDir, 'envision');
+const distAiArmDir = path.join(distWorkshopDir, 'ai-arm');
 
 console.log('=== Starting Workshop Suite Build ===');
 
@@ -48,14 +48,14 @@ try {
   process.exit(1);
 }
 
-// 3. Copy envision files to dist/workshop/envision
-console.log('Copying envision static files...');
+// 3. Copy ai-arm files to dist/workshop/ai-arm
+console.log('Copying ai-arm static files...');
 try {
-  const envisionSrc = path.join(rootDir, 'envision');
-  copyFolderSync(envisionSrc, distEnvisionDir);
-  console.log('✓ Envision static files copied successfully.');
+  const aiArmSrc = path.join(rootDir, 'ai-arm');
+  copyFolderSync(aiArmSrc, distAiArmDir);
+  console.log('✓ AI-ARM static files copied successfully.');
 } catch (err) {
-  console.error('Error: Failed to copy envision files:', err.message);
+  console.error('Error: Failed to copy ai-arm files:', err.message);
   process.exit(1);
 }
 
