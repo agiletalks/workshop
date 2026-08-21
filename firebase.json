@@ -3,7 +3,7 @@
     "rules": "firestore.rules"
   },
   "hosting": {
-    "site": "agiletalks",
+    "site": "agiletalks-workshop",
     "public": "dist",
     "ignore": [
       "firebase.json",
