@@ -59,5 +59,20 @@ try {
   process.exit(1);
 }
 
+// 4. Copy root index.html to dist/workshop/index.html
+console.log('Copying root index.html to dist/workshop/index.html...');
+try {
+  const rootIndexSrc = path.join(rootDir, 'index.html');
+  if (fs.existsSync(rootIndexSrc)) {
+    fs.copyFileSync(rootIndexSrc, path.join(distWorkshopDir, 'index.html'));
+    console.log('✓ Root index.html copied successfully.');
+  } else {
+    console.warn('Warning: Root index.html not found, skipping.');
+  }
+} catch (err) {
+  console.error('Error: Failed to copy root index.html:', err.message);
+  process.exit(1);
+}
+
 console.log('=== Build Completed Successfully ===');
 console.log(`Build output is ready at: ${distDir}`);
