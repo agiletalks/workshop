@@ -499,6 +499,35 @@ const defaultMatrices = [
 let matrices = JSON.parse(localStorage.getItem(storageKey) || "null") || defaultMatrices;
 let currentMatrixId = localStorage.getItem(currentMatrixKey) || matrices[0].id;
 
+// Migration: Force-remove prefix numbers (e.g. "0. 暫存" -> "暫存") from cached statuses and transitions to solve client-side cached data issues.
+let hasMigrated = false;
+matrices.forEach(m => {
+  m.statuses = m.statuses.map(s => {
+    const cleaned = s.replace(/^\d+\.\s*/, "").trim();
+    if (cleaned !== s) {
+      hasMigrated = true;
+      // Rename transitions map keys matching this status
+      const updatedTransitions = {};
+      Object.keys(m.transitions || {}).forEach(k => {
+        let newKey = k;
+        const parts = k.split(" -> ");
+        if (parts.length === 2) {
+          let from = parts[0].replace(/^\d+\.\s*/, "").trim();
+          let to = parts[1].replace(/^\d+\.\s*/, "").trim();
+          newKey = from + " -> " + to;
+        }
+        updatedTransitions[newKey] = m.transitions[k];
+      });
+      m.transitions = updatedTransitions;
+    }
+    return cleaned;
+  });
+});
+
+if (hasMigrated) {
+  localStorage.setItem(storageKey, JSON.stringify(matrices));
+}
+
 // Ensure currentMatrixId exists
 if (!matrices.some(m => m.id === currentMatrixId)) {
   currentMatrixId = matrices[0].id;
