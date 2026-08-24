@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Stormer - 敏捷需求建模白板</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        .canvas-grid {
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen overflow-hidden flex flex-col select-none">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-2 flex flex-col md:flex-row items-center justify-between gap-2.5 z-20 shadow-md">
+        <div class="flex items-center gap-2">
+            <div class="bg-amber-500 text-slate-950 p-1.5 rounded-lg shadow-md shadow-amber-500/10 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-1.5 leading-none">
+                    Event Stormer
+                    <span class="text-[9px] bg-slate-800 text-amber-400 font-semibold px-1 rounded border border-slate-700">Beta</span>
+                </h1>
+                <p class="text-[10px] text-slate-400 mt-0.5 leading-none">敏捷需求建模與事件風暴白板</p>
+            </div>
+        </div>
+
+        <!-- Global Controls -->
+        <div class="flex items-center flex-wrap gap-1.5">
+            <a href="../index.html" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-1 rounded-lg text-xs font-semibold transition-colors border border-slate-700 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                返回 Prompt Hub
+            </a>
+            <div class="w-px h-4 bg-slate-800 mx-0.5"></div>
+            <button onclick="openExportModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-lg shadow-indigo-600/10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                生成 AI 提示詞與 Mermaid
+            </button>
+            <button onclick="triggerImport()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-1 rounded-lg text-xs font-semibold transition-colors border border-slate-700 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                匯入 JSON
+            </button>
+            <button onclick="exportJson()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-1 rounded-lg text-xs font-semibold transition-colors border border-slate-700 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                匯出 JSON
+            </button>
+            <button onclick="confirmClearBoard()" class="bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-300 px-2 py-1 rounded-lg text-xs font-semibold transition-colors border border-red-900/50 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                清除
+            </button>
+        </div>
+    </header>
+
+    <!-- Hidden Input for file import -->
+    <input type="file" id="file-import-input" accept=".json" class="hidden" onchange="handleImportFile(event)">
+
+    <!-- Main Workspace Area -->
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- Sidebar / Toolbox (Floating panel on left) -->
+        <div class="absolute top-2 left-2 z-10 w-44 bg-slate-900/90 border border-slate-800 rounded-lg p-2.5 shadow-xl backdrop-blur-md flex flex-col gap-2.5 max-h-[calc(100vh-100px)] overflow-y-auto">
+            <div>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">區塊範本</h3>
+                <div class="flex flex-col gap-1.5">
+                    <button onclick="addTemplateBlock('transaction')" class="w-full bg-slate-800 hover:bg-slate-700/80 text-left p-1.5 rounded-md border border-slate-700/50 transition-colors group">
+                        <div class="text-[10px] font-semibold text-amber-400 mb-1">
+                            <span>🧱 交易鏈結</span>
+                        </div>
+                        <div class="flex flex-wrap gap-0.5 items-center leading-none">
+                            <span class="text-[8px] px-0.5 py-0.25 rounded bg-slate-600 text-slate-200">角色</span>
+                            <span class="text-slate-600 text-[8px]">➔</span>
+                            <span class="text-[8px] px-0.5 py-0.25 rounded bg-sky-600 text-white">指令</span>
+                            <span class="text-slate-600 text-[8px]">➔</span>
+                            <span class="text-[8px] px-0.5 py-0.25 rounded bg-orange-600 text-white">事件</span>
+                        </div>
+                    </button>
+                    <button onclick="addTemplateBlock('policy')" class="w-full bg-slate-800 hover:bg-slate-700/80 text-left p-1.5 rounded-md border border-slate-700/50 transition-colors group">
+                        <div class="text-[10px] font-semibold text-amber-400 mb-1">
+                            <span>🔄 反應鏈結</span>
+                        </div>
+                        <div class="flex flex-wrap gap-0.5 items-center leading-none">
+                            <span class="text-[8px] px-0.5 py-0.25 rounded bg-orange-600 text-white">事件</span>
+                            <span class="text-slate-600 text-[8px]">➔</span>
+                            <span class="text-[8px] px-0.5 py-0.25 rounded bg-rose-500 text-white">策略</span>
+                            <span class="text-slate-600 text-[8px]">➔</span>
+                            <span class="text-[8px] px-0.5 py-0.25 rounded bg-sky-600 text-white">指令</span>
+                        </div>
+                    </button>
+                    <button onclick="addTemplateBlock('read')" class="w-full bg-slate-800 hover:bg-slate-700/80 text-left p-1.5 rounded-md border border-slate-700/50 transition-colors group">
+                        <div class="text-[10px] font-semibold text-amber-400 mb-1">
+                            <span>📊 資料檢視</span>
+                        </div>
+                        <div class="flex flex-wrap gap-0.5 items-center leading-none">
+                            <span class="text-[8px] px-0.5 py-0.25 rounded bg-orange-600 text-white">事件</span>
+                            <span class="text-slate-600 text-[8px]">➔</span>
+                            <span class="text-[8px] px-0.5 py-0.25 rounded bg-emerald-500 text-emerald-950">畫面</span>
+                            <span class="text-slate-600 text-[8px]">➔</span>
+                            <span class="text-[8px] px-0.5 py-0.25 rounded bg-slate-600 text-slate-200">角色</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <hr class="border-slate-800">
+
+            <div>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">單張便利貼</h3>
+                <div class="grid grid-cols-2 gap-1">
+                    <button onclick="addSingleCard('event')" class="bg-orange-600/90 hover:bg-orange-500 text-white text-[9px] font-medium py-1 px-0.5 rounded border border-orange-500 shadow-sm transition-colors text-center">
+                        領域事件
+                    </button>
+                    <button onclick="addSingleCard('command')" class="bg-sky-600/90 hover:bg-sky-500 text-white text-[9px] font-medium py-1 px-0.5 rounded border border-sky-500 shadow-sm transition-colors text-center">
+                        指令/動作
+                    </button>
+                    <button onclick="addSingleCard('aggregate')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-[9px] font-semibold py-1 px-0.5 rounded border border-amber-400 shadow-sm transition-colors text-center">
+                        聚合/實體
+                    </button>
+                    <button onclick="addSingleCard('policy')" class="bg-rose-500 hover:bg-rose-400 text-rose-950 text-[9px] font-semibold py-1 px-0.5 rounded border border-rose-400 shadow-sm transition-colors text-center">
+                        策略/規則
+                    </button>
+                    <button onclick="addSingleCard('read-model')" class="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-[9px] font-semibold py-1 px-0.5 rounded border border-emerald-400 shadow-sm transition-colors text-center">
+                        讀取模型
+                    </button>
+                    <button onclick="addSingleCard('actor')" class="bg-slate-600 hover:bg-slate-500 text-slate-100 text-[9px] font-medium py-1 px-0.5 rounded border border-slate-500 shadow-sm transition-colors text-center">
+                        角色
+                    </button>
+                    <button onclick="addSingleCard('external-system')" class="bg-purple-600 hover:bg-purple-500 text-white text-[9px] font-medium py-1 px-0.5 rounded border border-purple-500 shadow-sm transition-colors text-center col-span-2">
+                        外部系統
+                    </button>
+                    <button onclick="addSingleCard('hotspot')" class="bg-red-600 hover:bg-red-500 text-white text-[9px] font-medium py-1 px-0.5 rounded border border-red-500 shadow-sm transition-colors text-center col-span-2">
+                        問題/痛點
+                    </button>
+                </div>
+            </div>
+            
+            <div class="text-[8px] text-slate-500 leading-tight border-t border-slate-800 pt-1.5">
+                💡 <b>操作：</b><br>
+                • 拖曳畫布或按 <kbd class="bg-slate-800 px-0.5 rounded">Space</kbd> 拖曳可平移。<br>
+                • 滾輪縮放。<br>
+                • 雙擊空白處新增交易區塊。<br>
+                • 雙擊卡片文字編輯。
+            </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div id="canvas-container" class="absolute inset-0 z-0 overflow-hidden cursor-grab active:cursor-grabbing bg-slate-950 canvas-grid" onmousedown="onCanvasMouseDown(event)" onwheel="onCanvasWheel(event)">
+            <!-- Inner Canvas Viewport -->
+            <div id="canvas-viewport" class="absolute transform-origin-0-0 w-0 h-0 transition-transform duration-75 ease-out">
+                <!-- Elements will be rendered here dynamically -->
+            </div>
+        </div>
+
+        <!-- Zoom Indicator & Fit To Screen (Bottom Right) -->
+        <div class="absolute bottom-6 right-6 z-10 flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-2 shadow-xl backdrop-blur-md gap-2">
+            <button onclick="adjustZoom(-0.1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-colors flex items-center justify-center">-</button>
+            <span id="zoom-percentage" class="text-xs font-semibold text-slate-300 min-w-[50px] text-center">100%</span>
+            <button onclick="adjustZoom(0.1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-colors flex items-center justify-center">+</button>
+            <div class="w-px h-6 bg-slate-800"></div>
+            <button onclick="resetView()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-medium transition-colors">置中/重置</button>
+        </div>
+
+    </div>
+
+    <!-- AI Generator Modal -->
+    <div id="export-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🚀</span>
+                    <div>
+                        <h2 class="text-base font-bold text-white">AI 需求建模與 Mermaid 產生器</h2>
+                        <p class="text-xs text-slate-400">一鍵產生適合發問給大型語言模型（LLM）的結構化 Prompt 與 Mermaid 圖表</p>
+                    </div>
+                </div>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="flex-1 p-6 overflow-y-auto flex flex-col gap-6">
+                <!-- Mermaid Tab / Prompt Tab toggle -->
+                <div class="flex border-b border-slate-800">
+                    <button id="tab-prompt" onclick="switchModalTab('prompt')" class="px-5 py-2.5 text-sm font-semibold border-b-2 border-indigo-500 text-indigo-400">
+                        💬 系統分析 AI Prompt
+                    </button>
+                    <button id="tab-mermaid" onclick="switchModalTab('mermaid')" class="px-5 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-300">
+                        📊 Mermaid 流程圖語法
+                    </button>
+                </div>
+
+                <!-- Prompt Content -->
+                <div id="modal-tab-content-prompt" class="flex-1 flex flex-col gap-3">
+                    <p class="text-xs text-slate-400">
+                        您可以直接複製以下完整 Prompt 貼給 Gemini 或 ChatGPT，AI 會自動根據您的事件風暴白板結構，產生實作規劃、資料庫 Schema 及後端架構程式碼。
+                    </p>
+                    <div class="relative flex-1">
+                        <textarea id="prompt-text-area" readonly class="w-full h-80 bg-slate-950 text-slate-300 text-xs p-4 rounded-xl border border-slate-800 font-mono focus:outline-none resize-none leading-relaxed custom-scrollbar"></textarea>
+                        <button onclick="copyToClipboard('prompt-text-area', 'prompt-copy-status')" class="absolute top-3 right-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg text-slate-200 transition-colors flex items-center gap-1 font-semibold">
+                            <span id="prompt-copy-status">複製 Prompt</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mermaid Content -->
+                <div id="modal-tab-content-mermaid" class="flex-1 flex flex-col gap-3 hidden">
+                    <p class="text-xs text-slate-400">
+                        以下為基於白板上所有區塊位置（由左至右的時間軸排序）產生的 Mermaid 流程圖語法，您可以貼在 Markdown 文件或 Mermaid 預覽工具中渲染。
+                    </p>
+                    <div class="relative flex-1">
+                        <textarea id="mermaid-text-area" readonly class="w-full h-80 bg-slate-950 text-slate-300 text-xs p-4 rounded-xl border border-slate-800 font-mono focus:outline-none resize-none leading-relaxed custom-scrollbar"></textarea>
+                        <button onclick="copyToClipboard('mermaid-text-area', 'mermaid-copy-status')" class="absolute top-3 right-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg text-slate-200 transition-colors flex items-center gap-1 font-semibold">
+                            <span id="mermaid-copy-status">複製 Mermaid 語法</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-slate-800 bg-slate-900/40 flex justify-end">
+                <button onclick="closeExportModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-colors">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert / Confirm Popup -->
+    <div id="confirm-popup" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-sm p-6 shadow-2xl flex flex-col gap-4">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">⚠️ 確認清除畫布嗎？</h3>
+            <p class="text-sm text-slate-400 leading-normal">
+                清除畫布後，所有便貼紙與流程區塊都將被永久刪除。若尚未匯出，將無法恢復。
+            </p>
+            <div class="flex justify-end gap-2.5 mt-2">
+                <button onclick="closeConfirmPopup()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-colors">取消</button>
+                <button onclick="clearBoard()" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-red-600/10">確認清除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Business Logic -->
+    <script>
+        // Core State
+        const state = {
+            zoom: 1,
+            panX: 0,
+            panY: 0,
+            blocks: [], // Array of block models
+            nextBlockId: 1,
+            nextCardId: 1
+        };
+
+        // Standard Colors & Labels mapping
+        const CARD_TYPES = {
+            'actor': { bgClass: 'bg-slate-500 text-slate-100 border-slate-600', label: '👤 Actor' },
+            'command': { bgClass: 'bg-sky-600 text-white border-sky-700', label: '💙 Command' },
+            'aggregate': { bgClass: 'bg-amber-400 text-amber-950 border-amber-500', label: '💛 Aggregate' },
+            'event': { bgClass: 'bg-orange-600 text-white border-orange-700', label: '🧡 Domain Event' },
+            'policy': { bgClass: 'bg-rose-500 text-rose-950 border-rose-600', label: '💗 Policy' },
+            'read-model': { bgClass: 'bg-emerald-500 text-emerald-950 border-emerald-600', label: '💚 Read Model' },
+            'external-system': { bgClass: 'bg-purple-600 text-white border-purple-700', label: '💜 External System' },
+            'hotspot': { bgClass: 'bg-red-600 text-white border-red-700', label: '🔴 Hotspot' }
+        };
+
+        // Dom Elements references
+        const canvasContainer = document.getElementById('canvas-container');
+        const canvasViewport = document.getElementById('canvas-viewport');
+        const zoomPercentage = document.getElementById('zoom-percentage');
+        const exportModal = document.getElementById('export-modal');
+        const confirmPopup = document.getElementById('confirm-popup');
+
+        // Drag state variables
+        let isDraggingCanvas = false;
+        let startPanX = 0;
+        let startPanY = 0;
+        let startMouseX = 0;
+        let startMouseY = 0;
+
+        let draggedBlock = null;
+        let startBlockX = 0;
+        let startBlockY = 0;
+
+        // Spacebar tracking
+        let isSpacePressed = false;
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
+                isSpacePressed = true;
+                canvasContainer.classList.add('cursor-grab');
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                isSpacePressed = false;
+                canvasContainer.classList.remove('cursor-grab');
+            }
+        });
+
+        // Initialize App
+        function init() {
+            // Load saved state from LocalStorage
+            try {
+                const savedBlocks = localStorage.getItem('event_stormer_blocks');
+                const savedZoom = localStorage.getItem('event_stormer_zoom');
+                const savedPanX = localStorage.getItem('event_stormer_panX');
+                const savedPanY = localStorage.getItem('event_stormer_panY');
+
+                if (savedBlocks) {
+                    state.blocks = JSON.parse(savedBlocks);
+                    // Recalculate next IDs to avoid duplication
+                    let maxBlockId = 0;
+                    let maxCardId = 0;
+                    state.blocks.forEach(b => {
+                        const bId = parseInt(b.id.replace('block_', ''));
+                        if (!isNaN(bId) && bId > maxBlockId) maxBlockId = bId;
+                        b.cards.forEach(c => {
+                            const cId = parseInt(c.id.replace('card_', ''));
+                            if (!isNaN(cId) && cId > maxCardId) maxCardId = cId;
+                        });
+                    });
+                    state.nextBlockId = maxBlockId + 1;
+                    state.nextCardId = maxCardId + 1;
+                } else {
+                    // Populate default template block (Insurance claim scenario)
+                    state.blocks = [
+                        {
+                            id: 'block_1',
+                            x: 100,
+                            y: 200,
+                            cards: [
+                                { id: 'card_1', type: 'actor', text: '保戶' },
+                                { id: 'card_2', type: 'command', text: '申請理賠' },
+                                { id: 'card_3', type: 'event', text: '理賠案已受理' }
+                            ]
+                        },
+                        {
+                            id: 'block_2',
+                            x: 600,
+                            y: 200,
+                            cards: [
+                                { id: 'card_4', type: 'event', text: '理賠案已受理' },
+                                { id: 'card_5', type: 'policy', text: '分派審核政策' },
+                                { id: 'card_6', type: 'command', text: '指派理賠專員' }
+                            ]
+                        },
+                        {
+                            id: 'block_3',
+                            x: 1100,
+                            y: 200,
+                            cards: [
+                                { id: 'card_7', type: 'actor', text: '理賠專員' },
+                                { id: 'card_8', type: 'command', text: '核決理賠' },
+                                { id: 'card_9', type: 'event', text: '理賠案已核准' }
+                            ]
+                        },
+                        {
+                            id: 'block_4',
+                            x: 1600,
+                            y: 200,
+                            cards: [
+                                { id: 'card_10', type: 'event', text: '理賠案已核准' },
+                                { id: 'card_11', type: 'policy', text: '自動付款政策' },
+                                { id: 'card_12', type: 'command', text: '撥款給付' }
+                            ]
+                        },
+                        {
+                            id: 'block_5',
+                            x: 2100,
+                            y: 200,
+                            cards: [
+                                { id: 'card_13', type: 'actor', text: '財務給付系統' },
+                                { id: 'card_14', type: 'command', text: '進行電子轉帳' },
+                                { id: 'card_15', type: 'event', text: '理賠款已匯出' }
+                            ]
+                        }
+                    ];
+                    state.nextBlockId = 6;
+                    state.nextCardId = 16;
+                }
+
+                if (savedZoom) state.zoom = parseFloat(savedZoom);
+                if (savedPanX) state.panX = parseFloat(savedPanX);
+                if (savedPanY) state.panY = parseFloat(savedPanY);
+            } catch (err) {
+                console.error("Failed to load local storage state:", err);
+            }
+
+            // Draw Initial View
+            updateViewportTransform();
+            renderBlocks();
+            updateZoomPercentage();
+        }
+
+        // Save state to LocalStorage (Debounced/Throttled)
+        let saveTimeout = null;
+        function queueSaveState() {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                try {
+                    localStorage.setItem('event_stormer_blocks', JSON.stringify(state.blocks));
+                    localStorage.setItem('event_stormer_zoom', state.zoom.toString());
+                    localStorage.setItem('event_stormer_panX', state.panX.toString());
+                    localStorage.setItem('event_stormer_panY', state.panY.toString());
+                } catch (err) {
+                    console.error("Failed to save state to local storage:", err);
+                }
+            }, 300);
+        }
+
+        // Helper to calculate font size based on text length
+        function getFontSizeClass(text) {
+            // Strip standard emojis and prefixes for count calculation
+            const cleanText = text.replace(/👤 |💙 |💛 |🧡 |💗 |💚 |💜 |🔴 /g, '').trim();
+            const len = cleanText.length;
+            if (len <= 6) return 'text-4xl';
+            if (len <= 15) return 'text-3xl';
+            if (len <= 35) return 'text-2xl';
+            if (len <= 70) return 'text-xl';
+            if (len <= 120) return 'text-lg';
+            return 'text-base';
+        }
+
+        // Render entire workspace blocks
+        function renderBlocks() {
+            // Remove existing block DOM nodes
+            const existingBlocks = canvasViewport.querySelectorAll('.block-node');
+            existingBlocks.forEach(b => b.remove());
+
+            // Build new nodes
+            state.blocks.forEach(block => {
+                const blockEl = document.createElement('div');
+                blockEl.className = 'block-node absolute flex flex-col items-stretch rounded-xl shadow-lg border border-slate-700 bg-slate-900/60 p-1.5 backdrop-blur-md group hover:border-slate-500 hover:bg-slate-900/90 transition-colors select-none';
+                blockEl.style.left = `${block.x}px`;
+                blockEl.style.top = `${block.y}px`;
+                blockEl.id = `block-${block.id}`;
+
+                // Drag handle container mousedown
+                blockEl.onmousedown = (e) => {
+                    // Prevent drag if clicking close button, add button, or textarea
+                    if (e.target.closest('.no-drag')) return;
+                    e.stopPropagation();
+                    
+                    draggedBlock = block;
+                    startBlockX = block.x;
+                    startBlockY = block.y;
+                    startMouseX = e.clientX;
+                    startMouseY = e.clientY;
+                    
+                    document.addEventListener('mousemove', onBlockDrag);
+                    document.addEventListener('mouseup', onBlockDragEnd);
+                };
+
+                // Add Drag indicator/Handle bar
+                const handleBar = document.createElement('div');
+                handleBar.className = 'absolute -top-7 left-2 flex items-center gap-2 text-[10px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 select-none opacity-60 group-hover:opacity-100 transition-opacity cursor-move';
+                handleBar.innerHTML = `
+                    <span>⠿ 拖曳群組</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                    <button class="no-drag ml-2 text-slate-500 hover:text-red-400 font-bold" onclick="deleteBlock('${block.id}')" title="刪除整組">🗑️</button>
+                `;
+                blockEl.appendChild(handleBar);
+
+                // Add Cards
+                block.cards.forEach((card, index) => {
+                    const cardConfig = CARD_TYPES[card.type] || CARD_TYPES['event'];
+                    const cardEl = document.createElement('div');
+                    
+                    // Determine rounded corners dynamically based on index to handle inner components gracefully
+                    const isFirst = index === 0;
+                    const isLast = index === block.cards.length - 1;
+                    let roundedClass = 'rounded-none';
+                    if (isFirst && isLast) roundedClass = 'rounded-lg';
+                    else if (isFirst) roundedClass = 'rounded-t-lg';
+                    else if (isLast) roundedClass = 'rounded-b-lg';
+
+                    cardEl.className = `w-96 h-40 flex flex-col justify-between p-4 select-text shadow-sm relative ${roundedClass} cursor-pointer border-b border-slate-800/60 last:border-b-0 ${cardConfig.bgClass} transition-transform hover:scale-[1.01] flex-shrink-0`;
+                    cardEl.id = `card-${card.id}`;
+                    
+                    // Card Type Label
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'text-[6px] font-bold opacity-30 uppercase tracking-widest block select-none';
+                    labelSpan.textContent = cardConfig.label;
+                    cardEl.appendChild(labelSpan);
+
+                    // Text Content area
+                    const contentContainer = document.createElement('div');
+                    const sizeClass = getFontSizeClass(card.text || "");
+                    contentContainer.className = `flex-1 flex items-center justify-center text-center overflow-y-auto pr-0.5 custom-scrollbar py-0.5 select-none font-extrabold leading-tight ${sizeClass}`;
+                    contentContainer.textContent = card.text || "請輸入內容...";
+                    
+                    // Card Action Controls (Close / Move card inside group)
+                    const controls = document.createElement('div');
+                    controls.className = 'absolute top-2.5 right-2.5 hidden group-hover:flex items-center gap-1 no-drag';
+                    
+                    // Up arrow if not first
+                    if (index > 0) {
+                        const btnUp = document.createElement('button');
+                        btnUp.className = 'w-6 h-6 bg-slate-900/60 hover:bg-slate-900 text-white rounded text-xs flex items-center justify-center font-bold';
+                        btnUp.textContent = '▲';
+                        btnUp.title = '向上移';
+                        btnUp.onclick = () => moveCardInBlock(block.id, index, -1);
+                        controls.appendChild(btnUp);
+                    }
+
+                    // Down arrow if not last
+                    if (index < block.cards.length - 1) {
+                        const btnDown = document.createElement('button');
+                        btnDown.className = 'w-6 h-6 bg-slate-900/60 hover:bg-slate-900 text-white rounded text-xs flex items-center justify-center font-bold';
+                        btnDown.textContent = '▼';
+                        btnDown.title = '向下移';
+                        btnDown.onclick = () => moveCardInBlock(block.id, index, 1);
+                        controls.appendChild(btnDown);
+                    }
+
+                    // Delete single card button
+                    const btnClose = document.createElement('button');
+                    btnClose.className = 'w-6 h-6 bg-red-600 hover:bg-red-500 text-white rounded text-xs flex items-center justify-center font-bold shadow';
+                    btnClose.textContent = '×';
+                    btnClose.title = '移除此卡';
+                    btnClose.onclick = () => removeCardFromBlock(block.id, card.id);
+                    controls.appendChild(btnClose);
+
+                    cardEl.appendChild(controls);
+                    cardEl.appendChild(contentContainer);
+
+                    // Double click to edit card text
+                    cardEl.ondblclick = (e) => {
+                        e.stopPropagation();
+                        startEditCardText(block.id, card.id, cardEl, contentContainer);
+                    };
+
+                    blockEl.appendChild(cardEl);
+                });
+
+                // Plus button at the bottom to add cards easily to this block
+                const addCardBtn = document.createElement('div');
+                addCardBtn.className = 'no-drag h-8 w-full flex items-center justify-center hover:bg-slate-800/20 hover:text-slate-200 cursor-pointer text-slate-500 transition-colors text-xs font-bold relative mt-1';
+                
+                const labelContainer = document.createElement('div');
+                labelContainer.className = 'flex items-center gap-1';
+                labelContainer.innerHTML = '<span>+ 新增卡片</span>';
+                addCardBtn.appendChild(labelContainer);
+
+                // Dropdown of standard colors to add (Controlled via click)
+                const dropdown = document.createElement('div');
+                dropdown.className = 'add-dropdown absolute left-full top-0 ml-2 w-32 bg-slate-900 border border-slate-800 rounded-lg shadow-xl p-1.5 hidden flex-col gap-1 z-30';
+                dropdown.innerHTML = `
+                    <div class="text-[9px] font-bold text-slate-500 px-1.5 uppercase pb-0.5 select-none">新增卡片</div>
+                    <button onclick="addCardToBlock('${block.id}', 'event')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-orange-400 font-semibold no-drag">🧡 領域事件</button>
+                    <button onclick="addCardToBlock('${block.id}', 'command')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-sky-400 font-semibold no-drag">💙 指令/動作</button>
+                    <button onclick="addCardToBlock('${block.id}', 'aggregate')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-amber-400 font-semibold no-drag">💛 聚合/實體</button>
+                    <button onclick="addCardToBlock('${block.id}', 'policy')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-rose-400 font-semibold no-drag">💗 策略/規則</button>
+                    <button onclick="addCardToBlock('${block.id}', 'read-model')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-emerald-400 font-semibold no-drag">💚 讀取模型</button>
+                    <button onclick="addCardToBlock('${block.id}', 'actor')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-slate-300 font-semibold no-drag">👤 角色</button>
+                    <button onclick="addCardToBlock('${block.id}', 'external-system')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-purple-400 font-semibold no-drag">💜 外部系統</button>
+                    <button onclick="addCardToBlock('${block.id}', 'hotspot')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-red-400 font-semibold no-drag">🔴 問題/痛點</button>
+                `;
+                addCardBtn.appendChild(dropdown);
+
+                // Click to toggle this dropdown and hide all others
+                addCardBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const isHidden = dropdown.classList.contains('hidden');
+                    // Hide all other dropdowns
+                    document.querySelectorAll('.add-dropdown').forEach(el => {
+                        el.classList.add('hidden');
+                        el.classList.remove('flex');
+                    });
+                    if (isHidden) {
+                        dropdown.classList.remove('hidden');
+                        dropdown.classList.add('flex');
+                    }
+                };
+
+                blockEl.appendChild(addCardBtn);
+
+                canvasViewport.appendChild(blockEl);
+            });
+        }
+
+        // Inline text editing for cards
+        function startEditCardText(blockId, cardId, cardEl, contentContainer) {
+            const originalText = contentContainer.textContent === "請輸入內容..." ? "" : contentContainer.textContent;
+            contentContainer.innerHTML = '';
+            
+            const textarea = document.createElement('textarea');
+            const sizeClass = getFontSizeClass(originalText);
+            textarea.className = `w-full h-full bg-slate-900/90 text-white resize-none outline-none border border-indigo-500 rounded p-1 font-extrabold text-center leading-tight no-drag ${sizeClass}`;
+            textarea.value = originalText;
+            
+            // Dynamic text resizing on input
+            textarea.oninput = () => {
+                textarea.classList.remove('text-4xl', 'text-3xl', 'text-2xl', 'text-xl', 'text-lg', 'text-base');
+                textarea.classList.add(getFontSizeClass(textarea.value));
+            };
+            
+            contentContainer.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            // Commit edit helper
+            function commitEdit() {
+                const newText = textarea.value.trim() || "請輸入內容...";
+                const block = state.blocks.find(b => b.id === blockId);
+                if (block) {
+                    const card = block.cards.find(c => c.id === cardId);
+                    if (card) {
+                        card.text = newText;
+                    }
+                }
+                renderBlocks();
+                queueSaveState();
+            }
+
+            // Keyboard/Blur events
+            textarea.onblur = () => {
+                commitEdit();
+            };
+
+            textarea.onkeydown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    textarea.blur(); // Triggers onblur to commit
+                }
+                if (e.key === 'Escape') {
+                    contentContainer.textContent = originalText || "請輸入內容...";
+                    renderBlocks();
+                }
+            };
+        }
+
+        // Block Drag Event Handlers
+        function onBlockDrag(e) {
+            if (!draggedBlock) return;
+            // Map mouse coordinates to zoom scale
+            const deltaX = (e.clientX - startMouseX) / state.zoom;
+            const deltaY = (e.clientY - startMouseY) / state.zoom;
+
+            draggedBlock.x = Math.round(startBlockX + deltaX);
+            draggedBlock.y = Math.round(startBlockY + deltaY);
+
+            // Update UI position instantly (60fps drag feel)
+            const blockEl = document.getElementById(`block-${draggedBlock.id}`);
+            if (blockEl) {
+                blockEl.style.left = `${draggedBlock.x}px`;
+                blockEl.style.top = `${draggedBlock.y}px`;
+            }
+        }
+
+        function onBlockDragEnd() {
+            draggedBlock = null;
+            document.removeEventListener('mousemove', onBlockDrag);
+            document.removeEventListener('mouseup', onBlockDragEnd);
+            queueSaveState();
+        }
+
+        // Canvas Zoom and Pan Handlers
+        function updateViewportTransform() {
+            canvasViewport.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+        }
+
+        function updateZoomPercentage() {
+            zoomPercentage.textContent = `${Math.round(state.zoom * 100)}%`;
+        }
+
+        function onCanvasMouseDown(e) {
+            // Drag canvas if space is pressed or clicking middle mouse button (button 1)
+            if (isSpacePressed || e.button === 1 || e.target === canvasContainer || e.target === canvasViewport) {
+                isDraggingCanvas = true;
+                startPanX = state.panX;
+                startPanY = state.panY;
+                startMouseX = e.clientX;
+                startMouseY = e.clientY;
+
+                document.addEventListener('mousemove', onCanvasMouseMove);
+                document.addEventListener('mouseup', onCanvasMouseUp);
+                
+                // Set cursor class
+                canvasContainer.classList.add('cursor-grabbing');
+                e.preventDefault();
+            }
+        }
+
+        // MouseMove pan update
+        function onCanvasMouseMove(e) {
+            if (!isDraggingCanvas) return;
+            state.panX = startPanX + (e.clientX - startMouseX);
+            state.panY = startPanY + (e.clientY - startMouseY);
+            updateViewportTransform();
+        }
+
+        function onCanvasMouseUp() {
+            isDraggingCanvas = false;
+            document.removeEventListener('mousemove', onCanvasMouseMove);
+            document.removeEventListener('mouseup', onCanvasMouseUp);
+            canvasContainer.classList.remove('cursor-grabbing');
+            queueSaveState();
+        }
+
+        function onCanvasWheel(e) {
+            e.preventDefault();
+            const zoomIntensity = 0.05;
+            
+            // Get mouse position relative to canvas-container
+            const rect = canvasContainer.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Calculate canvas-space mouse coordinates before zoom
+            const canvasX = (mouseX - state.panX) / state.zoom;
+            const canvasY = (mouseY - state.panY) / state.zoom;
+
+            // Compute new zoom factor
+            let newZoom = state.zoom - e.deltaY * zoomIntensity * 0.01;
+            newZoom = Math.max(0.15, Math.min(newZoom, 4.0)); // Zoom boundary limit
+
+            // Adjust pan so the pointer stays on the same coordinate
+            state.panX = mouseX - canvasX * newZoom;
+            state.panY = mouseY - canvasY * newZoom;
+            state.zoom = newZoom;
+
+            updateViewportTransform();
+            updateZoomPercentage();
+            queueSaveState();
+        }
+
+        function adjustZoom(delta) {
+            const containerCenter = canvasContainer.getBoundingClientRect();
+            const centerX = containerCenter.width / 2;
+            const centerY = containerCenter.height / 2;
+
+            const canvasX = (centerX - state.panX) / state.zoom;
+            const canvasY = (centerY - state.panY) / state.zoom;
+
+            let newZoom = state.zoom + delta;
+            newZoom = Math.max(0.15, Math.min(newZoom, 4.0));
+
+            state.panX = centerX - canvasX * newZoom;
+            state.panY = centerY - canvasY * newZoom;
+            state.zoom = newZoom;
+
+            updateViewportTransform();
+            updateZoomPercentage();
+            queueSaveState();
+        }
+
+        function resetView() {
+            state.zoom = 1;
+            state.panX = 0;
+            state.panY = 0;
+            updateViewportTransform();
+            updateZoomPercentage();
+            queueSaveState();
+        }
+
+        // Double click empty canvas space to quickly add a block
+        canvasContainer.ondblclick = (e) => {
+            if (e.target !== canvasContainer && e.target !== canvasViewport) return;
+            
+            // Get canvas-space click coordinates
+            const rect = canvasContainer.getBoundingClientRect();
+            const clickX = (e.clientX - rect.left - state.panX) / state.zoom;
+            const clickY = (e.clientY - rect.top - state.panY) / state.zoom;
+
+            addBlock('transaction', clickX - 250, clickY - 72);
+        };
+
+        // Add blocks programmatically
+        function addBlock(type, x, y) {
+            const blockId = `block_${state.nextBlockId++}`;
+            
+            // Default template sets
+            let cards = [];
+            if (type === 'transaction') {
+                cards = [
+                    { id: `card_${state.nextCardId++}`, type: 'actor', text: '👤 角色' },
+                    { id: `card_${state.nextCardId++}`, type: 'command', text: '💙 指令' },
+                    { id: `card_${state.nextCardId++}`, type: 'event', text: '🧡 領域事件' }
+                ];
+            } else if (type === 'policy') {
+                cards = [
+                    { id: `card_${state.nextCardId++}`, type: 'event', text: '🧡 領域事件' },
+                    { id: `card_${state.nextCardId++}`, type: 'policy', text: '💗 策略/規則' },
+                    { id: `card_${state.nextCardId++}`, type: 'command', text: '💙 觸發指令' }
+                ];
+            } else if (type === 'read') {
+                cards = [
+                    { id: `card_${state.nextCardId++}`, type: 'event', text: '🧡 領域事件' },
+                    { id: `card_${state.nextCardId++}`, type: 'read-model', text: '💚 檢視畫面' },
+                    { id: `card_${state.nextCardId++}`, type: 'actor', text: '👤 角色' }
+                ];
+            } else {
+                // Default single fallback card
+                cards = [
+                    { id: `card_${state.nextCardId++}`, type: type, text: '雙擊編輯' }
+                ];
+            }
+
+            state.blocks.push({
+                id: blockId,
+                x: x,
+                y: y,
+                cards: cards
+            });
+
+            renderBlocks();
+            queueSaveState();
+        }
+
+        // Toolbar direct triggers
+        function addTemplateBlock(templateType) {
+            // Add block in front of current center screen viewport
+            const rect = canvasContainer.getBoundingClientRect();
+            const x = (rect.width / 2 - state.panX) / state.zoom - 200;
+            const y = (rect.height / 2 - state.panY) / state.zoom - 80;
+            addBlock(templateType, x, y);
+        }
+
+        function addSingleCard(cardType) {
+            const rect = canvasContainer.getBoundingClientRect();
+            const x = (rect.width / 2 - state.panX) / state.zoom - 80;
+            const y = (rect.height / 2 - state.panY) / state.zoom - 80;
+            addBlock(cardType, x, y);
+        }
+
+        // Subcard manipulations inside blocks
+        function addCardToBlock(blockId, cardType) {
+            const block = state.blocks.find(b => b.id === blockId);
+            if (block) {
+                block.cards.push({
+                    id: `card_${state.nextCardId++}`,
+                    type: cardType,
+                    text: '雙擊編輯'
+                });
+                renderBlocks();
+                queueSaveState();
+            }
+        }
+
+        function removeCardFromBlock(blockId, cardId) {
+            const blockIndex = state.blocks.findIndex(b => b.id === blockId);
+            if (blockIndex !== -1) {
+                const block = state.blocks[blockIndex];
+                block.cards = block.cards.filter(c => c.id !== cardId);
+                
+                // If block becomes empty, delete the whole block
+                if (block.cards.length === 0) {
+                    state.blocks.splice(blockIndex, 1);
+                }
+                
+                renderBlocks();
+                queueSaveState();
+            }
+        }
+
+        function moveCardInBlock(blockId, cardIndex, offset) {
+            const block = state.blocks.find(b => b.id === blockId);
+            if (block) {
+                const cards = block.cards;
+                const newIndex = cardIndex + offset;
+                if (newIndex >= 0 && newIndex < cards.length) {
+                    // Swap positions
+                    const temp = cards[cardIndex];
+                    cards[cardIndex] = cards[newIndex];
+                    cards[newIndex] = temp;
+                    renderBlocks();
+                    queueSaveState();
+                }
+            }
+        }
+
+        // Delete block
+        function deleteBlock(blockId) {
+            state.blocks = state.blocks.filter(b => b.id !== blockId);
+            renderBlocks();
+            queueSaveState();
+        }
+
+        // Clear Board Workflow
+        function confirmClearBoard() {
+            confirmPopup.classList.remove('hidden');
+            confirmPopup.classList.add('flex');
+        }
+
+        function closeConfirmPopup() {
+            confirmPopup.classList.add('hidden');
+            confirmPopup.classList.remove('flex');
+        }
+
+        function clearBoard() {
+            state.blocks = [];
+            renderBlocks();
+            closeConfirmPopup();
+            queueSaveState();
+        }
+
+        // Export and Import JSON state
+        function exportJson() {
+            const dataStr = JSON.stringify(state, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'event-stormer-board.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        function triggerImport() {
+            document.getElementById('file-import-input').click();
+        }
+
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (parsedData.blocks && Array.isArray(parsedData.blocks)) {
+                        state.blocks = parsedData.blocks;
+                        state.zoom = parsedData.zoom || 1;
+                        state.panX = parsedData.panX || 0;
+                        state.panY = parsedData.panY || 0;
+                        
+                        // Set unique identifiers limits
+                        let maxBlockId = 0;
+                        let maxCardId = 0;
+                        state.blocks.forEach(b => {
+                            const bId = parseInt(b.id.replace('block_', ''));
+                            if (!isNaN(bId) && bId > maxBlockId) maxBlockId = bId;
+                            b.cards.forEach(c => {
+                                const cId = parseInt(c.id.replace('card_', ''));
+                                if (!isNaN(cId) && cId > maxCardId) maxCardId = cId;
+                            });
+                        });
+                        state.nextBlockId = maxBlockId + 1;
+                        state.nextCardId = maxCardId + 1;
+
+                        updateViewportTransform();
+                        renderBlocks();
+                        updateZoomPercentage();
+                        queueSaveState();
+                        alert("白板匯入成功！");
+                    } else {
+                        alert("無效的 JSON 檔案結構！");
+                    }
+                } catch (err) {
+                    alert("解析 JSON 發生錯誤！");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+            // Clear input so same file can be re-imported
+            event.target.value = '';
+        }
+
+        // Modal triggers
+        function openExportModal() {
+            // Generate content for tabs
+            generateAIPrompt();
+            generateMermaid();
+
+            exportModal.classList.remove('hidden');
+            exportModal.classList.add('flex');
+        }
+
+        function closeExportModal() {
+            exportModal.classList.add('hidden');
+            exportModal.classList.remove('flex');
+        }
+
+        function switchModalTab(tabName) {
+            const tabPrompt = document.getElementById('tab-prompt');
+            const tabMermaid = document.getElementById('tab-mermaid');
+            const contentPrompt = document.getElementById('modal-tab-content-prompt');
+            const contentMermaid = document.getElementById('modal-tab-content-mermaid');
+
+            if (tabName === 'prompt') {
+                tabPrompt.className = "px-5 py-2.5 text-sm font-semibold border-b-2 border-indigo-500 text-indigo-400";
+                tabMermaid.className = "px-5 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-300";
+                contentPrompt.classList.remove('hidden');
+                contentMermaid.classList.add('hidden');
+            } else {
+                tabMermaid.className = "px-5 py-2.5 text-sm font-semibold border-b-2 border-indigo-500 text-indigo-400";
+                tabPrompt.className = "px-5 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-300";
+                contentMermaid.classList.remove('hidden');
+                contentPrompt.classList.add('hidden');
+            }
+        }
+
+        function copyToClipboard(textareaId, statusId) {
+            const textarea = document.getElementById(textareaId);
+            textarea.select();
+            document.execCommand('copy');
+
+            const statusBtn = document.getElementById(statusId);
+            const originalText = statusBtn.textContent;
+            statusBtn.textContent = "✓ 已複製！";
+            statusBtn.classList.remove('bg-slate-800', 'text-slate-200');
+            statusBtn.classList.add('bg-emerald-600', 'text-white');
+
+            setTimeout(() => {
+                statusBtn.textContent = originalText;
+                statusBtn.classList.remove('bg-emerald-600', 'text-white');
+                statusBtn.classList.add('bg-slate-800', 'text-slate-200');
+            }, 2000);
+        }
+
+        // Code and prompt generation algorithms
+        function getChronologicalBlocks() {
+            // Sort blocks horizontally from left to right (X coordinate)
+            return [...state.blocks].sort((a, b) => a.x - b.x);
+        }
+
+        function generateAIPrompt() {
+            const sortedBlocks = getChronologicalBlocks();
+            let blockSpecMarkdown = "";
+
+            if (sortedBlocks.length === 0) {
+                blockSpecMarkdown = "（目前白板尚無任何實體建模內容）";
+            } else {
+                sortedBlocks.forEach((block, idx) => {
+                    const blockTypeLabel = block.cards.length > 1 ? "流程鏈結" : "獨立便利貼";
+                    blockSpecMarkdown += `### 區塊 ${idx + 1} [${blockTypeLabel}]\n`;
+                    block.cards.forEach(card => {
+                        const cardConfig = CARD_TYPES[card.type] || { label: card.type };
+                        blockSpecMarkdown += `* **[${cardConfig.label.substring(2)}]**: ${card.text}\n`;
+                    });
+                    blockSpecMarkdown += `\n`;
+                });
+            }
+
+            const promptText = `你是一位資深的系統架構師 (Software Architect) 與領域驅動設計 (DDD) 專家。
+以下是我們團隊透過 Event Storming 事件風暴產生的系統需求規格與流程鏈結（已依據白板上由左至右的時間軸排序）：
+
+## 事件風暴建模資料 (Event Storming Spec)
+
+${blockSpecMarkdown}
+---
+
+## 任務要求 (Task Requirements)
+
+請根據上述事件風暴的業務實體與流程建模，為我們完成以下技術設計與實作規劃：
+
+1. **領域模型設計 (Domain Model Design)**:
+   - 識別出所有的 **聚合根 (Aggregate Root)**、**實體 (Entity)** 與 **值物件 (Value Object)**，並說明其包含的欄位。
+   - 描述這些物件如何響應對應的 **指令 (Command)**，並描述拋出 **領域事件 (Domain Event)** 的業務邏輯規則。
+
+2. **系統狀態機 (State Machine / Flow)**:
+   - 詳細畫出該業務流程的狀態生命週期狀態轉換圖（例如從理賠受理、審查中、核准、已結案等狀態）。
+
+3. **實作程式碼架構 (Implementation Code Framework)**:
+   - 選擇主流的程式架構（如 TypeScript NestJS 或 Java Spring Boot），為最核心的 **聚合 (Aggregate)** 實體提供程式碼骨架（Skeleton Code），包含處理 Command 產生 Event 的核心業務方法。
+
+4. **資料庫設計 (Database Schema)**:
+   - 根據上述的 Aggregates & Read Models，提供對應的關係型資料庫 DDL (SQL) 或 NoSQL 的 Document Schema 規劃。
+
+5. **API 端點規格 (API Spec)**:
+   - 針對 Command 所代表的業務意圖，設計 RESTful API 端點路由、Request Body 與 Response 格式。
+
+請以清晰的繁體中文 (Traditional Chinese) 與 Markdown 程式碼區塊回覆。`;
+
+            document.getElementById('prompt-text-area').value = promptText;
+        }
+
+        function generateMermaid() {
+            const sortedBlocks = getChronologicalBlocks();
+            let mermaidCode = "graph LR\n";
+            mermaidCode += "    %% Style Definitions\n";
+            mermaidCode += "    classDef actor fill:#64748b,stroke:#475569,color:#fff;\n";
+            mermaidCode += "    classDef command fill:#0284c7,stroke:#0369a1,color:#fff;\n";
+            mermaidCode += "    classDef aggregate fill:#fbbf24,stroke:#d97706,color:#451a03;\n";
+            mermaidCode += "    classDef event fill:#ea580c,stroke:#c2410c,color:#fff;\n";
+            mermaidCode += "    classDef policy fill:#f43f5e,stroke:#e11d48,color:#fff;\n";
+            mermaidCode += "    classDef read fill:#10b981,stroke:#059669,color:#064e3b;\n";
+            mermaidCode += "    classDef external fill:#8b5cf6,stroke:#7c3aed,color:#fff;\n";
+            mermaidCode += "    classDef hotspot fill:#dc2626,stroke:#b91c1c,color:#fff;\n\n";
+
+            if (sortedBlocks.length === 0) {
+                mermaidCode += "    EmptyBoard[白板目前無內容]:::hotspot\n";
+            } else {
+                let nodeCounter = 1;
+
+                sortedBlocks.forEach((block, bIdx) => {
+                    mermaidCode += `    %% 區塊 ${bIdx + 1}\n`;
+                    let prevNodeId = null;
+
+                    block.cards.forEach((card) => {
+                        const nodeId = `N_${nodeCounter++}`;
+                        const sanitizedText = card.text.replace(/"/g, '\\"').replace(/\n/g, ' ');
+                        
+                        // Map type names to Mermaid style classes
+                        let styleClass = 'event';
+                        if (card.type === 'read-model') styleClass = 'read';
+                        else if (card.type === 'external-system') styleClass = 'external';
+                        else styleClass = card.type;
+
+                        mermaidCode += `    ${nodeId}["${sanitizedText}"]:::${styleClass}\n`;
+
+                        if (prevNodeId) {
+                            mermaidCode += `    ${prevNodeId} --> ${nodeId}\n`;
+                        }
+                        prevNodeId = nodeId;
+                    });
+                    mermaidCode += "\n";
+                });
+            }
+
+            document.getElementById('mermaid-text-area').value = mermaidCode;
+        }
+
+        // Close all add card dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.add-dropdown') && !e.target.closest('.no-drag')) {
+                document.querySelectorAll('.add-dropdown').forEach(el => {
+                    el.classList.add('hidden');
+                    el.classList.remove('flex');
+                });
+            }
+        });
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
