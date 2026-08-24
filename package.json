@@ -2,7 +2,7 @@
   "name": "workshop-root",
   "private": true,
   "scripts": {
-    "install:all": "npm install --prefix marshmallow",
+    "install:all": "npm install --prefix marshmallow && npm install --prefix split",
     "build": "node scripts/build-all.js",
     "deploy": "npx --prefix marshmallow firebase deploy"
   }

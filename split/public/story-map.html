@@ -1,0 +1,2833 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agile Board - 高效敏捷協作白板</title>
+  
+  <!-- Tailwind CSS (CDN first, Local fallback) -->
+  <script src="https://cdn.tailwindcss.com" onerror="this.onerror=null; this.src='lib/tailwindcss.js';"></script>
+  
+  <!-- Lucide Icons (CDN first, Local fallback) -->
+  <script src="https://unpkg.com/lucide@latest" onerror="this.onerror=null; this.src='lib/lucide.min.js';"></script>
+  
+  <!-- PapaParse for CSV Parsing (CDN first, Local fallback) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" onerror="this.onerror=null; this.src='lib/papaparse.min.js';"></script>
+  
+  <!-- SheetJS for Excel Export (CDN first, Local fallback) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" onerror="this.onerror=null; this.src='lib/xlsx.full.min.js';"></script>
+  
+  <!-- html2canvas and jsPDF for PDF Export (CDN first, Local fallback) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" onerror="this.onerror=null; this.src='lib/html2canvas.min.js';"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" onerror="this.onerror=null; this.src='lib/jspdf.umd.min.js';"></script>
+  
+  <style>
+    /* 點狀與方格背景效果 */
+    .bg-pattern-dots {
+      background-image: radial-gradient(rgba(0, 0, 0, 0.1) 1.5px, transparent 1.5px);
+    }
+    .bg-pattern-grid {
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    }
+    
+    /* 深色背景時，點狀與方格改為淡白色 */
+    .dark-pattern .bg-pattern-dots {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px);
+    }
+    .dark-pattern .bg-pattern-grid {
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    }
+
+    /* 網格背景層優化：僅對背景色彩做漸變，避免拖曳位置時產生轉場滯後與抖動 */
+    #background-pattern-layer {
+      transition: background-color 0.3s ease;
+    }
+
+    /* 紙張質感微陰影與手感 */
+    .paper-texture {
+      position: relative;
+    }
+    .paper-texture::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(0,0,0,0.02) 100%);
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    /* 隱藏捲軸 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.5);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.8);
+    }
+
+    /* 框選虛線樣式 */
+    .selection-box {
+      position: fixed;
+      border: 1.5px dashed #6366f1;
+      background-color: rgba(99, 102, 241, 0.08);
+      z-index: 100;
+      pointer-events: none;
+      border-radius: 6px;
+      display: none;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            boardBeige: '#FDFBF7',
+            boardPaleBlue: '#EFF6FF',
+            boardLightGray: '#F3F4F6',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="overflow-hidden select-none bg-slate-900 text-slate-800 font-sans w-screen h-screen">
+
+  <!-- 頂部高質感玻璃帷幕工具列 (抽屜式可隱藏與釘住) -->
+  <header id="main-toolbar" class="fixed top-2 left-2 right-2 md:top-4 md:left-4 md:right-4 h-16 bg-white/80 backdrop-blur-md border border-white/40 shadow-lg rounded-2xl z-40 flex items-center justify-between px-3 md:px-6 transition-all duration-300 transform -translate-y-28 opacity-0">
+    <!-- 左側 Kanban 品牌區 (在平板以下 md 隱藏以釋放寬度空間) -->
+    <div class="hidden md:flex items-center space-x-3">
+      <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+        <i data-lucide="kanban" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <span id="board-name-display" class="hover:bg-slate-100 px-2 py-0.5 rounded cursor-pointer transition-colors" onclick="renameBoard()">Story Map Board</span>
+        </h1>
+        <p class="text-xs text-slate-500 flex items-center gap-1">
+          <i data-lucide="clock" class="w-3 h-3"></i> 自動儲存於本機
+        </p>
+      </div>
+    </div>
+
+    <!-- 中間工具按鈕群 -->
+    <div class="flex items-center space-x-1.5 sm:space-x-2">
+      
+      <!-- Miro 特色：搬移/選擇模式切換 (已隱藏，由電腦版 Space 鍵拖曳與手機版左下角切換器取代) -->
+      <div class="hidden bg-slate-100 p-0.5 sm:p-1 rounded-xl border border-slate-200/60 mr-1 sm:mr-2">
+        <button id="btn-mode-select" onclick="setInteractionMode('select')" class="flex items-center justify-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm" title="選擇模式">
+          <i data-lucide="mouse-pointer" class="w-3.5 h-3.5"></i> <span class="hidden lg:inline">選擇物件</span>
+        </button>
+        <button id="btn-mode-hand" onclick="setInteractionMode('hand')" class="flex items-center justify-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800" title="搬移模式">
+          <i data-lucide="hand" class="w-3.5 h-3.5"></i> <span class="hidden lg:inline">搬移白板</span>
+        </button>
+      </div>
+
+      <div class="h-6 w-[1px] bg-slate-300/60 mx-0.5 sm:mx-1"></div>
+
+      <!-- 新增便利貼 -->
+      <button onclick="openNoteModal('create')" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm" title="新增便利貼">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> <span class="hidden lg:inline">新增便利貼</span>
+      </button>
+
+      <!-- 背景選擇器 -->
+      <div class="relative group">
+        <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 transition-all" title="白板背景">
+          <i data-lucide="palette" class="w-4 h-4"></i> <span class="hidden lg:inline">白板背景</span>
+        </button>
+        <div class="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 hidden group-hover:block hover:block z-50 after:content-[''] after:absolute after:-top-2 after:left-0 after:right-0 after:h-2">
+          <h3 class="text-xs font-bold text-slate-400 mb-3 tracking-wider">選擇白板底色與樣式</h3>
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <button onclick="changeBackground('white')" class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium">
+              <span class="w-4 h-4 rounded-full border border-slate-300 bg-white"></span> 純白背景
+            </button>
+            <button onclick="changeBackground('gray')" class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium">
+              <span class="w-4 h-4 rounded-full border border-slate-300 bg-gray-100"></span> 淺灰背景
+            </button>
+            <button onclick="changeBackground('beige')" class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium">
+              <span class="w-4 h-4 rounded-full border border-slate-300 bg-[#FDFBF7]"></span> 米色背景
+            </button>
+            <button onclick="changeBackground('blue')" class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium">
+              <span class="w-4 h-4 rounded-full border border-slate-300 bg-[#EFF6FF]"></span> 淡藍背景
+            </button>
+            <button onclick="changeBackground('dots')" class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium">
+              <span class="w-4 h-4 rounded-full border border-slate-300 bg-slate-200 bg-pattern-dots"></span> 點狀格線
+            </button>
+            <button onclick="changeBackground('grid')" class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium">
+              <span class="w-4 h-4 rounded-full border border-slate-300 bg-slate-200 bg-pattern-grid"></span> 方格線
+            </button>
+          </div>
+          <div class="border-t border-slate-100 pt-3 flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-600">自訂畫布色彩:</span>
+            <div class="flex items-center gap-2">
+              <input type="color" id="bg-color-picker" oninput="changeBackground('custom', this.value)" class="w-8 h-8 rounded border-0 cursor-pointer p-0 bg-transparent">
+              <span id="bg-color-hex" class="text-xs font-mono text-slate-500 uppercase">#FFFFFF</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 匯入按鈕 (在行動裝置小螢幕上隱藏以節省空間) -->
+      <button onclick="openImportModal()" class="hidden sm:flex bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-sm font-medium items-center justify-center gap-1.5 transition-all" title="批量匯入">
+        <i data-lucide="file-down" class="w-4 h-4"></i> <span class="hidden lg:inline">批量匯入</span>
+      </button>
+
+      <!-- 匯出選單 -->
+      <div class="relative group">
+        <button class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all" title="檔案匯出">
+          <i data-lucide="download" class="w-4 h-4"></i> <span class="hidden lg:inline">檔案匯出</span>
+        </button>
+        <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 p-2 hidden group-hover:block hover:block z-50 after:content-[''] after:absolute after:-top-2 after:left-0 after:right-0 after:h-2">
+          <button onclick="exportToExcel()" class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+            <i data-lucide="sheet" class="w-4 h-4"></i> 匯出 Excel
+          </button>
+          <button onclick="openPdfExportModal()" class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-700 transition-colors">
+            <i data-lucide="file-text" class="w-4 h-4"></i> 匯出 PDF 畫面
+          </button>
+          <button onclick="exportToJsonBackup()" class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
+            <i data-lucide="file-code" class="w-4 h-4"></i> 備份完整白板 (JSON)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側視角控制與協助 -->
+    <div class="flex items-center space-x-1.5 sm:space-x-2">
+      <button onclick="resetViewport()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 sm:p-2 rounded-xl transition-all" title="視角置中">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
+      </button>
+      <button onclick="openKeyboardShortcuts()" class="hidden sm:block bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 sm:p-2 rounded-xl transition-all" title="操作說明與快捷鍵">
+        <i data-lucide="help-circle" class="w-4 h-4"></i>
+      </button>
+      <div class="hidden sm:block h-6 w-[1px] bg-slate-300/60 mx-0.5 sm:mx-1"></div>
+      <button id="btn-pin-toolbar" onclick="togglePinToolbar()" class="hidden sm:block bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 sm:p-2 rounded-xl transition-all" title="釘住工具列">
+        <i id="pin-icon" data-lucide="pin" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 頂部懸浮拉環按鈕 (當工具列收合時顯示) -->
+  <div id="toolbar-handle" onclick="showToolbar()" class="fixed top-0 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border-x border-b border-slate-200/80 shadow-md px-5 py-1.5 rounded-b-2xl z-50 cursor-pointer flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 hover:shadow-lg transition-all transform duration-300">
+    <i id="toolbar-handle-icon" data-lucide="chevron-down" class="w-4 h-4 animate-bounce"></i>
+    <span class="text-[10px] font-extrabold tracking-wider uppercase">工具列</span>
+  </div>
+
+  <!-- 左下角漂浮畫布控制面板 -->
+  <div class="fixed bottom-6 left-6 bg-white/80 backdrop-blur-md border border-white/40 px-4 py-2 rounded-2xl shadow-lg z-40 flex items-center space-x-3">
+    <button onclick="zoomOut()" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 active:scale-90 transition-all">
+      <i data-lucide="minus" class="w-4 h-4"></i>
+    </button>
+    <span id="zoom-level" class="font-mono text-sm font-bold text-slate-700 min-w-[48px] text-center">100%</span>
+    <button onclick="zoomIn()" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 active:scale-90 transition-all">
+      <i data-lucide="plus" class="w-4 h-4"></i>
+    </button>
+    <div class="h-4 w-[1px] bg-slate-300"></div>
+    <!-- 電腦版操作提示 -->
+    <div class="hidden md:flex items-center gap-1 text-xs text-slate-500 font-medium">
+      <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-500"></i>
+      <span>右鍵選單 | 按住 Space 鍵拖曳畫布</span>
+    </div>
+    <!-- 手機版模式切換按鈕組 -->
+    <div class="md:hidden flex bg-slate-100 p-0.5 rounded-xl border border-slate-200/60" id="mobile-mode-toggle-group">
+      <button id="btn-mobile-select" onclick="setInteractionMode('select')" class="flex items-center justify-center p-1.5 rounded-lg transition-all bg-indigo-600 text-white shadow-sm" title="選擇物件">
+        <i data-lucide="mouse-pointer" class="w-4 h-4"></i>
+      </button>
+      <button id="btn-mobile-hand" onclick="setInteractionMode('hand')" class="flex items-center justify-center p-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-800" title="搬移白板">
+        <i data-lucide="hand" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- 右下角小地圖導航面板 -->
+  <div id="minimap-container" class="fixed bottom-20 right-6 bg-white/80 backdrop-blur-md border border-white/40 p-2.5 rounded-2xl shadow-lg z-40 flex flex-col items-center select-none transition-all hover:shadow-xl w-[200px]">
+    <div class="flex items-center justify-between w-full px-1 pb-2 border-b border-slate-200/60 mb-2">
+      <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+        <i data-lucide="map" class="w-3.5 h-3.5 text-indigo-600"></i> 畫布鳥瞰導航
+      </span>
+      <button onclick="toggleMinimap()" class="text-slate-400 hover:text-slate-600 rounded-lg transition-colors p-0.5">
+        <i id="minimap-toggle-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+      </button>
+    </div>
+    <div id="minimap-body" class="relative overflow-hidden bg-slate-50 border border-slate-200 rounded-xl cursor-crosshair w-[180px] h-[180px] transition-all duration-300">
+      <canvas id="minimap-canvas" width="180" height="180" class="absolute inset-0 pointer-events-none"></canvas>
+    </div>
+  </div>
+
+  <!-- 右下角統計資訊面板 -->
+  <div class="fixed bottom-6 right-6 bg-white/80 backdrop-blur-md border border-white/40 px-4 py-2 rounded-2xl shadow-lg z-40 flex items-center space-x-2">
+    <span class="text-xs text-slate-500">卡片數量: </span>
+    <span id="sticky-count" class="font-mono font-bold text-indigo-600 text-sm bg-indigo-50 px-2 py-0.5 rounded-lg">0</span>
+  </div>
+
+  <!-- 無限畫布外容器 -->
+  <div id="canvas-container" class="w-full h-full cursor-grab overflow-hidden relative select-none">
+    
+    <!-- 無限背景圖層：現已移到最外層，永遠滿版延伸且格線精準對齊位移與縮放 -->
+    <div id="background-pattern-layer" class="absolute inset-0 bg-pattern-dots bg-white"></div>
+    
+    <!-- 實際渲染縮放與位移的畫布層 (絕對定位，強制 origin-top-left 確保縮放中心與 JS 幾何坐標系完全對齊) -->
+    <div id="canvas-board" class="absolute w-[8000px] h-[8000px] top-0 left-0 origin-top-left pointer-events-none" style="transform-origin: top left;">
+      
+      <!-- 便利貼容器：當處於 Hand Mode 或按住 Space 時，動態加上 pointer-events-none 達到 Miro 整體大範圍拖動效果 -->
+      <div id="notes-container" class="absolute inset-0 pointer-events-none"></div>
+
+    </div>
+  </div>
+
+  <!-- 專業滑鼠右鍵毛玻璃 Context Menu -->
+  <div id="context-menu" class="fixed hidden bg-white/90 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-1.5 w-52 text-slate-700 z-50 text-xs font-semibold select-none transition-all duration-150 scale-95 opacity-0">
+    <button onclick="triggerContextMenuAction('create')" class="w-full text-left flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-colors">
+      <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-500"></i> 在此處新增便利貼卡片
+    </button>
+    <button onclick="triggerContextMenuAction('center')" class="w-full text-left flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors">
+      <i data-lucide="maximize" class="w-4 h-4 text-slate-500"></i> 視角重置 (置中)
+    </button>
+  </div>
+
+  <!-- 浮動資訊卡 (Tooltip Container) -->
+  <div id="floating-info-card" class="fixed pointer-events-none bg-slate-900/95 backdrop-blur-sm border border-slate-700/50 shadow-2xl rounded-xl p-4 w-72 text-white opacity-0 transition-opacity duration-200 z-50">
+    <div class="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
+      <span class="text-xs text-indigo-400 font-bold tracking-wider flex items-center gap-1">
+        <i data-lucide="file-text" class="w-3.5 h-3.5"></i> 便利貼詳細資訊
+      </span>
+      <span id="info-card-id" class="text-[10px] text-slate-500 font-mono"></span>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <h4 class="text-[11px] uppercase font-bold tracking-wider text-slate-400">便利貼內容 (Text)</h4>
+        <p id="info-card-text" class="text-sm font-medium text-slate-100 whitespace-pre-wrap mt-0.5 max-h-32 overflow-y-auto pr-1"></p>
+      </div>
+      <div>
+        <h4 class="text-[11px] uppercase font-bold tracking-wider text-slate-400">驗收條件 / 備註 (Acceptance Criteria)</h4>
+        <p id="info-card-ac" class="text-xs text-slate-300 whitespace-pre-wrap mt-0.5 max-h-32 overflow-y-auto pr-1"></p>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-800 pt-2 text-[10px] text-slate-500">
+        <span id="info-card-created" class="flex items-center gap-0.5"><i data-lucide="calendar" class="w-3 h-3"></i> </span>
+        <span id="info-card-updated" class="flex items-center gap-0.5"><i data-lucide="edit-3" class="w-3 h-3"></i> </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈出視窗 1：便利貼編輯/新增 Modal -->
+  <div id="note-modal" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-300">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <h3 id="modal-title" class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <i data-lucide="file-edit" class="text-indigo-600"></i> 新增便利貼
+        </h3>
+        <button onclick="closeNoteModal()" class="text-slate-400 hover:text-slate-600 rounded-full p-1.5 hover:bg-slate-100 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="mt-4 space-y-4">
+        <!-- Text 欄位 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">內容 (Text)</label>
+          <textarea id="modal-note-text" placeholder="請輸入主要看板故事、工作事項內容..." rows="3" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm outline-none resize-none transition-all"></textarea>
+        </div>
+        <!-- AC 欄位 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">驗收條件 / 補充備註 (Acceptance Criteria)</label>
+          <textarea id="modal-note-ac" placeholder="請輸入敏捷交付規格、驗收標準（AC）或技術卡片細節..." rows="3" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm outline-none resize-none transition-all"></textarea>
+        </div>
+        <!-- 色彩選擇 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">卡片背景色彩</label>
+          <div class="grid grid-cols-5 gap-2 mb-3" id="modal-color-palette"></div>
+          <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+            <span class="text-xs font-medium text-slate-500 flex items-center gap-1">
+              <i data-lucide="pipette" class="w-3.5 h-3.5"></i> 自訂色彩：
+            </span>
+            <div class="flex items-center gap-2">
+              <input type="color" id="note-custom-color" oninput="selectCustomNoteColor(this.value)" class="w-8 h-8 rounded border-0 cursor-pointer p-0 bg-transparent">
+              <span id="note-custom-hex" class="text-xs font-mono text-slate-500 uppercase">#FEF08A</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-6 flex justify-between space-x-3 border-t border-slate-100 pt-4">
+        <div>
+          <button id="modal-delete-btn" onclick="deleteNoteFromModal()" class="bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-1.5">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> 刪除便利貼
+          </button>
+        </div>
+        <div class="flex space-x-2">
+          <button onclick="closeNoteModal()" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition-all">
+            取消
+          </button>
+          <button id="modal-submit-btn" onclick="saveNoteModal()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-5 py-2 rounded-xl font-semibold text-sm transition-all shadow-md">
+            儲存便利貼
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈出視窗 2：批量匯入 Modal -->
+  <div id="import-modal" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-300">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <i data-lucide="file-up" class="text-indigo-600"></i> 批量便利貼匯入
+        </h3>
+        <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600 rounded-full p-1.5 hover:bg-slate-100 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="flex border-b border-slate-100 my-4 text-sm font-medium">
+        <button onclick="switchImportTab('text')" id="tab-btn-text" class="flex-1 text-center py-2 border-b-2 border-indigo-600 text-indigo-600 font-bold transition-all">
+          文字/CSV 直接貼上
+        </button>
+        <button onclick="switchImportTab('file')" id="tab-btn-file" class="flex-1 text-center py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition-all">
+          CSV 檔案上傳
+        </button>
+        <button onclick="switchImportTab('json')" id="tab-btn-json" class="flex-1 text-center py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition-all">
+          JSON 備份檔還原
+        </button>
+      </div>
+
+      <div id="import-tab-text" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">貼上純文字內容（每行產生一張便利貼，或標準 CSV）</label>
+          <textarea id="import-raw-text" placeholder="第一個卡片內容&#10;第二個卡片內容&#10;支援帶有標題列的標準 CSV (格式如: text,ac,color)" rows="6" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm outline-none resize-none transition-all font-mono"></textarea>
+        </div>
+      </div>
+
+      <div id="import-tab-file" class="hidden space-y-4">
+        <div class="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100/50 transition-colors cursor-pointer relative">
+          <input type="file" id="import-file-input" accept=".csv,.txt" onchange="handleFileSelect(event)" class="absolute inset-0 opacity-0 cursor-pointer">
+          <i data-lucide="upload-cloud" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
+          <span class="block text-sm font-semibold text-slate-700">選擇您的 CSV 或 TXT 檔案</span>
+          <span id="selected-file-name" class="block text-xs text-indigo-600 font-bold mt-2"></span>
+        </div>
+      </div>
+
+      <div id="import-tab-json" class="hidden space-y-4">
+        <div class="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100/50 transition-colors cursor-pointer relative">
+          <input type="file" id="import-json-input" accept=".json" onchange="handleJsonFileSelect(event)" class="absolute inset-0 opacity-0 cursor-pointer">
+          <i data-lucide="upload-cloud" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
+          <span class="block text-sm font-semibold text-slate-700">選擇您的 JSON 備份檔案</span>
+          <span id="selected-json-name" class="block text-xs text-indigo-600 font-bold mt-2"></span>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end space-x-2 border-t border-slate-100 pt-4">
+        <button onclick="closeImportModal()" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition-all">
+          取消
+        </button>
+        <button onclick="processImport()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-5 py-2 rounded-xl font-semibold text-sm transition-all shadow-md">
+          開始匯入白板
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈出視窗 3：匯出 PDF 精緻選項 Modal -->
+  <div id="pdf-modal" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-300">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
+          <i data-lucide="file-text" class="text-rose-500"></i> 匯出 PDF 白板畫面
+        </h3>
+        <button onclick="closePdfExportModal()" class="text-slate-400 hover:text-slate-600 rounded-full p-1.5 hover:bg-slate-100 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="my-4 space-y-3 text-slate-600 text-sm">
+        <p>請選擇您想要的匯出方式：</p>
+        <button onclick="performPdfExport('screen')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-rose-500 hover:bg-rose-50/30 transition-all flex items-center gap-3">
+          <span class="bg-rose-100 text-rose-700 p-2 rounded-lg"><i data-lucide="monitor" class="w-5 h-5"></i></span>
+          <div>
+            <span class="font-bold block text-slate-800">匯出目前看見的視角</span>
+            <span class="text-xs text-slate-400 block">僅輸出目前畫面所見範圍</span>
+          </div>
+        </button>
+        <button onclick="performPdfExport('all')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-rose-500 hover:bg-rose-50/30 transition-all flex items-center gap-3">
+          <span class="bg-rose-100 text-rose-700 p-2 rounded-lg"><i data-lucide="combine" class="w-5 h-5"></i></span>
+          <div>
+            <span class="font-bold block text-slate-800">匯出完整白板作業區</span>
+            <span class="text-xs text-slate-400 block">自動捕捉目前所有卡片的分布區域</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈出視窗 4：快捷鍵與操作指南 -->
+  <div id="help-modal" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-300">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i data-lucide="help-circle" class="text-indigo-600"></i> 操作指南與快速鍵
+        </h3>
+        <button onclick="closeKeyboardShortcuts()" class="text-slate-400 hover:text-slate-600 rounded-full p-1.5 hover:bg-slate-100 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="my-4 space-y-4 text-xs text-slate-600 max-h-[350px] overflow-y-auto pr-1">
+        <div>
+          <h4 class="font-bold text-slate-800 mb-1.5 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> 智慧導航與畫布搬移</h4>
+          <ul class="space-y-1 pl-2.5 list-disc">
+            <li><strong>選擇與編輯：</strong> 預設為選擇模式，可拖曳、雙擊卡片進行編輯，雙擊空白處可快速新增便利貼。</li>
+            <li><strong>按住空白鍵 (Space) 拖曳：</strong> 電腦版任何時候只要按住 Space 鍵並拖曳滑鼠左鍵，即可快速平移漫遊整個畫布。</li>
+            <li><strong>手機版模式切換：</strong> 使用手機時，可透過左下角控制面板的「指標」與「抓手」按鈕隨時切換「選擇物件」與「搬移白板」模式。</li>
+            <li><strong>滑鼠右鍵選單：</strong> 空白處點右鍵，可快速在此處新增便利貼或重置視角。</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-800 mb-1.5 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> 鎖定焦點縮放</h4>
+          <ul class="space-y-1 pl-2.5 list-disc">
+            <li>使用滑鼠滾輪，會以<strong>滑鼠游標為中心</strong>進行智慧對齊縮放。</li>
+            <li>點擊左下角 <strong>+ / -</strong> 縮放，會以<strong>畫面中心點</strong>為軸心精準對齊，焦點不飄移！</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-800 mb-1.5 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> 敏捷便利貼快捷操作</h4>
+          <ul class="space-y-1 pl-2.5 list-disc">
+            <li><strong>快速新增 (N)：</strong> 在非輸入狀態下按 N 鍵，可直接在畫布中心彈出新增視窗。</li>
+            <li><strong>全選卡片 (Ctrl + A)：</strong> 快速選取白板上的所有便利貼。</li>
+            <li><strong>復原 (Ctrl + Z) / 取消復原 (Ctrl + Y)：</strong> 本系統支援最大 50 步的 Undo 與 Redo。</li>
+            <li><strong>刪除 (Delete / Backspace)：</strong> 快速刪除所有已選取的便利貼。</li>
+            <li><strong>微調移動 (方向鍵)：</strong> 用上下左右鍵微調已選取卡片位置（每次 10px），按住 <strong>Shift + 方向鍵</strong> 可大幅移動（每次 50px）。</li>
+            <li><strong>字體放大縮放 (F)：</strong> 按下 F 鍵或點擊卡片右上角 <b>T</b> 按鈕，可單鍵將字體自適應放大到便利貼最大可用範圍，方便遠眺閱讀。</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-800 mb-1.5 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> 多選與自動排列</h4>
+          <ul class="space-y-1 pl-2.5 list-disc">
+            <li><strong>多選方式：</strong> 按住 <strong>Shift 鍵</strong> 逐一選取，或者直接在畫布空白處<strong>按住拖曳拉出虛線選取框</strong>批量選取。</li>
+            <li><strong>同步拖曳：</strong> 拖曳已選取卡片中的任意一張，其餘選中卡片會同步等位移搬移。</li>
+            <li><strong>自動對齊排列：</strong> 選取 2 張以上卡片時，可使用下方浮動工具面板的「橫向排列」、「縱向排列」、「網格對齊」將卡片以 240px 間距自動對齊，還可批量換色、放大或刪除。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 多選操作浮動工具列 -->
+  <div id="multiselect-toolbar" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur border border-slate-200/80 shadow-2xl rounded-2xl px-6 py-3 z-40 flex items-center space-x-4 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none">
+    <div class="text-xs font-bold text-slate-500 border-r border-slate-200 pr-4 flex items-center gap-1.5">
+      <i data-lucide="check-square" class="w-4 h-4 text-indigo-600"></i>
+      已選取 <span id="multiselect-count" class="font-mono text-sm font-black text-indigo-600">0</span> 張卡片
+    </div>
+    <div class="flex items-center space-x-1.5">
+      <button onclick="alignSelectedNotes('horizontal')" class="hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors" title="水平排列">
+        <i data-lucide="align-horizontal-space-around" class="w-4 h-4 text-indigo-500"></i> 橫向排列
+      </button>
+      <button onclick="alignSelectedNotes('vertical')" class="hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors" title="垂直排列">
+        <i data-lucide="align-vertical-space-around" class="w-4 h-4 text-indigo-500"></i> 縱向排列
+      </button>
+      <button onclick="alignSelectedNotes('grid')" class="hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors" title="網格對齊">
+        <i data-lucide="grid-3x3" class="w-4 h-4 text-indigo-500"></i> 網格對齊
+      </button>
+    </div>
+    <div class="h-5 w-[1px] bg-slate-200"></div>
+    <div class="flex items-center space-x-1.5">
+      <!-- 批次換色 -->
+      <div class="relative group/color">
+        <button class="hover:bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors">
+          <span class="w-3 h-3 rounded-full bg-indigo-500 border border-slate-300"></span> 變更色彩
+        </button>
+        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-xl shadow-xl border border-slate-100 p-2 hidden group-hover/color:block hover:block z-50 w-44 after:content-[''] after:absolute after:-bottom-2 after:left-0 after:right-0 after:h-2">
+          <div id="multiselect-color-grid" class="grid grid-cols-5 gap-1.5"></div>
+        </div>
+      </div>
+      <!-- 批次字體放大縮放 -->
+      <button onclick="toggleSelectedNotesFontFit()" class="hover:bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors" title="單鍵切換所選便利貼字體最大化">
+        <i data-lucide="type" class="w-3.5 h-3.5 text-indigo-500"></i> 字體縮放
+      </button>
+      <button onclick="deleteSelectedNotes()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors">
+        <i data-lucide="trash-2" class="w-4 h-4"></i> 刪除
+      </button>
+    </div>
+  </div>
+
+  <!-- 精緻 Toast 提示通知元件 -->
+  <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- 客製化確認對話框 -->
+  <div id="confirm-modal" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[60] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-300">
+      <div class="flex items-center gap-3 mb-3 text-amber-500">
+        <span class="bg-amber-100 p-2 rounded-xl"><i data-lucide="alert-triangle" class="w-6 h-6"></i></span>
+        <h4 id="confirm-title" class="font-bold text-slate-800 text-base">確認操作？</h4>
+      </div>
+      <p id="confirm-message" class="text-sm text-slate-600 mb-6 leading-relaxed"></p>
+      <div class="flex justify-end space-x-2">
+        <button id="confirm-cancel-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold transition-all">取消</button>
+        <button id="confirm-ok-btn" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-md">確認執行</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 系統預設 9 色色票配置 ---
+    const presetColors = [
+      { name: '黃色', hex: '#FEF08A' },
+      { name: '橘色', hex: '#FED7AA' },
+      { name: '紫色', hex: '#E9D5FF' },
+      { name: '綠色', hex: '#BBF7D0' },
+      { name: '粉紅色', hex: '#FBCFE8' },
+      { name: '藍色', hex: '#BFDBFE' },
+      { name: '黑色', hex: '#1E293B' },
+      { name: '白色', hex: '#FFFFFF' },
+      { name: '紅色', hex: '#FECACA' }
+    ];
+
+    // --- 全域變數與系統狀態定義 ---
+    const APP_ID = 'vibe-agile-board-story-map-v4'; // 更新版本 ID 以重新對齊世界座標
+    let boardState = {
+      boardName: "門診就醫體驗優化 - 影響地圖 (Impact Map)",
+      background: {
+        type: "dots", 
+        color: "#FFFFFF"
+      },
+      notes: [],
+      viewport: {
+        scale: 1.0,
+        x: 0,
+        y: 0
+      },
+      updatedAt: new Date().toISOString()
+    };
+
+    // 拖曳與視角狀態 (0~8000 世界座標系統)
+    let panX = 0;
+    let panY = 0;
+    let scale = 1.0;
+    let isPanning = false;
+    let isHoldingSpace = false;
+    let startMouseX = 0;
+    let startMouseY = 0;
+
+    // Miro 特色：系統操作模式 ('select' 物件選擇編輯 / 'hand' 白板抓手搬移)
+    let currentMode = 'select';
+    let lastMKeyPressTime = 0; // 記錄 M 鍵上一次按下的時間
+
+    // 多選便利貼集合
+    let selectedNoteIds = new Set();
+    let copiedNotes = []; // 暫存複製的便利貼資料
+    let isDrawingSelectionBox = false;
+    let selectionBoxEl = null;
+    let boxStartX = 0, boxStartY = 0;
+
+    // 小地圖控制狀態
+    let isDraggingMinimap = false;
+    let isMinimapCollapsed = false;
+
+    // 右鍵菜單狀態
+    let contextMenuPos = { x: 0, y: 0 };
+
+    // 便利貼編輯狀態
+    let activeModalMode = 'create';
+    let activeEditingNoteId = null;
+    let modalSelectedColor = '#FEF08A';
+
+    // 匯入檔案暫存
+    let selectedImportFileContent = null;
+
+    // Tooltip hover 延遲計時器
+    let tooltipTimeout = null;
+    let isTooltipVisible = false;
+
+    // 工具列收合與釘住狀態
+    let isToolbarPinned = false;
+    let isToolbarHovered = false;
+    let toolbarHideTimeout = null;
+
+    // 畫布 DOM 參照
+    const container = document.getElementById('canvas-container');
+    const board = document.getElementById('canvas-board');
+    const notesContainer = document.getElementById('notes-container');
+    const backgroundLayer = document.getElementById('background-pattern-layer');
+
+    // --- 幾何轉換引擎公式 (Container ↔ Board) ---
+    // 1. 將螢幕 (Container) 物理坐標轉換為白板空間座標 (0 ~ 8000)
+    function containerToBoard(cx, cy) {
+      const bx = (cx - panX) / scale;
+      const by = (cy - panY) / scale;
+      return { x: bx, y: by };
+    }
+
+    // 2. 將白板空間座標 (0 ~ 8000) 轉換為螢幕 (Container) 物理坐標
+    function boardToContainer(bx, by) {
+      const cx = bx * scale + panX;
+      const cy = by * scale + panY;
+      return { cx: cx, cy: cy };
+    }
+
+    // --- 視角初始居中定位方法 ---
+    function centerBoardOnLoad() {
+      const rect = container.getBoundingClientRect();
+      const W = rect.width;
+      const H = rect.height;
+      // 在比例為 1.0 時，將世界中點 (4000, 4000) 映射置中於螢幕中心
+      scale = 1.0;
+      panX = W / 2 - 4000 * scale;
+      panY = H / 2 - 4000 * scale;
+    }
+
+    // --- 工具列抽屜式控制函數 ---
+    function showToolbar() {
+      clearTimeout(toolbarHideTimeout);
+      const toolbar = document.getElementById('main-toolbar');
+      const handle = document.getElementById('toolbar-handle');
+      
+      toolbar.classList.remove('-translate-y-28', 'opacity-0', 'pointer-events-none');
+      toolbar.classList.add('translate-y-0', 'opacity-100');
+      
+      handle.classList.add('translate-y-[-100%]', 'opacity-0');
+    }
+
+    function hideToolbar() {
+      if (isToolbarPinned) return;
+      const toolbar = document.getElementById('main-toolbar');
+      const handle = document.getElementById('toolbar-handle');
+      
+      toolbar.classList.remove('translate-y-0', 'opacity-100');
+      toolbar.classList.add('-translate-y-28', 'opacity-0', 'pointer-events-none');
+      
+      handle.classList.remove('translate-y-[-100%]', 'opacity-0');
+    }
+
+    function scheduleHideToolbar() {
+      if (isToolbarPinned) return;
+      clearTimeout(toolbarHideTimeout);
+      toolbarHideTimeout = setTimeout(() => {
+        hideToolbar();
+      }, 600);
+    }
+
+    function togglePinToolbar() {
+      isToolbarPinned = !isToolbarPinned;
+      localStorage.setItem('aigile-board-toolbar-pinned', isToolbarPinned);
+      updatePinButtonUI();
+      if (isToolbarPinned) {
+        showToolbar();
+      } else {
+        scheduleHideToolbar();
+      }
+    }
+
+    function updatePinButtonUI() {
+      const btn = document.getElementById('btn-pin-toolbar');
+      const pinIcon = document.getElementById('pin-icon');
+      if (isToolbarPinned) {
+        btn.classList.remove('bg-slate-100', 'text-slate-600');
+        btn.classList.add('bg-indigo-100', 'text-indigo-600');
+        btn.title = "取消釘住工具列";
+        pinIcon.setAttribute('data-lucide', 'pin-off');
+      } else {
+        btn.classList.remove('bg-indigo-100', 'text-indigo-600');
+        btn.classList.add('bg-slate-100', 'text-slate-600');
+        btn.title = "釘住工具列";
+        pinIcon.setAttribute('data-lucide', 'pin');
+      }
+      if (window.lucide) {
+        lucide.createIcons({ scope: btn });
+      }
+    }
+
+    function initToolbarDrawer() {
+      const toolbar = document.getElementById('main-toolbar');
+      const handle = document.getElementById('toolbar-handle');
+      
+      const savedPin = localStorage.getItem('aigile-board-toolbar-pinned');
+      // 如果是窄螢幕（行動裝置，寬度小於 768px），則強制不釘住工具列以確保畫布操作空間
+      const isNarrowScreen = window.innerWidth < 768;
+      isToolbarPinned = isNarrowScreen ? false : (savedPin === 'true');
+      
+      updatePinButtonUI();
+      
+      toolbar.addEventListener('mouseenter', () => {
+        isToolbarHovered = true;
+        showToolbar();
+      });
+      toolbar.addEventListener('mouseleave', () => {
+        isToolbarHovered = false;
+        scheduleHideToolbar();
+      });
+      
+      handle.addEventListener('mouseenter', () => {
+        showToolbar();
+      });
+      
+      window.addEventListener('mousemove', (e) => {
+        if (e.clientY < 15) {
+          showToolbar();
+        }
+      });
+
+      // 行動端點擊外部或畫布時，自動收合工具列
+      container.addEventListener('click', () => {
+        if (window.innerWidth < 768) {
+          hideToolbar();
+        }
+      });
+      board.addEventListener('click', () => {
+        if (window.innerWidth < 768) {
+          hideToolbar();
+        }
+      });
+
+      if (isToolbarPinned) {
+        showToolbar();
+      } else {
+        hideToolbar();
+      }
+    }
+
+    // --- 初始化與本地儲存還原 ---
+    window.onload = function() {
+      initToolbarDrawer();
+      loadStateFromLocalStorage();
+      initializeUI();
+      setupCanvasEventListeners();
+      setupMinimapEvents();
+      setupKeyboardListeners();
+      setupContextMenu();
+      renderNotes();
+      updateCanvasTransform();
+      updateBackgroundUI();
+      
+      window.addEventListener('resize', updateCanvasTransform);
+      renderModalColorPalette();
+      updateStickyNotesCount();
+    }
+
+    function initializeUI() {
+      lucide.createIcons();
+    }
+
+    // --- 色彩 YIQ 亮度對比度判斷 ---
+    function getContrastColor(hexColor) {
+      let hex = hexColor.replace('#', '');
+      if (hex.length === 3) {
+        hex = hex.split('').map(char => char + char).join('');
+      }
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+      return (yiq >= 128) ? '#0F172A' : '#FFFFFF';
+    }
+
+    // --- Undo / Redo 歷史記錄與資料備份 ---
+    let undoStack = [];
+    let redoStack = [];
+    const MAX_HISTORY_STEPS = 50;
+    let pendingNotesStateBeforeDrag = null;
+
+    function pushHistory(customState = null) {
+      const stateToPush = customState ? JSON.parse(JSON.stringify(customState)) : JSON.parse(JSON.stringify(boardState.notes));
+      undoStack.push(stateToPush);
+      if (undoStack.length > MAX_HISTORY_STEPS) {
+        undoStack.shift();
+      }
+      redoStack = []; // 每次有新動作就清空 redo 棧
+    }
+
+    function undo() {
+      if (undoStack.length === 0) {
+        showToast("沒有上一步可以復原！", "warning");
+        return;
+      }
+      const currentNotes = JSON.parse(JSON.stringify(boardState.notes));
+      redoStack.push(currentNotes);
+      
+      const previousNotes = undoStack.pop();
+      boardState.notes = previousNotes;
+      
+      // 清空選取狀態，防止復原時卡片 ID 不匹配
+      if (typeof selectedNoteIds !== 'undefined') {
+        selectedNoteIds.clear();
+        updateMultiSelectUI();
+      }
+      
+      saveStateToLocalStorage();
+      renderNotes();
+      updateStickyNotesCount();
+      showToast("已復原上一步 (Undo)！", "info");
+    }
+
+    function redo() {
+      if (redoStack.length === 0) {
+        showToast("沒有下一步可以取消復原！", "warning");
+        return;
+      }
+      const currentNotes = JSON.parse(JSON.stringify(boardState.notes));
+      undoStack.push(currentNotes);
+      
+      const nextNotes = redoStack.pop();
+      boardState.notes = nextNotes;
+      
+      if (typeof selectedNoteIds !== 'undefined') {
+        selectedNoteIds.clear();
+        updateMultiSelectUI();
+      }
+      
+      saveStateToLocalStorage();
+      renderNotes();
+      updateStickyNotesCount();
+      showToast("已取消復原 (Redo)！", "info");
+    }
+
+    function saveStateToLocalStorage() {
+      boardState.viewport.scale = scale;
+      boardState.viewport.x = panX;
+      boardState.viewport.y = panY;
+      boardState.updatedAt = new Date().toISOString();
+      localStorage.setItem(APP_ID, JSON.stringify(boardState));
+    }
+
+    function loadStateFromLocalStorage() {
+      const saved = localStorage.getItem(APP_ID);
+      let hasSavedViewport = false;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            boardState = { ...boardState, ...parsed };
+            scale = boardState.viewport.scale || 1.0;
+            panX = boardState.viewport.x;
+            panY = boardState.viewport.y;
+            if (panX !== undefined && panY !== undefined) {
+              hasSavedViewport = true;
+            } else {
+              panX = 0;
+              panY = 0;
+            }
+            document.getElementById('board-name-display').innerText = boardState.boardName;
+          }
+        } catch (e) {
+          console.error("無法還原 Agile Board 設定，重設預設值。");
+        }
+      }
+
+      if (!saved || !hasSavedViewport) {
+        // 提供初始預設便利貼（建立在 8000x8000 世界中點，確保載入時置中完全可見）
+        boardState.notes = [];
+        // 第一次啟動時，重設視角置中
+        centerBoardOnLoad();
+        saveStateToLocalStorage();
+      }
+    }
+
+    function renameBoard() {
+      const currentName = boardState.boardName;
+      showCustomConfirm("變更白板名稱", `請輸入新的 Agile Board 標題：<input id='rename-input' type='text' value='${currentName}' class='w-full mt-2 px-3 py-2 bg-slate-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20'>`, function() {
+        const inputVal = document.getElementById('rename-input').value.trim();
+        if (inputVal) {
+          boardState.boardName = inputVal;
+          document.getElementById('board-name-display').innerText = inputVal;
+          saveStateToLocalStorage();
+          showToast("白板名稱修改成功！");
+        }
+      });
+    }
+
+    // --- Miro 特色：模式切換控制核心 ---
+    function setInteractionMode(mode) {
+      currentMode = mode;
+      const selectBtn = document.getElementById('btn-mode-select');
+      const handBtn = document.getElementById('btn-mode-hand');
+      const mobileSelectBtn = document.getElementById('btn-mobile-select');
+      const mobileHandBtn = document.getElementById('btn-mobile-hand');
+      const notesCont = document.getElementById('notes-container');
+
+      if (mode === 'select') {
+        if (selectBtn) {
+          selectBtn.className = "flex items-center justify-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm";
+        }
+        if (handBtn) {
+          handBtn.className = "flex items-center justify-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800";
+        }
+        if (mobileSelectBtn) {
+          mobileSelectBtn.className = "flex items-center justify-center p-1.5 rounded-lg transition-all bg-indigo-600 text-white shadow-sm";
+        }
+        if (mobileHandBtn) {
+          mobileHandBtn.className = "flex items-center justify-center p-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-800";
+        }
+        notesCont.classList.remove('pointer-events-none');
+        container.style.cursor = 'grab';
+        showToast("已切換至「選擇物件」模式");
+      } else {
+        if (handBtn) {
+          handBtn.className = "flex items-center justify-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm";
+        }
+        if (selectBtn) {
+          selectBtn.className = "flex items-center justify-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800";
+        }
+        if (mobileHandBtn) {
+          mobileHandBtn.className = "flex items-center justify-center p-1.5 rounded-lg transition-all bg-indigo-600 text-white shadow-sm";
+        }
+        if (mobileSelectBtn) {
+          mobileSelectBtn.className = "flex items-center justify-center p-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-800";
+        }
+        notesCont.classList.add('pointer-events-none');
+        container.style.cursor = 'grab';
+        showToast("已切換至「搬移白板」模式 — 卡片鎖定，可隨意拖動白板");
+      }
+    }
+
+    // --- 高階右鍵 Context Menu 設定 ---
+    function setupContextMenu() {
+      // 監聽畫布的 contextmenu 事件
+      container.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        
+        const menu = document.getElementById('context-menu');
+        menu.style.left = `${e.clientX}px`;
+        menu.style.top = `${e.clientY}px`;
+        
+        // 渲染選單圖示
+        menu.classList.remove('hidden');
+        setTimeout(() => {
+          menu.classList.remove('scale-95', 'opacity-0');
+          menu.classList.add('scale-100', 'opacity-100');
+        }, 10);
+        
+        lucide.createIcons({ scope: menu });
+        
+        // 記錄滑鼠右鍵點擊當前的物理座標
+        contextMenuPos = { x: e.clientX, y: e.clientY };
+      });
+
+      // 點擊其它區域自動隱藏右鍵選單
+      window.addEventListener('click', function(e) {
+        const menu = document.getElementById('context-menu');
+        if (!e.target.closest('#context-menu')) {
+          menu.classList.add('scale-95', 'opacity-0');
+          setTimeout(() => menu.classList.add('hidden'), 150);
+        }
+      });
+    }
+
+    // 點擊右鍵選單動作
+    function triggerContextMenuAction(action) {
+      const menu = document.getElementById('context-menu');
+      menu.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => menu.classList.add('hidden'), 150);
+
+      if (action === 'create') {
+        const rect = container.getBoundingClientRect();
+        // 計算滑鼠在 container 容器內的相對偏移量
+        const mouseX = contextMenuPos.x - rect.left;
+        const mouseY = contextMenuPos.y - rect.top;
+
+        // 核心公式：逆轉換計算該物理點所在的 8000x8000 世界座標
+        const boardPos = containerToBoard(mouseX, mouseY);
+        
+        // 新便利貼大小為 220x220 像素，我們向左上位移 110 像素以使卡片中心完美契合滑鼠點擊點
+        openNoteModal('create', { x: boardPos.x - 110, y: boardPos.y - 110 });
+        
+      } else if (action === 'center') {
+        resetViewport();
+      }
+    }
+
+    // --- 焦點推拉縮放與畫布導航 ---
+    function adjustZoom(zoomIn) {
+      const zoomFactor = 1.15;
+      let newScale = scale;
+      if (zoomIn) {
+        newScale = Math.min(scale * zoomFactor, 3.5);
+      } else {
+        newScale = Math.max(scale / zoomFactor, 0.15);
+      }
+
+      // 鎖定「當前視窗的可見物理中心點」作為焦點，推算虛擬空間座標
+      const rect = container.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      const worldX = (centerX - panX) / scale;
+      const worldY = (centerY - panY) / scale;
+
+      scale = newScale;
+      
+      // 【修復關鍵】：精確計算縮放焦點在 Y 軸的補償定位，確保視覺焦點不偏移
+      panX = centerX - worldX * scale;
+      panY = centerY - worldY * scale;
+
+      updateCanvasTransform();
+      saveStateToLocalStorage();
+    }
+
+    function zoomIn() { adjustZoom(true); }
+    function zoomOut() { adjustZoom(false); }
+
+    // 無限畫布滑鼠、觸控監聽
+    function setupCanvasEventListeners() {
+      // 滾輪智慧縮放：以滑鼠游標為絕對中心焦點，無縫對齊
+      container.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        const zoomFactor = 1.08;
+        let newScale = scale;
+        if (e.deltaY < 0) {
+          newScale = Math.min(scale * zoomFactor, 3.5);
+        } else {
+          newScale = Math.max(scale / zoomFactor, 0.15);
+        }
+
+        const rect = container.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const worldX = (mouseX - panX) / scale;
+        const worldY = (mouseY - panY) / scale;
+
+        scale = newScale;
+        panX = mouseX - worldX * scale;
+        panY = mouseY - worldY * scale;
+
+        updateCanvasTransform();
+        saveStateToLocalStorage();
+      }, { passive: false });
+
+      // 拖曳畫布 (Pan) 與選取框 (Selection Box) 控制
+      container.addEventListener('mousedown', function(e) {
+        if (e.button === 2) return;
+
+        const isMiddleClick = (e.button === 1);
+        const isSpaceDown = isHoldingSpace;
+        const isHandMode = (currentMode === 'hand');
+        const isBgClick = (e.target === container || e.target === backgroundLayer || e.target === board);
+
+        if (isMiddleClick || isSpaceDown || (isHandMode && isBgClick)) {
+          isPanning = true;
+          container.style.cursor = 'grabbing';
+          startMouseX = e.clientX - panX;
+          startMouseY = e.clientY - panY;
+          e.preventDefault();
+        } else if (currentMode === 'select' && isBgClick) {
+          isDrawingSelectionBox = true;
+          boxStartX = e.clientX;
+          boxStartY = e.clientY;
+          
+          if (!selectionBoxEl) {
+            selectionBoxEl = document.createElement('div');
+            selectionBoxEl.className = 'selection-box';
+            document.body.appendChild(selectionBoxEl);
+          }
+          selectionBoxEl.style.display = 'none';
+
+          if (!e.shiftKey) {
+            selectedNoteIds.clear();
+            updateNotesSelectionVisuals();
+          }
+        }
+      });
+
+      window.addEventListener('mousemove', function(e) {
+        if (isPanning) {
+          panX = e.clientX - startMouseX;
+          panY = e.clientY - startMouseY;
+          updateCanvasTransform();
+        } else if (isDrawingSelectionBox && selectionBoxEl) {
+          const left = Math.min(e.clientX, boxStartX);
+          const top = Math.min(e.clientY, boxStartY);
+          const width = Math.abs(e.clientX - boxStartX);
+          const height = Math.abs(e.clientY - boxStartY);
+          
+          selectionBoxEl.style.left = left + 'px';
+          selectionBoxEl.style.top = top + 'px';
+          selectionBoxEl.style.width = width + 'px';
+          selectionBoxEl.style.height = height + 'px';
+          selectionBoxEl.style.display = 'block';
+
+          const worldTL = containerToBoard(left, top);
+          const worldBR = containerToBoard(left + width, top + height);
+
+          const currentFrameSelected = new Set();
+          boardState.notes.forEach(note => {
+            const intersects = (note.x + 220 >= worldTL.x && note.x <= worldBR.x && note.y + 220 >= worldTL.y && note.y <= worldBR.y);
+            if (intersects) {
+              currentFrameSelected.add(note.id);
+            }
+          });
+
+          if (!e.shiftKey) {
+            selectedNoteIds.clear();
+            currentFrameSelected.forEach(id => selectedNoteIds.add(id));
+          } else {
+            currentFrameSelected.forEach(id => selectedNoteIds.add(id));
+          }
+          updateNotesSelectionVisuals();
+        }
+      });
+
+      window.addEventListener('mouseup', function() {
+        if (isPanning) {
+          isPanning = false;
+          container.style.cursor = (isHoldingSpace || currentMode === 'hand') ? 'grab' : 'grab';
+          saveStateToLocalStorage();
+        }
+        if (isDrawingSelectionBox) {
+          isDrawingSelectionBox = false;
+          if (selectionBoxEl) {
+            selectionBoxEl.style.display = 'none';
+          }
+          saveStateToLocalStorage();
+        }
+      });
+
+      // 雙擊空白處新增卡片 (雙擊位置為卡片中心)
+      container.addEventListener('dblclick', function(e) {
+        const isHandMode = (currentMode === 'hand');
+        if (isHandMode) return; 
+
+        const isBgClick = (e.target === container || e.target === backgroundLayer || e.target === board);
+        if (isBgClick) {
+          const rect = container.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+          
+          const boardPos = containerToBoard(mouseX, mouseY);
+          openNoteModal('create', { x: boardPos.x - 110, y: boardPos.y - 110 });
+        }
+      });
+
+      // 支援行動端多指觸摸與縮放
+      let touchStartDist = 0;
+      let isDoubleTouch = false;
+      let touchPanStartX = 0, touchPanStartY = 0;
+
+      container.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+          isDoubleTouch = true;
+          touchStartDist = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+          );
+        } else if (e.touches.length === 1 && (e.target === backgroundLayer || currentMode === 'hand')) {
+          isPanning = true;
+          touchPanStartX = e.touches[0].clientX - panX;
+          touchPanStartY = e.touches[0].clientY - panY;
+        }
+      });
+
+      container.addEventListener('touchmove', function(e) {
+        if (isDoubleTouch && e.touches.length === 2) {
+          e.preventDefault();
+          const dist = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+          );
+          const factor = dist / touchStartDist;
+          touchStartDist = dist;
+
+          const rect = container.getBoundingClientRect();
+          const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+          const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+          const worldX = (centerX - panX) / scale;
+          const worldY = (centerY - panY) / scale;
+
+          scale = Math.max(0.15, Math.min(scale * factor, 3.5));
+          panX = centerX - worldX * scale;
+          panY = centerY - worldY * scale;
+
+          updateCanvasTransform();
+        } else if (isPanning && e.touches.length === 1) {
+          panX = e.touches[0].clientX - touchPanStartX;
+          panY = e.touches[0].clientY - touchPanStartY;
+          updateCanvasTransform();
+        }
+      });
+
+      container.addEventListener('touchend', function() {
+        isDoubleTouch = false;
+        isPanning = false;
+        saveStateToLocalStorage();
+      });
+    }
+
+    // --- 鳥瞰小地圖事件與精準導航算法 ---
+    function setupMinimapEvents() {
+      const minimapBody = document.getElementById('minimap-body');
+      
+      function handleMinimapInteraction(e) {
+        const rect = minimapBody.getBoundingClientRect();
+        const mx = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+        const my = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+        
+        // 小地圖固定寬度與大白板(8000)的比值
+        const minimapScale = rect.width / 8000;
+        const x_target = mx / minimapScale; 
+        const y_target = my / minimapScale; 
+        
+        const W = container.clientWidth;
+        const H = container.clientHeight;
+        
+        // 精準將視角中心平移導向目標
+        panX = W / 2 - x_target * scale;
+        panY = H / 2 - y_target * scale;
+        
+        updateCanvasTransform();
+      }
+
+      minimapBody.addEventListener('pointerdown', function(e) {
+        isDraggingMinimap = true;
+        minimapBody.setPointerCapture(e.pointerId);
+        handleMinimapInteraction(e);
+        e.preventDefault();
+      });
+
+      minimapBody.addEventListener('pointermove', function(e) {
+        if (isDraggingMinimap) {
+          handleMinimapInteraction(e);
+        }
+      });
+
+      minimapBody.addEventListener('pointerup', function(e) {
+        if (isDraggingMinimap) {
+          isDraggingMinimap = false;
+          minimapBody.releasePointerCapture(e.pointerId);
+          saveStateToLocalStorage();
+        }
+      });
+    }
+
+    // 小地圖即時畫布渲染
+    function updateMinimap() {
+      const body = document.getElementById('minimap-body');
+      if (body.classList.contains('hidden')) return;
+
+      const canvas = document.getElementById('minimap-canvas');
+      const ctx = canvas.getContext('2d');
+      const W = container.clientWidth;
+      const H = container.clientHeight;
+      
+      const minimapW = canvas.width;
+      const minimapH = canvas.height;
+      const minimapScale = minimapW / 8000;
+
+      const type = boardState.background.type;
+      const customColor = boardState.background.color;
+      let bgColor = '#FFFFFF';
+      
+      switch (type) {
+        case 'white': bgColor = '#FFFFFF'; break;
+        case 'gray': bgColor = '#F3F4F6'; break;
+        case 'beige': bgColor = '#FDFBF7'; break;
+        case 'blue': bgColor = '#EFF6FF'; break;
+        case 'custom': bgColor = customColor || '#FFFFFF'; break;
+        default: bgColor = '#FFFFFF'; break;
+      }
+      
+      ctx.clearRect(0, 0, minimapW, minimapH);
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, minimapW, minimapH);
+
+      const contrast = getContrastColor(bgColor);
+      const isDarkBg = (contrast === '#FFFFFF');
+      ctx.strokeStyle = isDarkBg ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)';
+      ctx.lineWidth = 1;
+
+      ctx.strokeRect(0, 0, minimapW, minimapH);
+      ctx.beginPath();
+      ctx.moveTo(minimapW / 2, 0);
+      ctx.lineTo(minimapW / 2, minimapH);
+      ctx.moveTo(0, minimapH / 2);
+      ctx.lineTo(minimapW, minimapH / 2);
+      ctx.stroke();
+
+      // 繪製微型卡片縮影
+      boardState.notes.forEach(note => {
+        const nx = note.x * minimapScale;
+        const ny = note.y * minimapScale;
+        const nw = 220 * minimapScale;
+        const nh = 220 * minimapScale;
+
+        ctx.fillStyle = note.color;
+        ctx.fillRect(nx, ny, nw, nh);
+
+        ctx.strokeStyle = isDarkBg ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.08)';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(nx, ny, nw, nh);
+      });
+
+      // 繪製目前主視角的包絡線框
+      const topLeft = containerToBoard(0, 0);
+      const bottomRight = containerToBoard(W, H);
+
+      const vx = topLeft.x * minimapScale;
+      const vy = topLeft.y * minimapScale;
+      const vw = (bottomRight.x - topLeft.x) * minimapScale;
+      const vh = (bottomRight.y - topLeft.y) * minimapScale;
+
+      ctx.fillStyle = isDarkBg ? 'rgba(255, 255, 255, 0.12)' : 'rgba(99, 102, 241, 0.08)';
+      ctx.fillRect(vx, vy, vw, vh);
+
+      ctx.strokeStyle = '#6366F1'; 
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(vx, vy, vw, vh);
+    }
+
+    function toggleMinimap() {
+      isMinimapCollapsed = !isMinimapCollapsed;
+      const body = document.getElementById('minimap-body');
+      const icon = document.getElementById('minimap-toggle-icon');
+      if (isMinimapCollapsed) {
+        body.classList.add('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        body.classList.remove('hidden');
+        icon.style.transform = 'rotate(0deg)';
+        updateMinimap();
+      }
+    }
+
+    // --- 畫布變形同步及網格精準渲染 ---
+    function updateCanvasTransform() {
+      // 1. 同步大白板拖動平移
+      board.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      
+      // 2. 完美的無限背景同步：與世界座標系完全重合，絕不位移或抖動
+      const type = boardState.background.type;
+      let baseSize = 24;
+      if (type === 'grid') {
+        baseSize = 40;
+      }
+      
+      const scaledSize = baseSize * scale;
+      backgroundLayer.style.backgroundSize = `${scaledSize}px ${scaledSize}px`;
+      backgroundLayer.style.backgroundPosition = `${panX}px ${panY}px`;
+      
+      document.getElementById('zoom-level').innerText = `${Math.round(scale * 100)}%`;
+
+      updateMinimap();
+    }
+
+    function setupKeyboardListeners() {
+      window.addEventListener('keydown', function(e) {
+        if (e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
+          isHoldingSpace = true;
+          container.style.cursor = 'grab';
+          document.getElementById('notes-container').classList.add('pointer-events-none');
+          e.preventDefault();
+        }
+        
+        if (document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
+          // 已移除 V/H/M 鍵切換，改用 Space 鍵拖曳與手機版切換按鈕
+          
+          // N: 新增便利貼
+          if (e.key === 'n' || e.key === 'N') {
+            openNoteModal('create');
+            e.preventDefault();
+          }
+          
+          // F: 切換字體自適應最大化
+          if (e.key === 'f' || e.key === 'F') {
+            if (selectedNoteIds.size > 0) {
+              toggleSelectedNotesFontFit();
+              e.preventDefault();
+            }
+          }
+          
+          // Delete / Backspace: 刪除所選便利貼
+          if (e.key === 'Delete' || e.key === 'Backspace') {
+            if (selectedNoteIds.size > 0) {
+              deleteSelectedNotes();
+              e.preventDefault();
+            }
+          }
+          
+          // Ctrl+A: 全選
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+            selectedNoteIds.clear();
+            boardState.notes.forEach(note => selectedNoteIds.add(note.id));
+            updateNotesSelectionVisuals();
+            e.preventDefault();
+          }
+          
+          // Ctrl+C: 複製便利貼
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+            if (selectedNoteIds.size > 0) {
+              copiedNotes = [];
+              boardState.notes.forEach(note => {
+                if (selectedNoteIds.has(note.id)) {
+                  copiedNotes.push(JSON.parse(JSON.stringify(note)));
+                }
+              });
+              showToast(`成功複製 ${copiedNotes.length} 張便利貼！`);
+              e.preventDefault();
+            }
+          }
+          
+          // Ctrl+V: 貼上便利貼
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+            if (copiedNotes.length > 0) {
+              pushHistory();
+              const newSelectedIds = new Set();
+              const offset = 40;
+              
+              copiedNotes.forEach(copiedNote => {
+                // 移動複製資料的座標，使連續貼上呈階梯狀排列
+                copiedNote.x += offset;
+                copiedNote.y += offset;
+                
+                const newId = 'note-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now().toString(36);
+                const pastedNote = {
+                  ...copiedNote,
+                  id: newId,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                };
+                
+                boardState.notes.push(pastedNote);
+                newSelectedIds.add(newId);
+              });
+              
+              selectedNoteIds.clear();
+              newSelectedIds.forEach(id => selectedNoteIds.add(id));
+              
+              saveStateToLocalStorage();
+              renderNotes();
+              updateNotesSelectionVisuals();
+              updateStickyNotesCount();
+              
+              showToast(`成功貼上 ${copiedNotes.length} 張便利貼！`);
+              e.preventDefault();
+            }
+          }
+          
+          // Ctrl+Z: 復原
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+            undo();
+            e.preventDefault();
+          }
+          
+          // Ctrl+Y: 重做
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+            redo();
+            e.preventDefault();
+          }
+
+          // 方向鍵微調卡片位置
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            if (selectedNoteIds.size > 0) {
+              pushHistory();
+              const step = e.shiftKey ? 50 : 10;
+              let dx = 0, dy = 0;
+              if (e.key === 'ArrowUp') dy = -step;
+              if (e.key === 'ArrowDown') dy = step;
+              if (e.key === 'ArrowLeft') dx = -step;
+              if (e.key === 'ArrowRight') dx = step;
+              
+              selectedNoteIds.forEach(id => {
+                const note = boardState.notes.find(n => n.id === id);
+                if (note) {
+                  note.x += dx;
+                  note.y += dy;
+                  const card = document.getElementById(`note-${id}`);
+                  if (card) {
+                    card.style.left = note.x + 'px';
+                    card.style.top = note.y + 'px';
+                  }
+                }
+              });
+              saveStateToLocalStorage();
+              updateMinimap();
+              e.preventDefault();
+            }
+          }
+        }
+
+        if (e.key === 'Escape') {
+          closeNoteModal();
+          closeImportModal();
+          closeKeyboardShortcuts();
+          closePdfExportModal();
+          if (selectedNoteIds.size > 0) {
+            selectedNoteIds.clear();
+            updateNotesSelectionVisuals();
+          }
+        }
+      });
+
+      window.addEventListener('keyup', function(e) {
+        if (e.code === 'Space') {
+          isHoldingSpace = false;
+          container.style.cursor = 'grab';
+          if (currentMode === 'select') {
+            document.getElementById('notes-container').classList.remove('pointer-events-none');
+          }
+        }
+      });
+    }
+
+    // --- 視角重置 (Agile 導航中心重設) ---
+    function resetViewport() {
+      centerBoardOnLoad();
+      updateCanvasTransform();
+      saveStateToLocalStorage();
+      showToast("Agile Board 視角已置中！");
+    }
+
+    // --- 白板底色背景設定 ---
+    function changeBackground(type, customHex = null) {
+      boardState.background.type = type;
+      if (customHex) {
+        boardState.background.color = customHex;
+      }
+      updateBackgroundUI();
+      saveStateToLocalStorage();
+    }
+
+    function updateBackgroundUI() {
+      const type = boardState.background.type;
+      const color = boardState.background.color;
+
+      backgroundLayer.className = "absolute inset-0";
+      document.body.classList.remove('dark-pattern');
+
+      let targetColor = '#FFFFFF';
+      
+      switch (type) {
+        case 'white': targetColor = '#FFFFFF'; break;
+        case 'gray': targetColor = '#F3F4F6'; break;
+        case 'beige': targetColor = '#FDFBF7'; break;
+        case 'blue': targetColor = '#EFF6FF'; break;
+        case 'dots':
+          targetColor = '#FFFFFF';
+          backgroundLayer.classList.add('bg-pattern-dots');
+          break;
+        case 'grid':
+          targetColor = '#FFFFFF';
+          backgroundLayer.classList.add('bg-pattern-grid');
+          break;
+        case 'custom':
+          targetColor = color || '#FFFFFF';
+          break;
+      }
+
+      backgroundLayer.style.backgroundColor = targetColor;
+
+      const contrast = getContrastColor(targetColor);
+      if (contrast === '#FFFFFF') {
+        document.body.classList.add('dark-pattern');
+      }
+
+      const bgPicker = document.getElementById('bg-color-picker');
+      const bgHexLabel = document.getElementById('bg-color-hex');
+      if (bgPicker && bgHexLabel) {
+        bgPicker.value = targetColor;
+        bgHexLabel.innerText = targetColor;
+      }
+
+      updateCanvasTransform();
+    }
+
+    // --- 便利貼與 Modal 設計系統 ---
+    function renderModalColorPalette() {
+      const palette = document.getElementById('modal-color-palette');
+      palette.innerHTML = '';
+      presetColors.forEach(color => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'h-10 rounded-xl relative border border-slate-300/40 focus:outline-none transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center';
+        btn.style.backgroundColor = color.hex;
+        btn.title = color.name;
+        btn.onclick = () => selectModalColor(color.hex, btn);
+        
+        btn.innerHTML = `<span class="checkmark hidden"><i data-lucide="check" class="w-4 h-4"></i></span>`;
+        palette.appendChild(btn);
+      });
+      lucide.createIcons();
+    }
+
+    function selectModalColor(hex, element = null) {
+      modalSelectedColor = hex;
+      document.getElementById('note-custom-color').value = hex;
+      document.getElementById('note-custom-hex').innerText = hex;
+
+      const buttons = document.querySelectorAll('#modal-color-palette button');
+      buttons.forEach(btn => {
+        const check = btn.querySelector('.checkmark');
+        if (check) check.classList.add('hidden');
+        btn.classList.remove('ring-4', 'ring-indigo-500/30');
+      });
+
+      if (element) {
+        element.querySelector('.checkmark').classList.remove('hidden');
+        element.classList.add('ring-4', 'ring-indigo-500/30');
+        const contrast = getContrastColor(hex);
+        element.querySelector('.checkmark').style.color = contrast;
+      }
+    }
+
+    function selectCustomNoteColor(hex) {
+      modalSelectedColor = hex;
+      document.getElementById('note-custom-hex').innerText = hex;
+      
+      const foundPreset = presetColors.find(c => c.hex.toLowerCase() === hex.toLowerCase());
+      const buttons = document.querySelectorAll('#modal-color-palette button');
+      
+      buttons.forEach(btn => {
+        const check = btn.querySelector('.checkmark');
+        if (check) check.classList.add('hidden');
+        btn.classList.remove('ring-4', 'ring-indigo-500/30');
+      });
+
+      if (foundPreset) {
+        buttons.forEach(btn => {
+          if (btn.style.backgroundColor === hex || btn.style.backgroundColor === hex.toLowerCase() || btn.style.backgroundColor === hex.toUpperCase()) {
+            btn.querySelector('.checkmark').classList.remove('hidden');
+            btn.classList.add('ring-4', 'ring-indigo-500/30');
+          }
+        });
+      }
+    }
+
+    function renderNotes() {
+      notesContainer.innerHTML = '';
+      boardState.notes.forEach(note => {
+        const card = createNoteElement(note);
+        notesContainer.appendChild(card);
+        const textEl = card.querySelector('.note-text-el');
+        if (textEl) {
+          fitTextToCard(card, textEl, note);
+        }
+      });
+      updateMinimap();
+    }
+
+    // 建立便利貼元件並綁定雙擊編輯/拖曳/AC 懸浮
+    function createNoteElement(note) {
+      const textColor = getContrastColor(note.color);
+      const isDarkCard = (textColor === '#FFFFFF');
+
+      const card = document.createElement('div');
+      card.id = `note-${note.id}`;
+      
+      const isSelected = selectedNoteIds.has(note.id);
+      card.className = `absolute pointer-events-auto rounded-2xl shadow-md hover:shadow-xl select-none paper-texture flex flex-col p-4 w-[220px] h-[220px] transition-shadow duration-200 cursor-grab active:cursor-grabbing ${isSelected ? 'ring-4 ring-indigo-500/80 scale-[1.02] z-30 shadow-lg' : 'z-10'}`;
+      card.style.left = `${note.x}px`;
+      card.style.top = `${note.y}px`;
+      card.style.backgroundColor = note.color;
+      card.style.color = textColor;
+      card.style.border = isDarkCard ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)';
+
+      const contentHtml = `
+        <div class="flex items-start justify-between gap-1 mb-2">
+          <div class="note-text-el font-bold text-sm tracking-tight leading-snug line-clamp-4 pr-3 select-none pointer-events-none w-full" style="word-break: break-all;">
+            ${escapeHtml(note.text)}
+          </div>
+          <div class="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity note-tool-btn">
+            <button onclick="event.stopPropagation(); toggleNoteFontFit('${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center" title="字體自適應最大化 (快捷鍵: F)">
+              <i data-lucide="${note.isBigText ? 'minimize-2' : 'type'}" class="w-3.5 h-3.5"></i>
+            </button>
+            <button onclick="event.stopPropagation(); openNoteModal('edit', '${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+        
+        ${note.ac ? `
+        <div class="mt-auto border-t border-current/10 pt-2 flex items-center gap-1 text-[10px] opacity-80">
+          <i data-lucide="info" class="w-3 h-3 flex-shrink-0"></i>
+          <span class="truncate">驗收條件: ${escapeHtml(note.ac)}</span>
+        </div>
+        ` : ''}
+
+        <div class="quick-palette absolute bottom-2 left-2 right-2 h-7 bg-white/90 backdrop-blur border border-slate-300/30 rounded-xl px-1.5 flex items-center justify-between shadow-md opacity-0 translate-y-2 pointer-events-none transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+          ${presetColors.slice(0, 6).map(c => `
+            <button onclick="event.stopPropagation(); updateNoteColorDirectly('${note.id}', '${c.hex}')" class="w-3.5 h-3.5 rounded-full border border-slate-300 hover:scale-125 transition-all" style="background-color: ${c.hex}"></button>
+          `).join('')}
+          <div class="w-[1px] h-3 bg-slate-300"></div>
+          <button onclick="event.stopPropagation(); openNoteModal('edit', '${note.id}')" class="text-[10px] text-slate-600 font-bold hover:text-indigo-600 transition-all">更多</button>
+        </div>
+      `;
+
+      card.innerHTML = contentHtml;
+      card.classList.add('group');
+
+      // 雙擊開啟編輯視窗
+      card.addEventListener('dblclick', function(e) {
+        if (currentMode === 'hand') return; 
+        e.stopPropagation();
+        openNoteModal('edit', note.id);
+      });
+
+      // 拖曳與選取卡片邏輯
+      let startX = 0, startY = 0;
+      let dragStartPositions = {};
+      let isDragging = false;
+
+      card.addEventListener('pointerdown', function(e) {
+        if (currentMode === 'hand') return; 
+        if (e.target.closest('.note-tool-btn') || e.target.closest('.quick-palette')) return;
+
+        // 開始拖曳/選取時，立刻清除與隱藏 tooltip
+        clearTimeout(tooltipTimeout);
+        hideTooltip();
+        isTooltipVisible = false;
+
+        isDragging = true;
+        
+        // 多選選取狀態判斷
+        if (e.shiftKey) {
+          if (selectedNoteIds.has(note.id)) {
+            selectedNoteIds.delete(note.id);
+          } else {
+            selectedNoteIds.add(note.id);
+          }
+        } else {
+          if (!selectedNoteIds.has(note.id)) {
+            selectedNoteIds.clear();
+            selectedNoteIds.add(note.id);
+          }
+        }
+        updateNotesSelectionVisuals();
+        
+        // 紀錄所有已選取卡片的起始世界座標
+        dragStartPositions = {};
+        selectedNoteIds.forEach(id => {
+          const n = boardState.notes.find(noteObj => noteObj.id === id);
+          if (n) {
+            dragStartPositions[id] = { x: n.x, y: n.y };
+            const cardEl = document.getElementById(`note-${id}`);
+            if (cardEl) {
+              cardEl.style.zIndex = '100';
+              cardEl.style.transform = 'scale(1.05)';
+              cardEl.style.transition = 'transform 0.1s';
+            }
+          }
+        });
+
+        // 備份狀態供 Undo 使用
+        pendingNotesStateBeforeDrag = JSON.parse(JSON.stringify(boardState.notes));
+        
+        startX = e.clientX;
+        startY = e.clientY;
+
+        card.setPointerCapture(e.pointerId);
+        e.stopPropagation();
+      });
+
+      card.addEventListener('pointermove', function(e) {
+        if (!isDragging) return;
+        
+        const dx = (e.clientX - startX) / scale;
+        const dy = (e.clientY - startY) / scale;
+
+        selectedNoteIds.forEach(id => {
+          const n = boardState.notes.find(noteObj => noteObj.id === id);
+          const pos = dragStartPositions[id];
+          if (n && pos) {
+            n.x = pos.x + dx;
+            n.y = pos.y + dy;
+            const cardEl = document.getElementById(`note-${id}`);
+            if (cardEl) {
+              cardEl.style.left = `${n.x}px`;
+              cardEl.style.top = `${n.y}px`;
+            }
+          }
+        });
+
+        updateMinimap();
+      });
+
+      card.addEventListener('pointerup', function(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        selectedNoteIds.forEach(id => {
+          const cardEl = document.getElementById(`note-${id}`);
+          if (cardEl) {
+            cardEl.style.zIndex = selectedNoteIds.has(id) ? '30' : '10';
+            cardEl.style.transform = selectedNoteIds.has(id) ? 'scale(1.02)' : 'scale(1)';
+            cardEl.style.transition = 'none';
+          }
+        });
+
+        card.releasePointerCapture(e.pointerId);
+
+        // 判斷是否為實際位移
+        const moveDist = Math.hypot(e.clientX - startX, e.clientY - startY);
+        if (moveDist > 2) {
+          pushHistory(pendingNotesStateBeforeDrag);
+          saveStateToLocalStorage();
+        } else {
+          // 若無實質拖曳，且沒按住 Shift，則單選此便利貼
+          if (!e.shiftKey) {
+            selectedNoteIds.clear();
+            selectedNoteIds.add(note.id);
+            updateNotesSelectionVisuals();
+          }
+        }
+        pendingNotesStateBeforeDrag = null;
+        updateMinimap();
+      });
+
+      // AC 懸浮卡顯示 (滑鼠懸停 800ms 延遲)
+      let lastMouseEvent = null;
+      card.addEventListener('mouseenter', function(e) {
+        if (currentMode === 'hand') return;
+        lastMouseEvent = e;
+        clearTimeout(tooltipTimeout);
+        tooltipTimeout = setTimeout(() => {
+          showTooltip(lastMouseEvent, note);
+          isTooltipVisible = true;
+        }, 800);
+      });
+
+      card.addEventListener('mouseleave', function() {
+        clearTimeout(tooltipTimeout);
+        hideTooltip();
+        isTooltipVisible = false;
+      });
+
+      card.addEventListener('mousemove', function(e) {
+        if (currentMode === 'hand') return;
+        lastMouseEvent = e;
+        if (isTooltipVisible) {
+          moveTooltip(e);
+        }
+      });
+
+      setTimeout(() => {
+        lucide.createIcons({
+          attrs: { class: 'lucide-custom' },
+          nameAttr: 'data-lucide',
+          scope: card
+        });
+      }, 0);
+
+      return card;
+    }
+
+    // --- 便利貼文字字體自動最佳化縮放運算 ---
+    function fitTextToCard(cardElement, textElement, note) {
+      const isFit = note.isBigText === true;
+      if (!isFit) {
+        textElement.style.fontSize = '';
+        textElement.style.display = '-webkit-box';
+        textElement.style.webkitLineClamp = '4';
+        textElement.style.lineClamp = '4';
+        return;
+      }
+      
+      textElement.style.display = 'block';
+      textElement.style.webkitLineClamp = 'none';
+      textElement.style.lineClamp = 'none';
+      
+      const cardH = 220; 
+      const cardW = 220; 
+      
+      const padding = 32; 
+      const headerHeight = 28; 
+      
+      const acSection = cardElement.querySelector('.mt-auto');
+      const acHeight = acSection ? acSection.offsetHeight : 0;
+      const acMargin = acSection ? 12 : 0;
+      
+      const availableHeight = cardH - padding - headerHeight - acHeight - acMargin - 10;
+      const availableWidth = cardW - padding;
+      
+      let minFont = 12;
+      let maxFont = 64;
+      let optimalFont = minFont;
+      
+      for (let sz = minFont; sz <= maxFont; sz += 1) {
+        textElement.style.fontSize = sz + 'px';
+        if (textElement.scrollHeight <= availableHeight && textElement.scrollWidth <= availableWidth) {
+          optimalFont = sz;
+        } else {
+          break;
+        }
+      }
+      textElement.style.fontSize = optimalFont + 'px';
+    }
+
+    function toggleNoteFontFit(noteId) {
+      pushHistory();
+      const note = boardState.notes.find(n => n.id === noteId);
+      if (note) {
+        note.isBigText = !note.isBigText;
+        note.updatedAt = new Date().toISOString();
+        saveStateToLocalStorage();
+        renderNotes();
+        showToast(note.isBigText ? "已開啟字體最大化！" : "已還原預設字體大小。");
+      }
+    }
+
+    function toggleSelectedNotesFontFit() {
+      if (selectedNoteIds.size === 0) return;
+      pushHistory();
+      
+      let anyDisabled = false;
+      selectedNoteIds.forEach(id => {
+        const note = boardState.notes.find(n => n.id === id);
+        if (note && !note.isBigText) {
+          anyDisabled = true;
+        }
+      });
+      
+      selectedNoteIds.forEach(id => {
+        const note = boardState.notes.find(n => n.id === id);
+        if (note) {
+          note.isBigText = anyDisabled;
+          note.updatedAt = new Date().toISOString();
+        }
+      });
+      
+      saveStateToLocalStorage();
+      renderNotes();
+      updateNotesSelectionVisuals();
+      showToast(anyDisabled ? "已將所選卡片字體最大化！" : "已還原所選卡片預設字體。");
+    }
+
+    function updateNotesSelectionVisuals() {
+      boardState.notes.forEach(n => {
+        const card = document.getElementById(`note-${n.id}`);
+        if (card) {
+          if (selectedNoteIds.has(n.id)) {
+            card.classList.add('ring-4', 'ring-indigo-500/80', 'scale-[1.02]', 'z-30');
+            card.classList.remove('z-10');
+          } else {
+            card.classList.remove('ring-4', 'ring-indigo-500/80', 'scale-[1.02]', 'z-30');
+            card.classList.add('z-10');
+          }
+        }
+      });
+      updateMultiSelectUI();
+    }
+
+    function updateMultiSelectUI() {
+      const toolbar = document.getElementById('multiselect-toolbar');
+      const countSpan = document.getElementById('multiselect-count');
+      
+      if (selectedNoteIds.size >= 2) {
+        countSpan.innerText = selectedNoteIds.size;
+        toolbar.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+        toolbar.classList.add('translate-y-0', 'opacity-100');
+        renderMultiSelectColorPicker();
+      } else {
+        toolbar.classList.remove('translate-y-0', 'opacity-100');
+        toolbar.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }
+      
+      if (window.lucide) {
+        lucide.createIcons({ scope: toolbar });
+      }
+    }
+
+    function renderMultiSelectColorPicker() {
+      const grid = document.getElementById('multiselect-color-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      presetColors.forEach(c => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'w-6 h-6 rounded-full border border-slate-300/60 hover:scale-125 transition-all';
+        btn.style.backgroundColor = c.hex;
+        btn.title = c.name;
+        btn.onclick = () => batchChangeSelectedNotesColor(c.hex);
+        grid.appendChild(btn);
+      });
+    }
+
+    function batchChangeSelectedNotesColor(hex) {
+      if (selectedNoteIds.size === 0) return;
+      pushHistory();
+      selectedNoteIds.forEach(id => {
+        const note = boardState.notes.find(n => n.id === id);
+        if (note) {
+          note.color = hex;
+          note.updatedAt = new Date().toISOString();
+          const card = document.getElementById(`note-${id}`);
+          if (card) {
+            const textColor = getContrastColor(hex);
+            card.style.backgroundColor = hex;
+            card.style.color = textColor;
+            card.style.border = (textColor === '#FFFFFF') ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)';
+            
+            // 重新計算字體適應
+            const textEl = card.querySelector('.note-text-el');
+            if (textEl) {
+              fitTextToCard(card, textEl, note);
+            }
+          }
+        }
+      });
+      saveStateToLocalStorage();
+      updateMinimap();
+      showToast(`已批次將 ${selectedNoteIds.size} 張卡片變更色彩！`);
+    }
+
+    function alignSelectedNotes(direction) {
+      if (selectedNoteIds.size < 2) return;
+      pushHistory();
+      
+      const notesToAlign = boardState.notes.filter(n => selectedNoteIds.has(n.id));
+      
+      if (direction === 'horizontal') {
+        notesToAlign.sort((a, b) => a.x - b.x);
+        const avgY = notesToAlign.reduce((sum, n) => sum + n.y, 0) / notesToAlign.length;
+        
+        let currentX = notesToAlign[0].x;
+        notesToAlign.forEach((n, idx) => {
+          n.y = avgY;
+          n.x = currentX + idx * 240;
+        });
+        
+      } else if (direction === 'vertical') {
+        notesToAlign.sort((a, b) => a.y - b.y);
+        const avgX = notesToAlign.reduce((sum, n) => sum + n.x, 0) / notesToAlign.length;
+        
+        let currentY = notesToAlign[0].y;
+        notesToAlign.forEach((n, idx) => {
+          n.x = avgX;
+          n.y = currentY + idx * 240;
+        });
+        
+      } else if (direction === 'grid') {
+        notesToAlign.sort((a, b) => {
+          if (Math.abs(a.y - b.y) < 100) {
+            return a.x - b.x;
+          }
+          return a.y - b.y;
+        });
+        
+        const count = notesToAlign.length;
+        const cols = Math.ceil(Math.sqrt(count));
+        
+        const startX = notesToAlign[0].x;
+        const startY = notesToAlign[0].y;
+        
+        notesToAlign.forEach((n, idx) => {
+          const r = Math.floor(idx / cols);
+          const c = idx % cols;
+          n.x = startX + c * 240;
+          n.y = startY + r * 240;
+        });
+      }
+      
+      saveStateToLocalStorage();
+      renderNotes();
+      updateNotesSelectionVisuals();
+      showToast(`已成功對齊排列 ${notesToAlign.length} 張便利貼！`);
+    }
+
+    function deleteSelectedNotes() {
+      if (selectedNoteIds.size === 0) return;
+      const count = selectedNoteIds.size;
+      showCustomConfirm("批次刪除確認", `確定要永久刪除已選取的 ${count} 張敏捷卡片嗎？`, function() {
+        pushHistory();
+        boardState.notes = boardState.notes.filter(n => !selectedNoteIds.has(n.id));
+        selectedNoteIds.clear();
+        saveStateToLocalStorage();
+        renderNotes();
+        updateStickyNotesCount();
+        updateMultiSelectUI();
+        showToast(`已成功刪除 ${count} 張卡片。`);
+      });
+    }
+
+
+    function updateNoteColorDirectly(noteId, newHex) {
+      const note = boardState.notes.find(n => n.id === noteId);
+      if (note) {
+        pushHistory();
+        note.color = newHex;
+        note.updatedAt = new Date().toISOString();
+        saveStateToLocalStorage();
+        
+        const card = document.getElementById(`note-${noteId}`);
+        if (card) {
+          const textColor = getContrastColor(newHex);
+          card.style.backgroundColor = newHex;
+          card.style.color = textColor;
+          card.style.border = (textColor === '#FFFFFF') ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)';
+        }
+        showToast("已快速變更卡片顏色！");
+        updateMinimap();
+      }
+    }
+
+    // --- Tooltip 懸浮 AC 卡 ---
+    const tooltip = document.getElementById('floating-info-card');
+    
+    function showTooltip(e, note) {
+      document.getElementById('info-card-id').innerText = `#${note.id.substring(0, 8)}`;
+      document.getElementById('info-card-text').innerText = note.text;
+      document.getElementById('info-card-ac').innerText = note.ac || '（無驗收條件與備註說明）';
+      
+      const createdStr = note.createdAt ? new Date(note.createdAt).toLocaleString('zh-TW', {hour12:false}) : '未知';
+      const updatedStr = note.updatedAt ? new Date(note.updatedAt).toLocaleString('zh-TW', {hour12:false}) : '無';
+      
+      document.getElementById('info-card-created').innerHTML = `<i data-lucide="calendar" class="w-3 h-3 inline"></i> 建立: ${createdStr}`;
+      document.getElementById('info-card-updated').innerHTML = `<i data-lucide="edit-3" class="w-3 h-3 inline"></i> 修改: ${updatedStr}`;
+
+      lucide.createIcons({ scope: tooltip });
+      tooltip.style.opacity = '1';
+      moveTooltip(e);
+    }
+
+    function moveTooltip(e) {
+      const offset = 20;
+      let left = e.clientX + offset;
+      let top = e.clientY + offset;
+
+      const tooltipRect = tooltip.getBoundingClientRect();
+      if (left + tooltipRect.width > window.innerWidth) {
+        left = e.clientX - tooltipRect.width - offset;
+      }
+      if (top + tooltipRect.height > window.innerHeight) {
+        top = e.clientY - tooltipRect.height - offset;
+      }
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    }
+
+    function hideTooltip() {
+      tooltip.style.opacity = '0';
+    }
+
+    // --- Modal 對話框控制與資料儲存 ---
+    function openNoteModal(mode, spawnCoordinates = null) {
+      activeModalMode = mode;
+      
+      const modal = document.getElementById('note-modal');
+      const textInput = document.getElementById('modal-note-text');
+      const acInput = document.getElementById('modal-note-ac');
+      const title = document.getElementById('modal-title');
+      const deleteBtn = document.getElementById('modal-delete-btn');
+
+      modal.classList.remove('hidden');
+      setTimeout(() => modal.classList.add('opacity-100'), 10);
+      
+      if (mode === 'create') {
+        title.innerHTML = `<i data-lucide="plus-circle" class="text-indigo-600 w-5 h-5"></i> 新增敏捷卡片`;
+        textInput.value = '';
+        acInput.value = '';
+        deleteBtn.classList.add('hidden');
+        
+        if (spawnCoordinates) {
+          activeEditingNoteId = spawnCoordinates;
+        } else {
+          // 在畫布中心生成
+          const rect = container.getBoundingClientRect();
+          const cx = rect.width / 2;
+          const cy = rect.height / 2;
+          const boardPos = containerToBoard(cx, cy);
+          activeEditingNoteId = { x: boardPos.x - 110, y: boardPos.y - 110 };
+        }
+
+        const randomPreset = presetColors[Math.floor(Math.random() * presetColors.length)];
+        selectModalColor(randomPreset.hex);
+        
+      } else if (mode === 'edit') {
+        const noteId = spawnCoordinates;
+        const note = boardState.notes.find(n => n.id === noteId);
+        if (!note) return;
+
+        title.innerHTML = `<i data-lucide="file-edit" class="text-indigo-600 w-5 h-5"></i> 編輯卡片與 AC`;
+        textInput.value = note.text;
+        acInput.value = note.ac || '';
+        deleteBtn.classList.remove('hidden');
+        
+        activeEditingNoteId = noteId;
+        selectModalColor(note.color);
+      }
+      
+      lucide.createIcons({ scope: modal });
+      textInput.focus();
+    }
+
+    function closeNoteModal() {
+      const modal = document.getElementById('note-modal');
+      modal.classList.remove('opacity-100');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+      activeEditingNoteId = null;
+    }
+
+    function saveNoteModal() {
+      const text = document.getElementById('modal-note-text').value.trim();
+      const ac = document.getElementById('modal-note-ac').value.trim();
+
+      if (!text) {
+        showToast("「內容 (Text)」不可為空白！", "warning");
+        return;
+      }
+
+      pushHistory();
+
+      if (activeModalMode === 'create') {
+        const newNote = {
+          id: 'note-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now().toString(36),
+          text: text,
+          ac: ac,
+          color: modalSelectedColor,
+          x: activeEditingNoteId && activeEditingNoteId.x !== undefined ? activeEditingNoteId.x : 3900,
+          y: activeEditingNoteId && activeEditingNoteId.y !== undefined ? activeEditingNoteId.y : 3900,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        boardState.notes.push(newNote);
+        showToast("成功建立卡片！");
+      } else {
+        const note = boardState.notes.find(n => n.id === activeEditingNoteId);
+        if (note) {
+          note.text = text;
+          note.ac = ac;
+          note.color = modalSelectedColor;
+          note.updatedAt = new Date().toISOString();
+          showToast("卡片已成功儲存！");
+        }
+      }
+
+      saveStateToLocalStorage();
+      renderNotes();
+      updateStickyNotesCount();
+      closeNoteModal();
+    }
+
+    function deleteNoteFromModal() {
+      if (activeModalMode === 'edit' && activeEditingNoteId) {
+        showCustomConfirm("刪除確認", "確定要永久刪除此敏捷卡片嗎？", function() {
+          pushHistory();
+          boardState.notes = boardState.notes.filter(n => n.id !== activeEditingNoteId);
+          saveStateToLocalStorage();
+          renderNotes();
+          updateStickyNotesCount();
+          closeNoteModal();
+          showToast("卡片已刪除。");
+        });
+      }
+    }
+
+    function updateStickyNotesCount() {
+      document.getElementById('sticky-count').innerText = boardState.notes.length;
+    }
+
+    // --- 批量 CSV / 文字匯入邏輯 ---
+    let activeImportTab = 'text';
+    let selectedImportJsonContent = null;
+
+    function openImportModal() {
+      const modal = document.getElementById('import-modal');
+      modal.classList.remove('hidden');
+      setTimeout(() => modal.classList.add('opacity-100'), 10);
+      document.getElementById('import-raw-text').value = '';
+      document.getElementById('import-file-input').value = '';
+      document.getElementById('selected-file-name').innerText = '';
+      if (document.getElementById('import-json-input')) {
+        document.getElementById('import-json-input').value = '';
+        document.getElementById('selected-json-name').innerText = '';
+      }
+      selectedImportFileContent = null;
+      selectedImportJsonContent = null;
+      switchImportTab('text');
+      lucide.createIcons({ scope: modal });
+    }
+
+    function closeImportModal() {
+      const modal = document.getElementById('import-modal');
+      modal.classList.remove('opacity-100');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    function switchImportTab(tab) {
+      activeImportTab = tab;
+      const textBtn = document.getElementById('tab-btn-text');
+      const fileBtn = document.getElementById('tab-btn-file');
+      const jsonBtn = document.getElementById('tab-btn-json');
+      const textSection = document.getElementById('import-tab-text');
+      const fileSection = document.getElementById('import-tab-file');
+      const jsonSection = document.getElementById('import-tab-json');
+
+      function setTabActive(btn, active) {
+        if (!btn) return;
+        if (active) {
+          btn.className = "flex-1 text-center py-2 border-b-2 border-indigo-600 text-indigo-600 font-bold transition-all";
+        } else {
+          btn.className = "flex-1 text-center py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition-all";
+        }
+      }
+
+      setTabActive(textBtn, tab === 'text');
+      setTabActive(fileBtn, tab === 'file');
+      setTabActive(jsonBtn, tab === 'json');
+
+      if (tab === 'text') {
+        if (textSection) textSection.classList.remove('hidden');
+        if (fileSection) fileSection.classList.add('hidden');
+        if (jsonSection) jsonSection.classList.add('hidden');
+      } else if (tab === 'file') {
+        if (fileSection) fileSection.classList.remove('hidden');
+        if (textSection) textSection.classList.add('hidden');
+        if (jsonSection) jsonSection.classList.add('hidden');
+      } else {
+        if (jsonSection) jsonSection.classList.remove('hidden');
+        if (textSection) textSection.classList.add('hidden');
+        if (fileSection) fileSection.classList.add('hidden');
+      }
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('selected-file-name').innerText = `已選取檔案: ${file.name}`;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        selectedImportFileContent = evt.target.result;
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+
+    function handleJsonFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('selected-json-name').innerText = `已選取檔案: ${file.name}`;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        selectedImportJsonContent = evt.target.result;
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+
+    function processImport() {
+      let rawData = "";
+      if (activeImportTab === 'text') {
+        rawData = document.getElementById('import-raw-text').value.trim();
+        if (!rawData) {
+          showToast("請輸入欲匯入的文字！", "warning");
+          return;
+        }
+        parseAndAppendNotes(rawData);
+      } else if (activeImportTab === 'file') {
+        if (!selectedImportFileContent) {
+          showToast("請先選擇上傳檔案！", "warning");
+          return;
+        }
+        parseAndAppendNotes(selectedImportFileContent);
+      } else if (activeImportTab === 'json') {
+        if (!selectedImportJsonContent) {
+          showToast("請先選擇上傳的 JSON 備份檔案！", "warning");
+          return;
+        }
+        restoreFromJsonBackup(selectedImportJsonContent);
+      }
+    }
+
+    function restoreFromJsonBackup(jsonString) {
+      try {
+        const parsed = JSON.parse(jsonString);
+        if (parsed && Array.isArray(parsed.notes)) {
+          showCustomConfirm("還原備份確認", "匯入此備份檔將會覆蓋您目前的白板狀態。確定要繼續嗎？", function() {
+            pushHistory();
+            boardState = { ...boardState, ...parsed };
+            if (parsed.viewport) {
+              scale = parsed.viewport.scale || 1.0;
+              panX = parsed.viewport.x !== undefined ? parsed.viewport.x : panX;
+              panY = parsed.viewport.y !== undefined ? parsed.viewport.y : panY;
+            }
+            saveStateToLocalStorage();
+            renderNotes();
+            updateStickyNotesCount();
+            closeImportModal();
+            updateCanvasTransform();
+            updateBackgroundUI();
+            if (document.getElementById('board-name-display')) {
+              document.getElementById('board-name-display').innerText = boardState.boardName;
+            }
+            showToast("成功還原 JSON 備份白板！");
+          });
+        } else {
+          showToast("不正確的備份檔案格式！", "warning");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("解析 JSON 檔案失敗，請檢查檔案格式！", "warning");
+      }
+    }
+
+    function exportToJsonBackup() {
+      const jsonString = JSON.stringify(boardState, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filename = `${boardState.boardName.replace(/\s+/g, '_')}_完整備份_${dateStr}.json`;
+      downloadAnchor.download = filename;
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      URL.revokeObjectURL(url);
+      showToast("完整 JSON 備份檔已開始下載！");
+    }
+
+    function parseAndAppendNotes(dataString) {
+      pushHistory();
+      const rect = container.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const boardPos = containerToBoard(cx, cy);
+      const startWorldX = boardPos.x - 110;
+      const startWorldY = boardPos.y - 110;
+
+      let importedCount = 0;
+
+      Papa.parse(dataString, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          let rows = results.data;
+          
+          if (rows.length === 0 || !Object.keys(rows[0]).some(k => k.toLowerCase() === 'text')) {
+            Papa.parse(dataString, {
+              header: false,
+              skipEmptyLines: true,
+              complete: function(nonHeaderResults) {
+                importRawRows(nonHeaderResults.data, startWorldX, startWorldY);
+              }
+            });
+          } else {
+            rows.forEach((row, index) => {
+              let textVal = row.text || row.Text || row.TEXT || "";
+              let acVal = row.ac || row.Ac || row.AC || row.AcceptanceCriteria || "";
+              let colorVal = row.color || row.Color || row.COLOR || "";
+
+              if (!textVal) {
+                const keys = Object.keys(row);
+                textVal = row[keys[0]] || "";
+              }
+
+              if (textVal) {
+                if (!colorVal.startsWith('#')) {
+                  const preset = presetColors[Math.floor(Math.random() * presetColors.length)];
+                  colorVal = preset.hex;
+                }
+
+                const col = index % 5;
+                const r = Math.floor(index / 5);
+                const posX = startWorldX + col * 240 + (Math.random() * 15);
+                const posY = startWorldY + r * 240 + (Math.random() * 15);
+
+                const newNote = {
+                  id: 'note-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now().toString(36),
+                  text: textVal,
+                  ac: acVal,
+                  color: colorVal,
+                  x: posX,
+                  y: posY,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                };
+                boardState.notes.push(newNote);
+                importedCount++;
+              }
+            });
+            finalizeImport(importedCount);
+          }
+        },
+        error: function() {
+          const lines = dataString.split('\n');
+          lines.forEach((line, index) => {
+            const trimmed = line.trim();
+            if (trimmed) {
+              const col = index % 5;
+              const r = Math.floor(index / 5);
+              const posX = startWorldX + col * 240;
+              const posY = startWorldY + r * 240;
+              
+              const parts = trimmed.split(',');
+              const textVal = parts[0] || trimmed;
+              const acVal = parts[1] || '';
+              let colorVal = parts[2] || '';
+              
+              if (!colorVal.startsWith('#')) {
+                colorVal = presetColors[Math.floor(Math.random() * presetColors.length)].hex;
+              }
+
+              const newNote = {
+                id: 'note-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now().toString(36),
+                text: textVal,
+                ac: acVal,
+                color: colorVal,
+                x: posX,
+                y: posY,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              boardState.notes.push(newNote);
+              importedCount++;
+            }
+          });
+          finalizeImport(importedCount);
+        }
+      });
+    }
+
+    function importRawRows(rows, startX, startY) {
+      let importedCount = 0;
+      rows.forEach((row, index) => {
+        const textVal = row[0] ? row[0].toString().trim() : "";
+        const acVal = row[1] ? row[1].toString().trim() : "";
+        let colorVal = row[2] ? row[2].toString().trim() : "";
+
+        if (textVal) {
+          if (!colorVal.startsWith('#')) {
+            colorVal = presetColors[Math.floor(Math.random() * presetColors.length)].hex;
+          }
+          const col = index % 5;
+          const r = Math.floor(index / 5);
+          const posX = startX + col * 240 + (Math.random() * 15);
+          const posY = startY + r * 240 + (Math.random() * 15);
+
+          const newNote = {
+            id: 'note-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now().toString(36),
+            text: textVal,
+            ac: acVal,
+            color: colorVal,
+            x: posX,
+            y: posY,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          boardState.notes.push(newNote);
+          importedCount++;
+        }
+      });
+      finalizeImport(importedCount);
+    }
+
+    function finalizeImport(count) {
+      if (count > 0) {
+        saveStateToLocalStorage();
+        renderNotes();
+        updateStickyNotesCount();
+        closeImportModal();
+        showToast(`成功批量匯入 ${count} 張便利貼！`);
+      } else {
+        showToast("未偵測到任何有效的便利貼內容，請確認格式！", "warning");
+      }
+    }
+
+    // --- 檔案匯出與 PDF / Excel 製造器 ---
+    function exportToExcel() {
+      if (boardState.notes.length === 0) {
+        showToast("目前白板上沒有任何便利貼可供匯出！", "warning");
+        return;
+      }
+
+      const exportData = boardState.notes.map(note => ({
+        ID: note.id,
+        內容_Text: note.text,
+        驗收條件_AC: note.ac || '',
+        顏色_Color: note.color,
+        橫座標_X: Math.round(note.x),
+        縱座標_Y: Math.round(note.y),
+        創建時間_CreatedAt: note.createdAt || '',
+        更新時間_UpdatedAt: note.updatedAt || ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "白板資料清單");
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filename = `${boardState.boardName.replace(/\s+/g, '_')}_匯出清單_${dateStr}.xlsx`;
+      
+      XLSX.writeFile(workbook, filename);
+      showToast("Excel 資料匯出成功！");
+    }
+
+    function openPdfExportModal() {
+      const modal = document.getElementById('pdf-modal');
+      modal.classList.remove('hidden');
+      setTimeout(() => modal.classList.add('opacity-100'), 10);
+      lucide.createIcons({ scope: modal });
+    }
+
+    function closePdfExportModal() {
+      const modal = document.getElementById('pdf-modal');
+      modal.classList.remove('opacity-100');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    function performPdfExport(mode) {
+      closePdfExportModal();
+      showToast("正在建立 PDF 影像，請稍候...", "info", 4000);
+
+      const { jsPDF } = window.jspdf;
+
+      if (mode === 'screen') {
+        html2canvas(container, {
+          useCORS: true,
+          scale: 2,
+          backgroundColor: null
+        }).then(canvas => {
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('l', 'mm', 'a4');
+          const imgWidth = 297;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          pdf.save(`${boardState.boardName.replace(/\s+/g, '_')}_當前視角.pdf`);
+          showToast("目前視角已成功匯出 PDF！");
+        }).catch(err => {
+          console.error(err);
+          showToast("PDF 匯出失敗，請重試！", "warning");
+        });
+      } else {
+        if (boardState.notes.length === 0) {
+          showToast("目前白板沒有任何便利貼可供匯出！", "warning");
+          return;
+        }
+
+        let minX = Infinity, minY = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+        
+        boardState.notes.forEach(note => {
+          if (note.x < minX) minX = note.x;
+          if (note.y < minY) minY = note.y;
+          if (note.x + 220 > maxX) maxX = note.x + 220;
+          if (note.y + 220 > maxY) maxY = note.y + 220;
+        });
+
+        const padding = 100;
+        minX -= padding;
+        minY -= padding;
+        maxX += padding;
+        maxY += padding;
+
+        const originalScale = scale;
+        const originalPanX = panX;
+        const originalPanY = panY;
+
+        const workWidth = maxX - minX;
+        const workHeight = maxY - minY;
+        const containerRect = container.getBoundingClientRect();
+        
+        const scaleX = containerRect.width / workWidth;
+        const scaleY = containerRect.height / workHeight;
+        const autoScale = Math.min(scaleX, scaleY, 1.2);
+
+        scale = autoScale;
+        panX = containerRect.width / 2 - (minX + workWidth / 2) * scale;
+        panY = containerRect.height / 2 - (minY + workHeight / 2) * scale;
+        updateCanvasTransform();
+
+        setTimeout(() => {
+          html2canvas(container, {
+            useCORS: true,
+            scale: 2,
+            backgroundColor: null
+          }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            const imgWidth = 297;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save(`${boardState.boardName.replace(/\s+/g, '_')}_全域作業區.pdf`);
+            showToast("全作業區便利貼已成功匯出 PDF！");
+
+            scale = originalScale;
+            panX = originalPanX;
+            panY = originalPanY;
+            updateCanvasTransform();
+          }).catch(err => {
+            console.error(err);
+            scale = originalScale;
+            panX = originalPanX;
+            panY = originalPanY;
+            updateCanvasTransform();
+            showToast("PDF 繪圖失敗，請重試！", "warning");
+          });
+        }, 500);
+      }
+    }
+
+    function escapeHtml(string) {
+      return String(string).replace(/[&<>"']/g, function (s) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[s];
+      });
+    }
+
+    // --- Toast 提示通知 ---
+    function showToast(message, type = "success", duration = 3000) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let icon = "check-circle";
+      let colorClass = "bg-slate-900 text-white border-slate-800";
+      
+      if (type === "warning") {
+        icon = "alert-triangle";
+        colorClass = "bg-amber-500 text-white border-amber-400";
+      } else if (type === "info") {
+        icon = "info";
+        colorClass = "bg-indigo-600 text-white border-indigo-500";
+      }
+
+      toast.className = `px-4 py-3 rounded-2xl shadow-xl border text-sm font-semibold flex items-center gap-2 transform translate-y-4 opacity-0 transition-all duration-300 pointer-events-auto ${colorClass}`;
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> <span>${message}</span>`;
+      
+      container.appendChild(toast);
+      lucide.createIcons({ scope: toast });
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-[-4px]', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    // --- 客製化確認對話框 ---
+    function showCustomConfirm(title, message, onConfirmCallback) {
+      const modal = document.getElementById('confirm-modal');
+      const titleEl = document.getElementById('confirm-title');
+      const msgEl = document.getElementById('confirm-message');
+      const okBtn = document.getElementById('confirm-ok-btn');
+      const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+      titleEl.innerText = title;
+      msgEl.innerHTML = message;
+
+      modal.classList.remove('hidden');
+      setTimeout(() => modal.classList.add('opacity-100'), 10);
+
+      const executeOk = () => {
+        modal.classList.remove('opacity-100');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        if (onConfirmCallback) onConfirmCallback();
+      };
+
+      const executeCancel = () => {
+        modal.classList.remove('opacity-100');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+      };
+
+      okBtn.onclick = executeOk;
+      cancelBtn.onclick = executeCancel;
+    }
+  </script>
+</body>
+</html>

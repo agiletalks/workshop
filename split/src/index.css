@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: 14 154 160;      /* Card Teal #0E9AA0 */
+    --accent: 245 158 11;       /* Card Amber #F59E0B */
+    --warning: 245 158 11;      /* Card Amber #F59E0B */
+    --bg-app: 248 250 252;      /* Slate 50 */
+    --bg-card: 255 255 255;
+    --text-main: 15 23 42;      /* Slate 900 */
+    --text-muted: 100 116 139;  /* Slate 500 */
+    --border-color: 226 232 240;/* Slate 200 */
+  }
+
+  body {
+    background-color: rgb(var(--bg-app));
+    color: rgb(var(--text-main));
+    font-family: 'Outfit', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden; /* AppShell holds independent scrolling columns */
+    height: 100vh;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(14, 154, 160, 0.15);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0e9aa0;
+}
+
+/* Print CSS variables & page breaks */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+  
+  body {
+    overflow: visible !important;
+    height: auto !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}

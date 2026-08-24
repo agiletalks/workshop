@@ -156,7 +156,7 @@ export async function syncOfflineQueue() {
     const batch = writeBatch(db);
 
     for (const item of queuedItems) {
-      const versionDocRef = doc(db, 'workshops', item.workshopId, 'versions', item.id);
+      const versionDocRef = doc(db, 'agiletalks-db', 'marshmallow', 'workshops', item.workshopId, 'versions', item.id);
       
       // Update item status to synced
       const syncedRecord: TeamVersion = {
@@ -207,7 +207,7 @@ export function subscribeToWorkshop(workshopId: string, callback: ListenerCallba
   });
 
   if (isFirebaseConfigured && db) {
-    const docRef = doc(db, 'workshops', workshopId);
+    const docRef = doc(db, 'agiletalks-db', 'marshmallow', 'workshops', workshopId);
     const unsub = onSnapshot(docRef, async (docSnap) => {
       if (docSnap.exists()) {
         const wsData = docSnap.data() as Workshop;
@@ -244,7 +244,7 @@ export function subscribeToTeams(workshopId: string, callback: ListenerCallback<
   });
 
   if (isFirebaseConfigured && db) {
-    const colRef = collection(db, 'workshops', workshopId, 'teams');
+    const colRef = collection(db, 'agiletalks-db', 'marshmallow', 'workshops', workshopId, 'teams');
     const unsub = onSnapshot(colRef, async (querySnap) => {
       const teamsList: Team[] = [];
       const localIDB = await getIDB();
@@ -277,7 +277,7 @@ export function subscribeToVersions(workshopId: string, callback: ListenerCallba
   });
 
   if (isFirebaseConfigured && db) {
-    const colRef = collection(db, 'workshops', workshopId, 'versions');
+    const colRef = collection(db, 'agiletalks-db', 'marshmallow', 'workshops', workshopId, 'versions');
     const unsub = onSnapshot(colRef, async (querySnap) => {
       const versionsList: TeamVersion[] = [];
       const localIDB = await getIDB();
@@ -325,7 +325,7 @@ export async function updateWorkshopState(workshopId: string, updates: Partial<W
   // 2. Sync to Firebase
   if (isFirebaseConfigured && db) {
     try {
-      const docRef = doc(db, 'workshops', workshopId);
+      const docRef = doc(db, 'agiletalks-db', 'marshmallow', 'workshops', workshopId);
       await updateDoc(docRef, updates as any);
     } catch (e) {
       console.error('Failed to sync workshop update to Firebase:', e);
@@ -368,7 +368,7 @@ export async function createWorkshop(name: string, joinCode: string): Promise<Wo
   notifyWorkshop(newWS);
 
   if (isFirebaseConfigured && db) {
-    const docRef = doc(db, 'workshops', newWS.id);
+    const docRef = doc(db, 'agiletalks-db', 'marshmallow', 'workshops', newWS.id);
     await setDoc(docRef, newWS);
   }
 
@@ -395,7 +395,7 @@ export async function joinTeam(workshopId: string, teamName: string, recorderNam
   // 2. Check Firestore if Firebase is configured
   if (isFirebaseConfigured && db) {
     try {
-      const colRef = collection(db, 'workshops', workshopId, 'teams');
+      const colRef = collection(db, 'agiletalks-db', 'marshmallow', 'workshops', workshopId, 'teams');
       const snap = await getDocs(colRef);
       let firestoreMatched: Team | null = null;
       snap.forEach((docSnap) => {
@@ -436,7 +436,7 @@ export async function joinTeam(workshopId: string, teamName: string, recorderNam
   notifyTeams(allTeams.filter(t => t.workshopId === workshopId));
 
   if (isFirebaseConfigured && db) {
-    const docRef = doc(db, 'workshops', workshopId, 'teams', newTeam.id);
+    const docRef = doc(db, 'agiletalks-db', 'marshmallow', 'workshops', workshopId, 'teams', newTeam.id);
     await setDoc(docRef, newTeam);
   } else {
     // Broadcast mock sync
@@ -506,7 +506,7 @@ export async function submitVersionRecord(
   // 3. Update Team document in Firestore
   if (isFirebaseConfigured && db) {
     try {
-      const teamRef = doc(db, 'workshops', team.workshopId, 'teams', team.id);
+      const teamRef = doc(db, 'agiletalks-db', 'marshmallow', 'workshops', team.workshopId, 'teams', team.id);
       await updateDoc(teamRef, {
         currentChallengeSequence: nextSeq,
         lastSeenAt: Date.now()
@@ -548,7 +548,7 @@ export async function findWorkshopByJoinCode(joinCode: string): Promise<Workshop
 
   if (isFirebaseConfigured && db) {
     try {
-      const q = query(collection(db, 'workshops'), where('joinCode', '==', joinCode.toUpperCase().trim()));
+      const q = query(collection(db, 'agiletalks-db', 'marshmallow', 'workshops'), where('joinCode', '==', joinCode.toUpperCase().trim()));
       const snap = await getDocs(q);
       if (!snap.empty) {
         const ws = snap.docs[0].data() as Workshop;
@@ -579,7 +579,7 @@ export async function updateTeamR1Activities(team: Team, activities: string[]): 
 
   if (isFirebaseConfigured && db) {
     try {
-      const teamRef = doc(db, 'workshops', team.workshopId, 'teams', team.id);
+      const teamRef = doc(db, 'agiletalks-db', 'marshmallow', 'workshops', team.workshopId, 'teams', team.id);
       await updateDoc(teamRef, {
         r1Activities: activities,
         lastSeenAt: Date.now()

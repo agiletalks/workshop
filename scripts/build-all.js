@@ -49,6 +49,20 @@ try {
   process.exit(1);
 }
 
+// 2b. Build split project
+console.log('Building split project...');
+try {
+  execSync('npm run build', {
+    cwd: path.join(rootDir, 'split'),
+    stdio: 'inherit',
+    shell: process.platform === 'win32' ? 'cmd.exe' : true
+  });
+  console.log('✓ Split project built successfully.');
+} catch (err) {
+  console.error('Error: Failed to build split project.');
+  process.exit(1);
+}
+
 // 3. Copy ai-arm files to dist/workshop/ai-arm
 console.log('Copying ai-arm static files...');
 try {
