@@ -181,13 +181,11 @@
 
   tbody th {
     text-align: left;
-    width: 18%;
+    width: 24%;
     background: var(--header);
-    padding-left: 6px;
+    padding: 2px 4px;
     font-size: min(1.8vw, 1.8vh, 12px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow: visible;
   }
 
   thead th {
@@ -207,6 +205,15 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  tr.add-row-tr th {
+    background: #f8fafc;
+    padding: 2px;
+  }
+  tr.add-row-tr td {
+    background: #f8fafc;
+    cursor: default;
   }
 
   .cell {
@@ -241,44 +248,61 @@
     color: #374151;
   }
 
-  /* Status list editing items in sidebar */
-  .status-item {
+  /* Row Header inline editing elements */
+  .row-header-container {
     display: flex;
     align-items: center;
+    width: 100%;
     gap: 4px;
-    margin-bottom: 6px;
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    padding: 4px 6px;
-    border-radius: 6px;
+    position: relative;
+    box-sizing: border-box;
   }
 
-  .status-item:hover {
-    border-color: var(--active);
-  }
-
-  .status-item input {
+  .row-header-input {
     flex: 1;
     min-width: 0;
-    border: none;
+    border: 1px solid transparent;
     background: transparent;
-    font-size: 12px;
-    padding: 2px 4px;
+    font-weight: 700;
+    font-size: min(1.8vw, 1.8vh, 12px);
     outline: none;
+    padding: 2px 4px;
+    border-radius: 4px;
     color: var(--text);
   }
 
-  .status-item button {
-    padding: 2px 4px;
+  .row-header-input:focus {
+    border-color: var(--active);
+    background: #fff;
+  }
+
+  .row-header-actions {
+    display: flex;
+    gap: 1px;
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+  }
+
+  .row-header-container:hover .row-header-actions {
+    opacity: 1;
+  }
+
+  .row-action-btn {
+    padding: 2px;
     font-size: 10px;
     border: none;
     background: transparent;
     color: var(--muted);
     cursor: pointer;
+    line-height: 1;
   }
 
-  .status-item button:hover {
+  .row-action-btn:hover {
     color: var(--active);
+  }
+
+  .row-action-btn.del:hover {
+    color: #ef4444;
   }
 
   .small {
@@ -425,7 +449,7 @@
 
   <div class="workspace">
     <!-- Left Side: Sidebar Controls -->
-    <div id="sidebarContainer" class="sidebar">
+    <div id="sidebarContainer" class="sidebar" style="height: auto;">
       <!-- Matrix Switching Card -->
       <div class="sidebar-card">
         <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">📋 矩陣管理</h4>
@@ -436,22 +460,6 @@
           <button onclick="createNewMatrix()" class="primary" style="padding: 4px 0; font-size: 11px;">+ 新增</button>
           <button onclick="renameCurrentMatrix()" style="padding: 4px 0; font-size: 11px;">✏️ 命名</button>
           <button onclick="deleteCurrentMatrix()" style="padding: 4px 0; font-size: 11px; color: var(--no-text); border-color: rgba(239, 68, 68, 0.3);" class="btn-danger">🗑️ 刪除</button>
-        </div>
-      </div>
-
-      <!-- Status Editing Card -->
-      <div class="sidebar-card" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
-        <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">⚙️ 狀態清單編輯器</h4>
-        
-        <!-- Add Status -->
-        <div style="display: flex; gap: 4px; margin-bottom: 8px;">
-          <input type="text" id="newStatusInput" placeholder="新增狀態..." onkeydown="if(event.key==='Enter') addStatus()" style="flex: 1; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none;" />
-          <button onclick="addStatus()" class="primary" style="padding: 4px 8px; font-size: 12px;">+</button>
-        </div>
-
-        <!-- Scrollable List of Statuses -->
-        <div id="statusesList" style="flex: 1; overflow-y: auto; padding-right: 2px;">
-          <!-- Items will be injected dynamically -->
         </div>
       </div>
     </div>
@@ -532,6 +540,9 @@ if (hasMigrated) {
 if (!matrices.some(m => m.id === currentMatrixId)) {
   currentMatrixId = matrices[0].id;
 }
+
+// Track newly added status row for auto-focusing
+let focusTarget = null;
 
 function getActiveMatrix() {
   return matrices.find(m => m.id === currentMatrixId) || matrices[0];
@@ -629,7 +640,7 @@ function render() {
   const trh = document.createElement("tr");
   const corner = document.createElement("th");
   corner.textContent = "目標狀態 ↓ / 目前狀態 →";
-  corner.style.width = "18%";
+  corner.style.width = "24%";
   trh.appendChild(corner);
 
   statuses.forEach(s => {
@@ -637,7 +648,7 @@ function render() {
     th.className = "col-header";
     th.textContent = s;
     th.title = s;
-    th.style.width = `calc(82% / ${statuses.length})`;
+    th.style.width = `calc(76% / ${statuses.length})`;
     trh.appendChild(th);
   });
 
@@ -646,12 +657,23 @@ function render() {
 
   const tbody = document.createElement("tbody");
 
-  statuses.forEach(to => {
+  statuses.forEach((to, idx) => {
     const tr = document.createElement("tr");
-    const rowHead = document.createElement("th");
-    rowHead.textContent = to;
-    rowHead.title = to;
-    tr.appendChild(rowHead);
+    
+    // Inline Editable Status Header cell
+    const th = document.createElement("th");
+    const container = document.createElement("div");
+    container.className = "row-header-container";
+    container.innerHTML = `
+      <input type="text" id="input-status-${idx}" class="row-header-input" value="${escapeHtml(to)}" onchange="renameStatus(${idx}, this.value)" />
+      <div class="row-header-actions">
+        <button class="row-action-btn" onclick="moveStatus(${idx}, -1)" title="上移">▲</button>
+        <button class="row-action-btn" onclick="moveStatus(${idx}, 1)" title="下移">▼</button>
+        <button class="row-action-btn del" onclick="deleteStatus(${idx})" title="刪除">🗑️</button>
+      </div>
+    `;
+    th.appendChild(container);
+    tr.appendChild(th);
 
     statuses.forEach(from => {
       const td = document.createElement("td");
@@ -675,22 +697,31 @@ function render() {
     tbody.appendChild(tr);
   });
 
+  // Append Symmetrical Add Status Row Button at bottom
+  const addRowTr = document.createElement("tr");
+  addRowTr.className = "add-row-tr";
+  const addRowTh = document.createElement("th");
+  addRowTh.innerHTML = `
+    <button onclick="autoAddStatus()" style="border: 1px dashed var(--border); width: 100%; padding: 4px; text-align: center; border-radius: 6px; font-size: 11px; cursor: pointer; color: var(--active); background: #f8fafc; font-weight: bold;">+ 新增狀態 (Status)</button>
+  `;
+  addRowTr.appendChild(addRowTh);
+  statuses.forEach(() => {
+    const td = document.createElement("td");
+    addRowTr.appendChild(td);
+  });
+  tbody.appendChild(addRowTr);
+
   table.appendChild(tbody);
 
-  // 2. Render Right Status Sidebar List
-  const listContainer = document.getElementById("statusesList");
-  listContainer.innerHTML = "";
-  statuses.forEach((s, idx) => {
-    const item = document.createElement("div");
-    item.className = "status-item";
-    item.innerHTML = `
-      <input type="text" value="${escapeHtml(s)}" onchange="renameStatus(${idx}, this.value)" />
-      <button onclick="moveStatus(${idx}, -1)" title="上移">▲</button>
-      <button onclick="moveStatus(${idx}, 1)" title="下移">▼</button>
-      <button onclick="deleteStatus(${idx})" title="刪除">🗑️</button>
-    `;
-    listContainer.appendChild(item);
-  });
+  // 3. Focus newly created status input
+  if (focusTarget !== null) {
+    const el = document.getElementById(`input-status-${focusTarget}`);
+    if (el) {
+      el.focus();
+      el.select();
+    }
+    focusTarget = null;
+  }
 }
 
 function setAll(value) {
@@ -710,7 +741,7 @@ function clearSaved() {
   localStorage.removeItem(currentMatrixKey);
   matrices = [
     {
-      id: "matrix-default",
+      id: "matrix-default-v2",
       name: "預設狀態矩陣",
       statuses: [...defaultStatuses],
       transitions: {}
@@ -752,21 +783,22 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-// Add New Status
-function addStatus() {
-  const input = document.getElementById("newStatusInput");
-  const name = input.value.trim();
-  if (!name) return;
+// Add New Status Symmetrically with auto-focusing
+function autoAddStatus() {
   const active = getActiveMatrix();
+  const list = active.statuses;
 
-  if (active.statuses.includes(name)) {
-    alert("狀態名稱不能重複！");
-    return;
+  let name = "新狀態";
+  let counter = 1;
+  while (list.includes(name + counter)) {
+    counter++;
   }
+  const uniqueName = name + counter;
 
-  active.statuses.push(name);
+  list.push(uniqueName);
+  focusTarget = list.length - 1;
+
   saveMatrices();
-  input.value = "";
   render();
 }
 
