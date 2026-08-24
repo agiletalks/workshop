@@ -113,7 +113,7 @@
 
   .workspace {
     display: flex;
-    gap: 6px;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -133,27 +133,71 @@
     justify-content: stretch;
   }
 
-  .sidebar {
-    width: 260px;
-    min-width: 260px;
-    max-width: 260px;
+  /* Inline Top Tabs Styling */
+  .tabs {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #e2e8f0;
+    color: #475569;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease-in-out;
+    border: 1px solid transparent;
+  }
+
+  .tab:hover {
+    background: #cbd5e1;
+    color: var(--text);
+  }
+
+  .tab.active {
+    background: var(--active);
+    color: white;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+  }
+
+  .tab .tab-edit-btn, .tab .tab-del-btn {
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+    line-height: 1;
+  }
+
+  .tab .tab-edit-btn:hover, .tab .tab-del-btn:hover {
+    opacity: 1;
+    color: #ef4444;
+  }
+
+  .add-tab-btn {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--active);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
     box-sizing: border-box;
   }
 
-  .sidebar-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px;
-    box-sizing: border-box;
-  }
-
-  #sidebarToggle:hover {
-    background: #94a3b8 !important;
-    color: white !important;
+  .add-tab-btn:hover {
+    background: #e0e7ff;
+    border-color: var(--active);
   }
 
   table {
@@ -464,15 +508,19 @@
     <a href="../index.html" class="team-bar-link">返回傳送門首頁 ←</a>
   </div>
 
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-    <h1 style="margin: 0;">決策表 (Decision Table)</h1>
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <h1 style="margin: 0; font-size: 20px;">決策表 (Decision Table)</h1>
+      <!-- Tabs container -->
+      <div id="tabsList" class="tabs"></div>
+      <button onclick="createNewTable()" class="add-tab-btn">+ 新增表</button>
+    </div>
     <div class="hint" style="margin: 0; font-size: 12px;">
       定義「多自變數」與「多應變數」間的條件映射規則。點擊單元格切換。
     </div>
   </div>
 
   <div class="toolbar">
-    <button onclick="addNewRule()" class="primary">+ 新增規則</button>
     <button onclick="setAll('—')">全部設為 —</button>
     <button onclick="clearSaved()">清除儲存</button>
     <button onclick="exportCSV()">匯出 CSV</button>
@@ -485,26 +533,7 @@
   </div>
 
   <div class="workspace">
-    <!-- Left Side: Collapsible Sidebar -->
-    <div id="sidebarContainer" class="sidebar" style="height: auto;">
-      <!-- Table Selection Card -->
-      <div class="sidebar-card">
-        <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">📋 表格管理</h4>
-        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
-          <select id="dtSelector" onchange="switchTable(this.value)" style="flex: 1; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none; background: #fff;"></select>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
-          <button onclick="createNewTable()" class="primary" style="padding: 4px 0; font-size: 11px;">+ 新增</button>
-          <button onclick="renameCurrentTable()" style="padding: 4px 0; font-size: 11px;">✏️ 命名</button>
-          <button onclick="deleteCurrentTable()" style="padding: 4px 0; font-size: 11px; color: var(--no-text); border-color: rgba(239, 68, 68, 0.3);" class="btn-danger">🗑️ 刪除</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Toggle Divider -->
-    <div id="sidebarToggle" onclick="toggleSidebar()" style="width: 12px; min-width: 12px; cursor: pointer; background: #cbd5e1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 10px; color: #475569; user-select: none; transition: background 0.2s;" title="收合側邊欄">◀</div>
-
-    <!-- Right Side: Decision Table Grid -->
+    <!-- Main Table Area (Takes 100% width) -->
     <div class="table-wrap">
       <table id="decisionTable"></table>
     </div>
@@ -571,14 +600,47 @@ function saveTables() {
 }
 
 function renderTableSelector() {
-  const selector = document.getElementById("dtSelector");
-  selector.innerHTML = "";
+  const container = document.getElementById("tabsList");
+  container.innerHTML = "";
   tables.forEach(t => {
-    const opt = document.createElement("option");
-    opt.value = t.id;
-    opt.textContent = t.name;
-    if (t.id === currentTableId) opt.selected = true;
-    selector.appendChild(opt);
+    const tab = document.createElement("div");
+    tab.className = "tab" + (t.id === currentTableId ? " active" : "");
+    tab.onclick = () => switchTable(t.id);
+
+    const label = document.createElement("span");
+    label.textContent = t.name;
+    label.title = "雙擊可重新命名";
+    label.ondblclick = (e) => {
+      e.stopPropagation();
+      renameTable(t.id);
+    };
+    tab.appendChild(label);
+
+    // Edit icon
+    const editBtn = document.createElement("span");
+    editBtn.className = "tab-edit-btn";
+    editBtn.innerHTML = "✏️";
+    editBtn.title = "重新命名";
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
+      renameTable(t.id);
+    };
+    tab.appendChild(editBtn);
+
+    // Delete cross button
+    if (tables.length > 1) {
+      const delBtn = document.createElement("span");
+      delBtn.className = "tab-del-btn";
+      delBtn.innerHTML = "&times;";
+      delBtn.title = "刪除決策表";
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteTable(t.id);
+      };
+      tab.appendChild(delBtn);
+    }
+
+    container.appendChild(tab);
   });
 }
 
@@ -604,26 +666,30 @@ function createNewTable() {
   switchTable(newId);
 }
 
-function renameCurrentTable() {
-  const active = getActiveTable();
-  const newName = prompt("請輸入新的表名稱：", active.name);
+function renameTable(id) {
+  const target = tables.find(t => t.id === id);
+  if (!target) return;
+  const newName = prompt("請輸入新的表名稱：", target.name);
   if (!newName || !newName.trim()) return;
-  active.name = newName.trim();
+  target.name = newName.trim();
   saveTables();
   renderTableSelector();
+  render();
 }
 
-function deleteCurrentTable() {
+function deleteTable(id) {
   if (tables.length <= 1) {
     alert("必須至少保留一個決策表！");
     return;
   }
-  const active = getActiveTable();
-  if (!confirm(`確定要刪除決策表「${active.name}」嗎？此動作無法復原。`)) return;
+  const target = tables.find(t => t.id === id);
+  if (!confirm(`確定要刪除決策表「${target.name}」嗎？此動作無法復原。`)) return;
 
-  tables = tables.filter(t => t.id !== currentTableId);
-  currentTableId = tables[0].id;
-  localStorage.setItem(currentTableKey, currentTableId);
+  tables = tables.filter(t => t.id !== id);
+  if (currentTableId === id) {
+    currentTableId = tables[0].id;
+    localStorage.setItem(currentTableKey, currentTableId);
+  }
   saveTables();
   renderTableSelector();
   render();
@@ -1062,23 +1128,7 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-// Sidebar collapsible logic
-let sidebarCollapsed = false;
-function toggleSidebar() {
-  const sidebar = document.getElementById("sidebarContainer");
-  const toggle = document.getElementById("sidebarToggle");
-  sidebarCollapsed = !sidebarCollapsed;
-  if (sidebarCollapsed) {
-    sidebar.style.display = "none";
-    toggle.textContent = "▶";
-    toggle.title = "展開側邊欄";
-  } else {
-    sidebar.style.display = "flex";
-    toggle.textContent = "◀";
-    toggle.title = "收合側邊欄";
-  }
-  render();
-}
+// check session and run initial render
 
 // Helper to escape HTML characters
 function escapeHtml(string) {

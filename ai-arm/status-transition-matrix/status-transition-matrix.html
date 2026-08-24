@@ -112,7 +112,7 @@
 
   .workspace {
     display: flex;
-    gap: 6px;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -132,27 +132,71 @@
     justify-content: stretch;
   }
 
-  .sidebar {
-    width: 260px;
-    min-width: 260px;
-    max-width: 260px;
+  /* Inline Top Tabs Styling */
+  .tabs {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #e2e8f0;
+    color: #475569;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease-in-out;
+    border: 1px solid transparent;
+  }
+
+  .tab:hover {
+    background: #cbd5e1;
+    color: var(--text);
+  }
+
+  .tab.active {
+    background: var(--active);
+    color: white;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+  }
+
+  .tab .tab-edit-btn, .tab .tab-del-btn {
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+    line-height: 1;
+  }
+
+  .tab .tab-edit-btn:hover, .tab .tab-del-btn:hover {
+    opacity: 1;
+    color: #ef4444;
+  }
+
+  .add-tab-btn {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--active);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
     box-sizing: border-box;
   }
 
-  #sidebarToggle:hover {
-    background: #94a3b8 !important;
-    color: white !important;
-  }
-
-  .sidebar-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px;
-    box-sizing: border-box;
+  .add-tab-btn:hover {
+    background: #e0e7ff;
+    border-color: var(--active);
   }
 
   table {
@@ -427,8 +471,13 @@
     <a href="../index.html" class="team-bar-link">返回傳送門首頁 ←</a>
   </div>
 
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-    <h1 style="margin: 0;">狀態轉換矩陣</h1>
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <h1 style="margin: 0; font-size: 20px;">狀態轉換矩陣</h1>
+      <!-- Tabs container -->
+      <div id="tabsList" class="tabs"></div>
+      <button onclick="createNewMatrix()" class="add-tab-btn">+ 新增矩陣</button>
+    </div>
     <div class="hint" style="margin: 0; font-size: 12px;">
       橫軸代表「目前狀態」，縱軸代表「目標狀態」。點擊單元格切換。
     </div>
@@ -448,26 +497,7 @@
   </div>
 
   <div class="workspace">
-    <!-- Left Side: Sidebar Controls -->
-    <div id="sidebarContainer" class="sidebar" style="height: auto;">
-      <!-- Matrix Switching Card -->
-      <div class="sidebar-card">
-        <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">📋 矩陣管理</h4>
-        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
-          <select id="matrixSelector" onchange="switchMatrix(this.value)" style="flex: 1; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none; background: #fff;"></select>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
-          <button onclick="createNewMatrix()" class="primary" style="padding: 4px 0; font-size: 11px;">+ 新增</button>
-          <button onclick="renameCurrentMatrix()" style="padding: 4px 0; font-size: 11px;">✏️ 命名</button>
-          <button onclick="deleteCurrentMatrix()" style="padding: 4px 0; font-size: 11px; color: var(--no-text); border-color: rgba(239, 68, 68, 0.3);" class="btn-danger">🗑️ 刪除</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Collapsible Toggle Bar -->
-    <div id="sidebarToggle" onclick="toggleSidebar()" style="width: 12px; min-width: 12px; cursor: pointer; background: #cbd5e1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 10px; color: #475569; user-select: none; transition: background 0.2s;" title="收合側邊欄">◀</div>
-
-    <!-- Right Side: Table Area -->
+    <!-- Main Table Area (Takes 100% width) -->
     <div class="table-wrap">
       <table id="matrix"></table>
     </div>
@@ -570,14 +600,47 @@ function saveMatrices() {
 }
 
 function renderMatrixSelector() {
-  const selector = document.getElementById("matrixSelector");
-  selector.innerHTML = "";
+  const container = document.getElementById("tabsList");
+  container.innerHTML = "";
   matrices.forEach(m => {
-    const opt = document.createElement("option");
-    opt.value = m.id;
-    opt.textContent = m.name;
-    if (m.id === currentMatrixId) opt.selected = true;
-    selector.appendChild(opt);
+    const tab = document.createElement("div");
+    tab.className = "tab" + (m.id === currentMatrixId ? " active" : "");
+    tab.onclick = () => switchMatrix(m.id);
+
+    const label = document.createElement("span");
+    label.textContent = m.name;
+    label.title = "雙擊可重新命名";
+    label.ondblclick = (e) => {
+      e.stopPropagation();
+      renameMatrix(m.id);
+    };
+    tab.appendChild(label);
+
+    // Edit icon
+    const editBtn = document.createElement("span");
+    editBtn.className = "tab-edit-btn";
+    editBtn.innerHTML = "✏️";
+    editBtn.title = "重新命名";
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
+      renameMatrix(m.id);
+    };
+    tab.appendChild(editBtn);
+
+    // Delete cross button
+    if (matrices.length > 1) {
+      const delBtn = document.createElement("span");
+      delBtn.className = "tab-del-btn";
+      delBtn.innerHTML = "&times;";
+      delBtn.title = "刪除矩陣";
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteMatrix(m.id);
+      };
+      tab.appendChild(delBtn);
+    }
+
+    container.appendChild(tab);
   });
 }
 
@@ -589,7 +652,7 @@ function switchMatrix(id) {
 }
 
 function createNewMatrix() {
-  const name = prompt("請輸入新矩陣的名稱：");
+  const name = prompt("請輸入新狀態矩陣的名稱：");
   if (!name || !name.trim()) return;
   const newId = "matrix-" + Date.now();
   matrices.push({
@@ -602,26 +665,30 @@ function createNewMatrix() {
   switchMatrix(newId);
 }
 
-function renameCurrentMatrix() {
-  const active = getActiveMatrix();
-  const newName = prompt("請輸入新的矩陣名稱：", active.name);
+function renameMatrix(id) {
+  const target = matrices.find(m => m.id === id);
+  if (!target) return;
+  const newName = prompt("請輸入新的矩陣名稱：", target.name);
   if (!newName || !newName.trim()) return;
-  active.name = newName.trim();
+  target.name = newName.trim();
   saveMatrices();
   renderMatrixSelector();
+  render();
 }
 
-function deleteCurrentMatrix() {
+function deleteMatrix(id) {
   if (matrices.length <= 1) {
     alert("必須至少保留一個矩陣！");
     return;
   }
-  const active = getActiveMatrix();
-  if (!confirm(`確定要刪除矩陣「${active.name}」嗎？此動作無法復原。`)) return;
-  
-  matrices = matrices.filter(m => m.id !== currentMatrixId);
-  currentMatrixId = matrices[0].id;
-  localStorage.setItem(currentMatrixKey, currentMatrixId);
+  const target = matrices.find(m => m.id === id);
+  if (!confirm(`確定要刪除狀態矩陣「${target.name}」嗎？此動作無法復原。`)) return;
+
+  matrices = matrices.filter(m => m.id !== id);
+  if (currentMatrixId === id) {
+    currentMatrixId = matrices[0].id;
+    localStorage.setItem(currentMatrixKey, currentMatrixId);
+  }
   saveMatrices();
   renderMatrixSelector();
   render();
@@ -919,23 +986,7 @@ function translateTeamName(t) {
   return map[t] || t;
 }
 
-let sidebarCollapsed = false;
-function toggleSidebar() {
-  const sidebar = document.getElementById("sidebarContainer");
-  const toggle = document.getElementById("sidebarToggle");
-  sidebarCollapsed = !sidebarCollapsed;
-  if (sidebarCollapsed) {
-    sidebar.style.display = "none";
-    toggle.textContent = "▶";
-    toggle.title = "展開側邊欄";
-  } else {
-    sidebar.style.display = "flex";
-    toggle.textContent = "◀";
-    toggle.title = "收合側邊欄";
-  }
-  // Re-render table to adjust cells to new layout size
-  render();
-}
+// check session and run initial render
 
 checkTeamSession();
 renderMatrixSelector();
