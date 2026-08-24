@@ -527,12 +527,12 @@
                     
                     // Card Action Controls (Close / Move card inside group)
                     const controls = document.createElement('div');
-                    controls.className = 'absolute top-2.5 right-2.5 hidden group-hover:flex items-center gap-1 no-drag';
+                    controls.className = 'absolute top-3.5 right-3.5 hidden group-hover:flex items-center gap-1.5 no-drag';
                     
                     // Up arrow if not first
                     if (index > 0) {
                         const btnUp = document.createElement('button');
-                        btnUp.className = 'w-6 h-6 bg-slate-900/60 hover:bg-slate-900 text-white rounded text-xs flex items-center justify-center font-bold';
+                        btnUp.className = 'w-9 h-9 bg-slate-900/60 hover:bg-slate-900 text-white rounded text-base flex items-center justify-center font-bold shadow-md';
                         btnUp.textContent = '▲';
                         btnUp.title = '向上移';
                         btnUp.onclick = () => moveCardInBlock(block.id, index, -1);
@@ -542,7 +542,7 @@
                     // Down arrow if not last
                     if (index < block.cards.length - 1) {
                         const btnDown = document.createElement('button');
-                        btnDown.className = 'w-6 h-6 bg-slate-900/60 hover:bg-slate-900 text-white rounded text-xs flex items-center justify-center font-bold';
+                        btnDown.className = 'w-9 h-9 bg-slate-900/60 hover:bg-slate-900 text-white rounded text-base flex items-center justify-center font-bold shadow-md';
                         btnDown.textContent = '▼';
                         btnDown.title = '向下移';
                         btnDown.onclick = () => moveCardInBlock(block.id, index, 1);
@@ -551,7 +551,7 @@
 
                     // Delete single card button
                     const btnClose = document.createElement('button');
-                    btnClose.className = 'w-6 h-6 bg-red-600 hover:bg-red-500 text-white rounded text-xs flex items-center justify-center font-bold shadow';
+                    btnClose.className = 'w-9 h-9 bg-red-600 hover:bg-red-500 text-white rounded text-base flex items-center justify-center font-bold shadow-md';
                     btnClose.textContent = '×';
                     btnClose.title = '移除此卡';
                     btnClose.onclick = () => removeCardFromBlock(block.id, card.id);
@@ -571,26 +571,26 @@
 
                 // Plus button at the bottom to add cards easily to this block
                 const addCardBtn = document.createElement('div');
-                addCardBtn.className = 'no-drag h-8 w-full flex items-center justify-center hover:bg-slate-800/20 hover:text-slate-200 cursor-pointer text-slate-500 transition-colors text-xs font-bold relative mt-1';
+                addCardBtn.className = 'no-drag h-12 w-full flex items-center justify-center hover:bg-slate-800/25 hover:text-slate-200 cursor-pointer text-slate-400 transition-colors text-lg font-extrabold border border-dashed border-slate-800/60 hover:border-slate-600/80 rounded-lg relative mt-2';
                 
                 const labelContainer = document.createElement('div');
-                labelContainer.className = 'flex items-center gap-1';
+                labelContainer.className = 'flex items-center gap-1.5';
                 labelContainer.innerHTML = '<span>+ 新增卡片</span>';
                 addCardBtn.appendChild(labelContainer);
 
                 // Dropdown of standard colors to add (Controlled via click)
                 const dropdown = document.createElement('div');
-                dropdown.className = 'add-dropdown absolute left-full top-0 ml-2 w-32 bg-slate-900 border border-slate-800 rounded-lg shadow-xl p-1.5 hidden flex-col gap-1 z-30';
+                dropdown.className = 'add-dropdown absolute left-full top-0 ml-2 w-36 bg-slate-900 border border-slate-800 rounded-lg shadow-xl p-2 hidden flex-col gap-1 z-30';
                 dropdown.innerHTML = `
-                    <div class="text-[9px] font-bold text-slate-500 px-1.5 uppercase pb-0.5 select-none">新增卡片</div>
-                    <button onclick="addCardToBlock('${block.id}', 'event')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-orange-400 font-semibold no-drag">🧡 領域事件</button>
-                    <button onclick="addCardToBlock('${block.id}', 'command')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-sky-400 font-semibold no-drag">💙 指令/動作</button>
-                    <button onclick="addCardToBlock('${block.id}', 'aggregate')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-amber-400 font-semibold no-drag">💛 聚合/實體</button>
-                    <button onclick="addCardToBlock('${block.id}', 'policy')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-rose-400 font-semibold no-drag">💗 策略/規則</button>
-                    <button onclick="addCardToBlock('${block.id}', 'read-model')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-emerald-400 font-semibold no-drag">💚 讀取模型</button>
-                    <button onclick="addCardToBlock('${block.id}', 'actor')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-slate-300 font-semibold no-drag">👤 角色</button>
-                    <button onclick="addCardToBlock('${block.id}', 'external-system')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-purple-400 font-semibold no-drag">💜 外部系統</button>
-                    <button onclick="addCardToBlock('${block.id}', 'hotspot')" class="text-left px-2 py-1 rounded hover:bg-slate-800 text-[10px] text-red-400 font-semibold no-drag">🔴 問題/痛點</button>
+                    <div class="text-[10px] font-bold text-slate-500 px-2 uppercase pb-1 select-none">新增卡片</div>
+                    <button onclick="addCardToBlock('${block.id}', 'event')" class="text-left px-2.5 py-1.5 rounded hover:bg-slate-800 text-xs text-orange-400 font-semibold no-drag">🧡 領域事件</button>
+                    <button onclick="addCardToBlock('${block.id}', 'command')" class="text-left px-2.5 py-1.5 rounded hover:bg-slate-800 text-xs text-sky-400 font-semibold no-drag">💙 指令/動作</button>
+                    <button onclick="addCardToBlock('${block.id}', 'aggregate')" class="text-left px-2.5 py-1.5 rounded hover:bg-slate-800 text-xs text-amber-400 font-semibold no-drag">💛 聚合/實體</button>
+                    <button onclick="addCardToBlock('${block.id}', 'policy')" class="text-left px-2.5 py-1.5 rounded hover:bg-slate-800 text-xs text-rose-400 font-semibold no-drag">💗 策略/規則</button>
+                    <button onclick="addCardToBlock('${block.id}', 'read-model')" class="text-left px-2.5 py-1.5 rounded hover:bg-slate-800 text-xs text-emerald-400 font-semibold no-drag">💚 讀取模型</button>
+                    <button onclick="addCardToBlock('${block.id}', 'actor')" class="text-left px-2.5 py-1.5 rounded hover:bg-slate-800 text-xs text-slate-300 font-semibold no-drag">👤 角色</button>
+                    <button onclick="addCardToBlock('${block.id}', 'external-system')" class="text-left px-2.5 py-1.5 rounded hover:bg-slate-800 text-xs text-purple-400 font-semibold no-drag">💜 外部系統</button>
+                    <button onclick="addCardToBlock('${block.id}', 'hotspot')" class="text-left px-2.5 py-1.5 rounded hover:bg-slate-800 text-xs text-red-400 font-semibold no-drag">🔴 問題/痛點</button>
                 `;
                 addCardBtn.appendChild(dropdown);
 
