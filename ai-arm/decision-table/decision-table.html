@@ -198,7 +198,26 @@
   thead th.rule-header {
     background: #e0e7ff;
     position: relative;
-    padding-right: 18px;
+    padding: 2px 18px 2px 2px;
+    box-sizing: border-box;
+  }
+
+  .rule-header-input {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    font-weight: 700;
+    text-align: center;
+    font-size: min(1.8vw, 1.8vh, 12px);
+    outline: none;
+    padding: 2px 4px;
+    border-radius: 4px;
+    color: var(--text);
+  }
+
+  .rule-header-input:focus {
+    border-color: var(--active);
+    background: #fff;
   }
 
   thead th.rule-header .del-rule-btn {
@@ -645,8 +664,15 @@ function render() {
   rules.forEach((r, idx) => {
     const th = document.createElement("th");
     th.className = "rule-header";
-    th.textContent = r.name;
     th.style.width = `calc(76% / ${rules.length})`;
+    
+    // Inline editable rule name input
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "rule-header-input";
+    input.value = r.name;
+    input.onchange = (e) => renameRule(idx, e.target.value);
+    th.appendChild(input);
     
     // Rule delete cross button
     const delBtn = document.createElement("span");
@@ -887,8 +913,11 @@ function deleteVariable(type, idx) {
 // Add new Rule column
 function addNewRule() {
   const active = getActiveTable();
-  const ruleNum = active.rules.length + 1;
-  const newRuleName = "R" + ruleNum;
+  let counter = active.rules.length + 1;
+  while (active.rules.some(r => r.name === "R" + counter)) {
+    counter++;
+  }
+  const newRuleName = "R" + counter;
 
   const newRule = {
     name: newRuleName,
@@ -905,18 +934,26 @@ function addNewRule() {
   render();
 }
 
-// Delete specific Rule column
+// Delete specific Rule column (preserves other custom rule names!)
 function deleteRule(idx) {
   const active = getActiveTable();
   const rName = active.rules[idx].name;
   if (!confirm(`確定要刪除規則「${rName}」嗎？`)) return;
 
   active.rules.splice(idx, 1);
-  // Re-index Rule Names
-  active.rules.forEach((r, i) => {
-    r.name = "R" + (i + 1);
-  });
+  saveTables();
+  render();
+}
 
+// Rename specific Rule column
+function renameRule(idx, newName) {
+  newName = newName.trim();
+  if (!newName) {
+    render();
+    return;
+  }
+  const active = getActiveTable();
+  active.rules[idx].name = newName;
   saveTables();
   render();
 }
