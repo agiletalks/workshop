@@ -38,7 +38,7 @@
     height: 100vh;
     max-width: 100%;
     margin: 0;
-    padding: 12px 16px;
+    padding: 8px 12px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -47,13 +47,13 @@
 
   h1 {
     margin: 0;
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .hint {
     color: var(--muted);
     margin: 0;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .toolbar {
@@ -64,9 +64,9 @@
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 8px;
+    padding: 6px 10px;
     margin-bottom: 8px;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   button, select, input {
@@ -79,7 +79,7 @@
     border-radius: 6px;
     padding: 4px 10px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   button:hover {
@@ -110,6 +110,15 @@
   .pill.no { background: var(--no); color: var(--no-text); }
   .pill.maybe { background: var(--maybe); color: var(--maybe-text); }
 
+  .workspace {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+
   .table-wrap {
     flex: 1 1 0%;
     min-height: 0;
@@ -121,6 +130,24 @@
     display: flex;
     align-items: stretch;
     justify-content: stretch;
+  }
+
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .sidebar-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    box-sizing: border-box;
   }
 
   table {
@@ -152,11 +179,29 @@
     width: 18%;
     background: var(--header);
     padding-left: 6px;
-    font-size: min(1.8vw, 1.8vh, 13px);
+    font-size: min(1.8vw, 1.8vh, 12px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   thead th {
-    font-size: min(1.8vw, 1.8vh, 13px);
+    font-size: min(1.8vw, 1.8vh, 12px);
+    background: var(--header);
+  }
+
+  thead th.col-header {
+    writing-mode: vertical-lr;
+    text-align: left;
+    padding: 6px 4px;
+    font-size: min(1.8vw, 1.8vh, 11px);
+    font-weight: 600;
+    max-height: 120px;
+    height: 120px;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .cell {
@@ -191,23 +236,44 @@
     color: #374151;
   }
 
-  .panel {
-    margin-top: 6px;
-    background: var(--card);
+  /* Status list editing items in sidebar */
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    background: #f8fafc;
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 12px;
+    padding: 4px 6px;
+    border-radius: 6px;
   }
 
-  textarea {
-    width: 100%;
-    min-height: 48px;
-    resize: none;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px;
-    box-sizing: border-box;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  .status-item:hover {
+    border-color: var(--active);
+  }
+
+  .status-item input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    padding: 2px 4px;
+    outline: none;
+    color: var(--text);
+  }
+
+  .status-item button {
+    padding: 2px 4px;
+    font-size: 10px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .status-item button:hover {
+    color: var(--active);
   }
 
   .small {
@@ -216,23 +282,23 @@
   }
 
   @media print {
-    .toolbar, .panel, .hint, .team-bar { display: none; }
+    .toolbar, .sidebar, .hint, .team-bar { display: none; }
     body { background: white; }
     .wrap { margin: 0; max-width: none; }
-    .table-wrap { box-shadow: none; border-radius: 0; }
+    .table-wrap { box-shadow: none; border-radius: 0; width: 100% !important; }
   }
 
   /* Team info header bar */
   .team-bar {
     background: #1e293b;
     color: #f3f4f6;
-    padding: 10px 20px;
-    font-size: 14px;
+    padding: 8px 16px;
+    font-size: 13px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-radius: 12px;
-    margin-bottom: 20px;
+    border-radius: 8px;
+    margin-bottom: 8px;
   }
   .team-bar-info {
     display: flex;
@@ -334,47 +400,59 @@
 
   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
     <h1 style="margin: 0;">狀態轉換矩陣</h1>
-    <div class="hint" style="margin: 0; font-size: 13px;">
+    <div class="hint" style="margin: 0; font-size: 12px;">
       橫軸代表「目前狀態」，縱軸代表「目標狀態」。點擊單元格切換。
     </div>
   </div>
 
   <div class="toolbar">
-    <div class="matrix-select-wrap" style="display: flex; align-items: center; gap: 6px; margin-right: 12px; border-right: 1px solid var(--border); padding-right: 12px;">
-      <span style="font-weight: bold; color: var(--text);">選擇矩陣：</span>
-      <select id="matrixSelector" onchange="switchMatrix(this.value)" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; outline: none;"></select>
-      <button onclick="createNewMatrix()" class="primary" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;">+ 新增</button>
-      <button onclick="renameCurrentMatrix()" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;">✏️ 命名</button>
-      <button onclick="deleteCurrentMatrix()" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; color: var(--no-text); border-color: rgba(239, 68, 68, 0.3);" class="btn-danger">🗑️ 刪除</button>
-    </div>
-    
-    <button onclick="setAll('no')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;">全部設為不可觸發</button>
-    <button onclick="setAll('maybe')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;">全部設為待確認</button>
-    <button onclick="clearSaved()" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;">清除儲存</button>
-    <button onclick="exportCSV()" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;">匯出 CSV</button>
-    <button onclick="window.print()" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;">列印 / 存 PDF</button>
+    <button onclick="setAll('no')">全部設為不可觸發</button>
+    <button onclick="setAll('maybe')">全部設為待確認</button>
+    <button onclick="clearSaved()">清除儲存</button>
+    <button onclick="exportCSV()">匯出 CSV</button>
+    <button onclick="window.print()">列印 / 存 PDF</button>
     <div class="legend">
-      <span class="pill yes" style="padding: 3px 8px; font-size: 11px;">✓ 可觸發</span>
-      <span class="pill no" style="padding: 3px 8px; font-size: 11px;">× 不可觸發</span>
-      <span class="pill maybe" style="padding: 3px 8px; font-size: 11px;">? 待確認</span>
+      <span class="pill yes">✓ 可觸發</span>
+      <span class="pill no">× 不可觸發</span>
+      <span class="pill maybe">? 待確認</span>
     </div>
   </div>
 
-  <div class="table-wrap">
-    <table id="matrix"></table>
-  </div>
-
-  <div class="panel">
-    <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;" onclick="toggleConfigPanel()">
-      <h3 style="margin: 0; font-size: 13px; display: flex; align-items: center; gap: 4px;">
-        ⚙️ 狀態清單編輯器 <span id="panelToggleArrow" style="font-size: 10px; color: var(--muted); font-weight: normal;">▲ 折疊</span>
-      </h3>
-      <span class="small" style="margin: 0; font-size: 12px;">一行一個狀態，修改後重建表格。系統會保留相同狀態名稱的既有設定。</span>
+  <div class="workspace">
+    <!-- Left Side: Table Area -->
+    <div class="table-wrap">
+      <table id="matrix"></table>
     </div>
-    <div id="panelContent" style="display: block; margin-top: 6px;">
-      <textarea id="statusInput" style="min-height: 48px; height: 50px; font-size: 12px; padding: 6px; margin-bottom: 4px;"></textarea>
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
-        <button class="primary" onclick="rebuildFromInput()" style="padding: 4px 10px; font-size: 12px; border-radius: 6px;">重建表格</button>
+
+    <!-- Right Side: Sidebar Controls -->
+    <div class="sidebar">
+      <!-- Matrix Switching Card -->
+      <div class="sidebar-card">
+        <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">📋 矩陣管理</h4>
+        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+          <select id="matrixSelector" onchange="switchMatrix(this.value)" style="flex: 1; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none; background: #fff;"></select>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
+          <button onclick="createNewMatrix()" class="primary" style="padding: 4px 0; font-size: 11px;">+ 新增</button>
+          <button onclick="renameCurrentMatrix()" style="padding: 4px 0; font-size: 11px;">✏️ 命名</button>
+          <button onclick="deleteCurrentMatrix()" style="padding: 4px 0; font-size: 11px; color: var(--no-text); border-color: rgba(239, 68, 68, 0.3);" class="btn-danger">🗑️ 刪除</button>
+        </div>
+      </div>
+
+      <!-- Status Editing Card -->
+      <div class="sidebar-card" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">⚙️ 狀態清單編輯器</h4>
+        
+        <!-- Add Status -->
+        <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+          <input type="text" id="newStatusInput" placeholder="新增狀態..." onkeydown="if(event.key==='Enter') addStatus()" style="flex: 1; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none;" />
+          <button onclick="addStatus()" class="primary" style="padding: 4px 8px; font-size: 12px;">+</button>
+        </div>
+
+        <!-- Scrollable List of Statuses -->
+        <div id="statusesList" style="flex: 1; overflow-y: auto; padding-right: 2px;">
+          <!-- Items will be injected dynamically -->
+        </div>
       </div>
     </div>
   </div>
@@ -382,15 +460,15 @@
 
 <script>
 const defaultStatuses = [
-  "0. 退回受理人員",
-  "1. 暫存",
-  "2. 受理人員建檔",
-  "3. 受理人員補件",
-  "4. 完成受理",
-  "5. 退回客戶",
-  "6. 駁退",
-  "7. 結轉股務",
-  "9. 撤件"
+  "退回受理人員",
+  "暫存",
+  "受理人員建檔",
+  "受理人員補件",
+  "完成受理",
+  "退回客戶",
+  "駁退",
+  "結轉股務",
+  "撤件"
 ];
 
 // Read team session identity
@@ -506,7 +584,7 @@ function render() {
   const statuses = active.statuses;
   const transitions = active.transitions || {};
 
-  document.getElementById("statusInput").value = statuses.join("\n");
+  // 1. Render Left Table Matrix
   const table = document.getElementById("matrix");
   table.innerHTML = "";
 
@@ -517,12 +595,12 @@ function render() {
   corner.style.width = "18%";
   trh.appendChild(corner);
 
-  statuses.forEach((s, idx) => {
+  statuses.forEach(s => {
     const th = document.createElement("th");
-    th.textContent = idx;
+    th.className = "col-header";
+    th.textContent = s;
     th.title = s;
     th.style.width = `calc(82% / ${statuses.length})`;
-    th.style.cursor = "help";
     trh.appendChild(th);
   });
 
@@ -561,6 +639,21 @@ function render() {
   });
 
   table.appendChild(tbody);
+
+  // 2. Render Right Status Sidebar List
+  const listContainer = document.getElementById("statusesList");
+  listContainer.innerHTML = "";
+  statuses.forEach((s, idx) => {
+    const item = document.createElement("div");
+    item.className = "status-item";
+    item.innerHTML = `
+      <input type="text" value="${escapeHtml(s)}" onchange="renameStatus(${idx}, this.value)" />
+      <button onclick="moveStatus(${idx}, -1)" title="上移">▲</button>
+      <button onclick="moveStatus(${idx}, 1)" title="下移">▼</button>
+      <button onclick="deleteStatus(${idx})" title="刪除">🗑️</button>
+    `;
+    listContainer.appendChild(item);
+  });
 }
 
 function setAll(value) {
@@ -570,23 +663,6 @@ function setAll(value) {
       if (from !== to) active.transitions[key(from, to)] = value;
     });
   });
-  saveMatrices();
-  render();
-}
-
-function rebuildFromInput() {
-  const active = getActiveMatrix();
-  const nextStatuses = document.getElementById("statusInput").value
-    .split("\n")
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  if (nextStatuses.length === 0) {
-    alert("請至少保留一個狀態。");
-    return;
-  }
-
-  active.statuses = nextStatuses;
   saveMatrices();
   render();
 }
@@ -639,16 +715,111 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-function toggleConfigPanel() {
-  const content = document.getElementById("panelContent");
-  const arrow = document.getElementById("panelToggleArrow");
-  if (content.style.display === "none") {
-    content.style.display = "block";
-    arrow.textContent = "▲ 折疊";
-  } else {
-    content.style.display = "none";
-    arrow.textContent = "▼ 展開";
+// Add New Status
+function addStatus() {
+  const input = document.getElementById("newStatusInput");
+  const name = input.value.trim();
+  if (!name) return;
+  const active = getActiveMatrix();
+
+  if (active.statuses.includes(name)) {
+    alert("狀態名稱不能重複！");
+    return;
   }
+
+  active.statuses.push(name);
+  saveMatrices();
+  input.value = "";
+  render();
+}
+
+// Rename Status (preserves transitions!)
+function renameStatus(idx, newName) {
+  newName = newName.trim();
+  const active = getActiveMatrix();
+  const oldName = active.statuses[idx];
+  if (!newName || newName === oldName) {
+    render();
+    return;
+  }
+
+  if (active.statuses.includes(newName)) {
+    alert("狀態名稱不能重複！");
+    render();
+    return;
+  }
+
+  const updatedTransitions = {};
+  Object.keys(active.transitions).forEach(k => {
+    let newKey = k;
+    const parts = k.split(" -> ");
+    if (parts.length === 2) {
+      let from = parts[0];
+      let to = parts[1];
+      if (from === oldName) from = newName;
+      if (to === oldName) to = newName;
+      newKey = key(from, to);
+    }
+    updatedTransitions[newKey] = active.transitions[k];
+  });
+
+  active.statuses[idx] = newName;
+  active.transitions = updatedTransitions;
+  saveMatrices();
+  render();
+}
+
+// Move status (reorder)
+function moveStatus(idx, direction) {
+  const active = getActiveMatrix();
+  const targetIdx = idx + direction;
+  if (targetIdx < 0 || targetIdx >= active.statuses.length) return;
+
+  const temp = active.statuses[idx];
+  active.statuses[idx] = active.statuses[targetIdx];
+  active.statuses[targetIdx] = temp;
+
+  saveMatrices();
+  render();
+}
+
+// Delete status
+function deleteStatus(idx) {
+  const active = getActiveMatrix();
+  if (active.statuses.length <= 1) {
+    alert("至少需保留一個狀態！");
+    return;
+  }
+  const deletedName = active.statuses[idx];
+  if (!confirm(`確定要刪除狀態「${deletedName}」嗎？相關的轉換設定將會消失。`)) return;
+
+  const updatedTransitions = {};
+  Object.keys(active.transitions).forEach(k => {
+    const parts = k.split(" -> ");
+    if (parts.length === 2) {
+      if (parts[0] !== deletedName && parts[1] !== deletedName) {
+        updatedTransitions[k] = active.transitions[k];
+      }
+    }
+  });
+
+  active.statuses.splice(idx, 1);
+  active.transitions = updatedTransitions;
+  saveMatrices();
+  render();
+}
+
+// Escape HTML utility
+function escapeHtml(string) {
+  return String(string).replace(/[&<>"']/g, function (s) {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[s];
+  });
 }
 
 // Check Team Session
