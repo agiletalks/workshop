@@ -559,8 +559,8 @@ if (!tables.some(t => t.id === currentTableId)) {
   currentTableId = tables[0].id;
 }
 
-// Track newly added row for focusing
-let focusVarIndex = null;
+// Track newly added row or column for auto-focusing
+let focusTarget = null;
 
 function getActiveTable() {
   return tables.find(t => t.id === currentTableId) || tables[0];
@@ -664,11 +664,12 @@ function render() {
   rules.forEach((r, idx) => {
     const th = document.createElement("th");
     th.className = "rule-header";
-    th.style.width = `calc(76% / ${rules.length})`;
+    th.style.width = `calc(70% / ${rules.length})`;
     
     // Inline editable rule name input
     const input = document.createElement("input");
     input.type = "text";
+    input.id = `input-rule-${idx}`;
     input.className = "rule-header-input";
     input.value = r.name;
     input.onchange = (e) => renameRule(idx, e.target.value);
@@ -685,6 +686,17 @@ function render() {
     th.appendChild(delBtn);
     trh.appendChild(th);
   });
+
+  // Add dummy Rule header at the far right of columns
+  const addRuleTh = document.createElement("th");
+  addRuleTh.style.width = "6%";
+  addRuleTh.style.background = "#f1f5f9";
+  addRuleTh.style.padding = "2px";
+  addRuleTh.innerHTML = `
+    <button onclick="addNewRule()" style="border: 1px dashed var(--border); width: 100%; padding: 2px; text-align: center; border-radius: 4px; font-size: 11px; cursor: pointer; color: var(--active); background: #f8fafc; font-weight: bold;" title="新增一列規則">+</button>
+  `;
+  trh.appendChild(addRuleTh);
+
   thead.appendChild(trh);
   tableEl.appendChild(thead);
 
@@ -722,6 +734,13 @@ function render() {
       };
       tr.appendChild(td);
     });
+
+    // Rightmost dummy cell aligning with +Rule column
+    const dummyTd = document.createElement("td");
+    dummyTd.style.background = "#f8fafc";
+    dummyTd.style.borderLeft = "1px dashed var(--border)";
+    tr.appendChild(dummyTd);
+
     tbody.appendChild(tr);
   });
 
@@ -737,6 +756,9 @@ function render() {
     const td = document.createElement("td");
     addInputTr.appendChild(td);
   });
+  const dummyInputTd = document.createElement("td");
+  dummyInputTd.style.background = "#f8fafc";
+  addInputTr.appendChild(dummyInputTd);
   tbody.appendChild(addInputTr);
 
   // B. Divider Row separating Inputs and Outputs
@@ -751,6 +773,9 @@ function render() {
     const td = document.createElement("td");
     dividerTr.appendChild(td);
   });
+  const dummyDividerTd = document.createElement("td");
+  dummyDividerTd.style.background = "var(--divider)";
+  dividerTr.appendChild(dummyDividerTd);
   tbody.appendChild(dividerTr);
 
   // C. Dependent Variables Rows (Outputs)
@@ -785,6 +810,12 @@ function render() {
       };
       tr.appendChild(td);
     });
+
+    const dummyTd = document.createElement("td");
+    dummyTd.style.background = "#f8fafc";
+    dummyTd.style.borderLeft = "1px dashed var(--border)";
+    tr.appendChild(dummyTd);
+
     tbody.appendChild(tr);
   });
 
@@ -800,19 +831,27 @@ function render() {
     const td = document.createElement("td");
     addOutputTr.appendChild(td);
   });
+  const dummyOutputTd = document.createElement("td");
+  dummyOutputTd.style.background = "#f8fafc";
+  addOutputTr.appendChild(dummyOutputTd);
   tbody.appendChild(addOutputTr);
 
   tableEl.appendChild(tbody);
 
-  // 3. Focus newly created variable input
-  if (focusVarIndex) {
-    const targetId = `input-${focusVarIndex.type}-${focusVarIndex.index}`;
-    const inputEl = document.getElementById(targetId);
-    if (inputEl) {
-      inputEl.focus();
-      inputEl.select();
+  // 3. Focus newly created variable input or rule input
+  if (focusTarget) {
+    let targetId = '';
+    if (focusTarget.type === 'rule') {
+      targetId = `input-rule-${focusTarget.index}`;
+    } else {
+      targetId = `input-${focusTarget.type}-${focusTarget.index}`;
     }
-    focusVarIndex = null;
+    const el = document.getElementById(targetId);
+    if (el) {
+      el.focus();
+      el.select();
+    }
+    focusTarget = null;
   }
 }
 
@@ -835,7 +874,7 @@ function autoAddVariable(type) {
     r[type][uniqueName] = "—";
   });
 
-  focusVarIndex = { type: type, index: list.length - 1 };
+  focusTarget = { type: type, index: list.length - 1 };
 
   saveTables();
   render();
@@ -930,6 +969,7 @@ function addNewRule() {
   active.outputs.forEach(o => newRule.outputs[o] = "—");
 
   active.rules.push(newRule);
+  focusTarget = { type: 'rule', index: active.rules.length - 1 };
   saveTables();
   render();
 }
