@@ -2912,6 +2912,16 @@
       okBtn.onclick = executeOk;
       cancelBtn.onclick = executeCancel;
     }
+
+    // --- 跨分頁多人即時同步監聽器 ---
+    window.addEventListener('storage', function(e) {
+      if (e.key === APP_ID) {
+        loadStateFromLocalStorage();
+        renderNotes();
+        updateCanvasTransform();
+        updateStickyNotesCount();
+      }
+    });
   </script>
 </body>
 </html>

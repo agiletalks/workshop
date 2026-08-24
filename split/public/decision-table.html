@@ -1196,6 +1196,18 @@ function escapeHtml(string) {
 // Initialization calls
 renderTableSelector();
 render();
+
+// --- 跨分頁多人即時同步監聽器 ---
+window.addEventListener('storage', function(e) {
+  if (e.key === storageKey) {
+    tables = JSON.parse(localStorage.getItem(storageKey) || "null") || defaultTables;
+    if (tables.length > 0 && !tables.some(t => t.id === currentTableId)) {
+      currentTableId = tables[0].id;
+    }
+    renderTableSelector();
+    render();
+  }
+});
 </script>
 </body>
 </html>

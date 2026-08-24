@@ -10,6 +10,8 @@ import { SlideLightbox } from "./components/SlideLightbox";
 import { WorkbookPanel } from "./components/WorkbookPanel";
 import { OverviewGrid } from "./components/OverviewGrid";
 import { modules } from "./data/modules";
+import { db, isFirebaseConfigured } from "./services/firebase";
+import { doc, onSnapshot, setDoc, collection, deleteDoc } from "firebase/firestore";
 
 function App() {
   // Passcode Gate state
@@ -17,8 +19,11 @@ function App() {
     if (!appConfig.passwordEnabled || appConfig.devBypassPassword) {
       return true;
     }
-    return sessionStorage.getItem("split_courseware_authorized") === "true";
+    return localStorage.getItem("split_authorized") === "true";
   });
+
+  const nickname = localStorage.getItem("split_nickname") || "學生";
+  const teamId = localStorage.getItem("split_teamId") || "Team 1";
 
   // State management from custom hook
   const {
@@ -43,8 +48,13 @@ function App() {
   // Sidebar collapsible state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  // Lock state for co-editing prevention
+  const [locks, setLocks] = useState<Record<string, { editor: string; updatedAt: number }>>({});
+  const [now, setNow] = useState(Date.now());
+  const [focusedSlideId, setFocusedSlideId] = useState<string | null>(null);
+
   // Slide navigation
-  const activeSlideIndex = slides.findIndex(s => s.id === workbook.activeSlideId);
+  const activeSlideIndex = slides.findIndex((s) => s.id === workbook.activeSlideId);
   const activeSlide = slides[activeSlideIndex] || slides[0];
 
   // Store latest state in refs so the window event listener can read it without triggering re-registration
@@ -77,7 +87,7 @@ function App() {
       const match = hash.match(/\/module\/([E|S|P|L|I|T])\/slide\/(\d+)/);
       if (match) {
         const pageNum = parseInt(match[2], 10);
-        const matchedSlide = slides.find(s => s.page === pageNum);
+        const matchedSlide = slides.find((s) => s.page === pageNum);
         if (matchedSlide && matchedSlide.id !== activeSlideIdRef.current) {
           setActiveSlideId(matchedSlide.id);
           if (viewModeRef.current !== "focus") {
@@ -90,11 +100,184 @@ function App() {
     };
 
     window.addEventListener("hashchange", handleHashChange);
-    // Trigger initially to handle deep links
     handleHashChange();
 
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, [setActiveSlideId, setViewMode]);
+
+  // Local clock to invalidate old locks
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Subscribe to slide locks in the current team
+  useEffect(() => {
+    if (!authorized || !isFirebaseConfigured || !db) return;
+
+    const locksCollectionRef = collection(db!, "workshops", "split", "teams", teamId, "locks");
+    const unsubscribe = onSnapshot(locksCollectionRef, (snapshot) => {
+      const activeLocks: Record<string, { editor: string; updatedAt: number }> = {};
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data && data.editor && data.updatedAt) {
+          activeLocks[docSnap.id] = {
+            editor: data.editor,
+            updatedAt: Number(data.updatedAt)
+          };
+        }
+      });
+      setLocks(activeLocks);
+    });
+
+    return () => unsubscribe();
+  }, [authorized, teamId]);
+
+  // Keep lock alive while focused
+  useEffect(() => {
+    if (!focusedSlideId || !isFirebaseConfigured || !db) return;
+
+    const interval = setInterval(async () => {
+      const lockDocRef = doc(db!, "workshops", "split", "teams", teamId, "locks", focusedSlideId);
+      await setDoc(lockDocRef, {
+        editor: nickname,
+        updatedAt: Date.now()
+      }).catch((err) => {
+        console.warn("Failed to renew lock", err);
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [focusedSlideId, teamId, nickname]);
+
+  const handleNoteFocus = async (slideId: string) => {
+    setFocusedSlideId(slideId);
+    if (!isFirebaseConfigured || !db) return;
+    const lockDocRef = doc(db!, "workshops", "split", "teams", teamId, "locks", slideId);
+    await setDoc(lockDocRef, {
+      editor: nickname,
+      updatedAt: Date.now()
+    }).catch((err) => {
+      console.warn("Failed to set lock on focus", err);
+    });
+  };
+
+  const handleNoteBlur = async (slideId: string) => {
+    setFocusedSlideId(null);
+    if (!isFirebaseConfigured || !db) return;
+    const lockDocRef = doc(db!, "workshops", "split", "teams", teamId, "locks", slideId);
+    await deleteDoc(lockDocRef).catch((err) => {
+      console.warn("Failed to delete lock on blur", err);
+    });
+  };
+
+  const getActiveEditorForSlide = (slideId: string) => {
+    const lock = locks[slideId];
+    if (!lock) return undefined;
+    if (lock.editor !== nickname && now - lock.updatedAt < 8000) {
+      return lock.editor;
+    }
+    return undefined;
+  };
+
+  // Whiteboard Storage Bridge: Upload local edits to Firestore
+  const lastSyncedTimestamps = useRef<Record<string, string>>({});
+  useEffect(() => {
+    if (!authorized || !isFirebaseConfigured || !db) return;
+
+    const handleLocalStorageUpdate = async (key: string, value: string | null) => {
+      let toolId = "";
+      if (key === "vibe-agile-board-wbs-v4") toolId = "wbs";
+      else if (key === "vibe-agile-board-impact-map-v3") toolId = "impact-map";
+      else if (key === "vibe-agile-board-story-map-v4") toolId = "story-map";
+      else if (key === "decision_tables_standalone") toolId = "decision-table";
+
+      if (!toolId || !value) return;
+
+      try {
+        const timestamp = new Date().toISOString();
+        lastSyncedTimestamps.current[toolId] = timestamp;
+
+        const docRef = doc(db!, "workshops", "split", "teams", teamId, "tools", toolId);
+        await setDoc(docRef, { data: value, updatedAt: timestamp });
+      } catch (err) {
+        console.error(`Failed to upload ${toolId} to Firestore:`, err);
+      }
+    };
+
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key) {
+        handleLocalStorageUpdate(e.key, e.newValue);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageEvent);
+
+    let prevValues: Record<string, string | null> = {
+      "vibe-agile-board-wbs-v4": localStorage.getItem("vibe-agile-board-wbs-v4"),
+      "vibe-agile-board-impact-map-v3": localStorage.getItem("vibe-agile-board-impact-map-v3"),
+      "vibe-agile-board-story-map-v4": localStorage.getItem("vibe-agile-board-story-map-v4"),
+      "decision_tables_standalone": localStorage.getItem("decision_tables_standalone")
+    };
+
+    const pollInterval = setInterval(() => {
+      const keys = ["vibe-agile-board-wbs-v4", "vibe-agile-board-impact-map-v3", "vibe-agile-board-story-map-v4", "decision_tables_standalone"];
+      keys.forEach((key) => {
+        const current = localStorage.getItem(key);
+        if (current !== prevValues[key]) {
+          prevValues[key] = current;
+          handleLocalStorageUpdate(key, current);
+        }
+      });
+    }, 1000);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageEvent);
+      clearInterval(pollInterval);
+    };
+  }, [authorized, teamId]);
+
+  // Whiteboard Storage Bridge: Download remote updates from Firestore
+  useEffect(() => {
+    if (!authorized || !isFirebaseConfigured || !db) return;
+
+    const colRef = collection(db!, "workshops", "split", "teams", teamId, "tools");
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
+      snapshot.forEach((changeDoc) => {
+        const toolId = changeDoc.id;
+        const remote = changeDoc.data();
+        if (!remote || !remote.data) return;
+
+        let key = "";
+        if (toolId === "wbs") key = "vibe-agile-board-wbs-v4";
+        else if (toolId === "impact-map") key = "vibe-agile-board-impact-map-v3";
+        else if (toolId === "story-map") key = "vibe-agile-board-story-map-v4";
+        else if (toolId === "decision-table") key = "decision_tables_standalone";
+
+        if (!key) return;
+
+        const localTimestamp = lastSyncedTimestamps.current[toolId];
+        if (!localTimestamp || new Date(remote.updatedAt) > new Date(localTimestamp)) {
+          lastSyncedTimestamps.current[toolId] = remote.updatedAt;
+          const currentLocalVal = localStorage.getItem(key);
+          if (currentLocalVal !== remote.data) {
+            localStorage.setItem(key, remote.data);
+            window.dispatchEvent(
+              new StorageEvent("storage", {
+                key,
+                newValue: remote.data,
+                storageArea: localStorage
+              })
+            );
+          }
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, [authorized, teamId]);
 
   const handleNext = () => {
     if (activeSlideIndex < slides.length - 1) {
@@ -125,9 +308,11 @@ function App() {
   // Export Markdown Notes file
   const handleExportMarkdown = () => {
     const now = new Date();
-    const timestamp = now.getFullYear() +
+    const timestamp =
+      now.getFullYear() +
       String(now.getMonth() + 1).padStart(2, "0") +
-      String(now.getDate()).padStart(2, "0") + "_" +
+      String(now.getDate()).padStart(2, "0") +
+      "_" +
       String(now.getHours()).padStart(2, "0") +
       String(now.getMinutes()).padStart(2, "0");
 
@@ -142,61 +327,60 @@ function App() {
 
     // Group notes by modules
     modules.forEach((mod) => {
-      const modSlides = slides.filter(s => s.moduleId === mod.id);
+      const modSlides = slides.filter((s) => s.moduleId === mod.id);
       let moduleHasNotes = false;
 
-      // Check if module contains any note/interaction responses
-      const modMdSections = modSlides.map((slide) => {
-        const res = getResponse(slide.id);
-        const hasNote = res.personalNote.trim().length > 0;
-        const hasInteraction = res.interactionData != null;
+      const modMdSections = modSlides
+        .map((slide) => {
+          const res = getResponse(slide.id);
+          const hasNote = res.personalNote.trim().length > 0;
+          const hasInteraction = res.interactionData != null;
 
-        if (!hasNote && !hasInteraction) return "";
+          if (!hasNote && !hasInteraction) return "";
 
-        moduleHasNotes = true;
-        let slideMd = `### Page ${slide.page.toString().padStart(2, "0")} ｜ ${slide.title}\n`;
-        if (slide.toolName) {
-          slideMd += `* **使用工具**: ${slide.toolName}\n`;
-        }
-        slideMd += `* **完成狀態**: ${res.completed ? "✅ 已完成" : "⏳ 學習中"}\n\n`;
-
-        if (hasNote) {
-          slideMd += `#### 📝 個人隨堂筆記\n\`\`\`text\n${res.personalNote}\n\`\`\`\n\n`;
-        }
-
-        if (hasInteraction && slide.interactionType === "table-fill" && slide.interactionConfig) {
-          slideMd += `#### 📅 實作表格填寫 (${slide.toolName})\n\n`;
-          const config = slide.interactionConfig;
-          const data = res.interactionData;
-          // Build md table headers
-          slideMd += `| ` + config.headers.join(" | ") + ` |\n`;
-          slideMd += `| ` + config.headers.map(() => "---").join(" | ") + ` |\n`;
-          // Rows
-          config.rows.forEach((row: string[], rowIndex: number) => {
-            const cells = row.map((cellText, colIndex) => {
-              if (colIndex === 0) return cellText;
-              return data[`${rowIndex}-${colIndex}`] || "";
-            });
-            slideMd += `| ` + cells.join(" | ") + ` |\n`;
-          });
-          slideMd += `\n`;
-        }
-
-        if (hasInteraction && slide.interactionType === "sticky-board" && slide.interactionConfig) {
-          slideMd += `#### 📌 便利貼實作看板\n\n`;
-          const stickyNotes = res.interactionData as any[];
-          if (Array.isArray(stickyNotes) && stickyNotes.length > 0) {
-            stickyNotes.forEach((n) => {
-              slideMd += `* [${n.color.toUpperCase()}] (${Math.round(n.x)}, ${Math.round(n.y)}): ${n.text}\n`;
-            });
-          } else {
-            slideMd += `* (無新增便利貼項目)\n`;
+          moduleHasNotes = true;
+          let slideMd = `### Page ${slide.page.toString().padStart(2, "0")} ｜ ${slide.title}\n`;
+          if (slide.toolName) {
+            slideMd += `* **使用工具**: ${slide.toolName}\n`;
           }
-          slideMd += `\n`;
-        }
+          slideMd += `* **完成狀態**: ${res.completed ? "✅ 已完成" : "⏳ 學習中"}\n\n`;
 
-        return slideMd;
-      }).filter(Boolean);
+          if (hasNote) {
+            slideMd += `#### 📝 個人隨堂筆記\n\`\`\`text\n${res.personalNote}\n\`\`\`\n\n`;
+          }
+
+          if (hasInteraction && slide.interactionType === "table-fill" && slide.interactionConfig) {
+            slideMd += `#### 📅 實作表格填寫 (${slide.toolName})\n\n`;
+            const config = slide.interactionConfig;
+            const data = res.interactionData;
+            slideMd += `| ` + config.headers.join(" | ") + ` |\n`;
+            slideMd += `| ` + config.headers.map(() => "---").join(" | ") + ` |\n`;
+            config.rows.forEach((row: string[], rowIndex: number) => {
+              const cells = row.map((cellText, colIndex) => {
+                if (colIndex === 0) return cellText;
+                return data[`${rowIndex}-${colIndex}`] || "";
+              });
+              slideMd += `| ` + cells.join(" | ") + ` |\n`;
+            });
+            slideMd += `\n`;
+          }
+
+          if (hasInteraction && slide.interactionType === "sticky-board" && slide.interactionConfig) {
+            slideMd += `#### 📌 便利貼實作看板\n\n`;
+            const stickyNotes = res.interactionData as any[];
+            if (Array.isArray(stickyNotes) && stickyNotes.length > 0) {
+              stickyNotes.forEach((n) => {
+                slideMd += `* [${n.color.toUpperCase()}] (${Math.round(n.x)}, ${Math.round(n.y)}): ${n.text}\n`;
+              });
+            } else {
+              slideMd += `* (無新增便利貼項目)\n`;
+            }
+            slideMd += `\n`;
+          }
+
+          return slideMd;
+        })
+        .filter(Boolean);
 
       if (moduleHasNotes) {
         mdContent += `## ${mod.title}\n\n`;
@@ -205,7 +389,6 @@ function App() {
       }
     });
 
-    // Create file trigger download
     const blob = new Blob([mdContent], { type: "text/markdown;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -215,12 +398,13 @@ function App() {
     document.body.removeChild(link);
   };
 
-  // Export JSON Backup file
   const handleExportJSON = () => {
     const now = new Date();
-    const timestamp = now.getFullYear() +
+    const timestamp =
+      now.getFullYear() +
       String(now.getMonth() + 1).padStart(2, "0") +
-      String(now.getDate()).padStart(2, "0") + "_" +
+      String(now.getDate()).padStart(2, "0") +
+      "_" +
       String(now.getHours()).padStart(2, "0") +
       String(now.getMinutes()).padStart(2, "0");
 
@@ -234,40 +418,45 @@ function App() {
     document.body.removeChild(link);
   };
 
-  // Import JSON Backup file
   const handleImportJSON = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const parsed = JSON.parse(e.target?.result as string);
-        // Verify key structure matches courseId
         if (parsed && parsed.courseId === appConfig.courseId) {
           const confirmOverwrite = window.confirm(
-            "偵測到相符的講義備份檔。這將覆蓋您本機目前的筆記與實作資料，確認是否還原？"
+            "偵測到相符的講義備份檔。這將覆蓋您目前所屬組別的雲端/本地實作資料，確認是否還原？"
           );
           if (confirmOverwrite) {
             importWorkbook(parsed);
-            alert("還原成功！已讀取您的歷史筆記與進度。");
+            alert("還原成功！已讀取歷史進度。");
           }
         } else {
-          alert("❌ 錯誤：不相容的 JSON 檔案格式，其儲存庫 ID 與本課程不匹配。");
+          alert("❌ 錯誤：不相容的 JSON 檔案格式。");
         }
       } catch (err) {
-        alert("❌ 錯誤：JSON 備份檔解析失敗，請確認檔案是否損毀。");
+        alert("❌ 錯誤：JSON 備份檔解析失敗。");
       }
     };
     reader.readAsText(file);
   };
 
-  // Reset all workbook data
   const handleReset = () => {
     const confirmReset = window.confirm(
-      "⚠️ 警告：這將永久刪除您保存在本機瀏覽器中的所有筆記與便利貼實作資料。建議您在此之前先下載備份，確認是否清除？"
+      "⚠️ 警告：這將清空目前所屬組別的所有筆記與實作資料。確認是否重設？"
     );
     if (confirmReset) {
       resetWorkbook();
-      alert("已重置所有隨堂筆記！");
+      alert("已重置資料！");
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("split_authorized");
+    localStorage.removeItem("split_role");
+    localStorage.removeItem("split_nickname");
+    localStorage.removeItem("split_teamId");
+    setAuthorized(false);
   };
 
   // If passcode enabled and not authorized, render PasswordGate screen
@@ -288,6 +477,9 @@ function App() {
       onReset={handleReset}
       sidebarCollapsed={sidebarCollapsed}
       onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+      nickname={nickname}
+      teamId={teamId}
+      onLogout={handleLogout}
     />
   );
 
@@ -309,6 +501,9 @@ function App() {
       updateInteractionData={updateInteractionData}
       toggleCompleted={toggleCompleted}
       onImageClick={handleImageClick}
+      activeEditor={getActiveEditorForSlide(activeSlide.id)}
+      onNoteFocus={handleNoteFocus}
+      onNoteBlur={handleNoteBlur}
     />
   );
 
@@ -325,24 +520,19 @@ function App() {
     <div className="w-screen h-screen overflow-hidden flex flex-col bg-slate-50">
       {workbook.viewMode === "focus" ? (
         <div className="flex-1 flex overflow-hidden">
-          {/* 3-Column main App Shell */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {topBar}
             <div className="flex-1 flex overflow-hidden">
               {sidebar}
-              {/* Responsive Layout: Vertical split on mobile, Horizontal split on desktop */}
               <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-full">
-                {/* SlideViewer: Fixed/Percentage height on mobile, full height on desktop */}
                 <div className="w-full h-[38vh] min-h-[220px] max-h-[300px] md:h-full md:max-h-none md:w-[40%] lg:w-[35%] xl:w-[30%] shrink-0 overflow-hidden flex flex-col bg-slate-100 relative">
                   {slideViewer}
                 </div>
-                {/* WorkbookPanel: Takes remaining space, scrolls internally */}
                 <div className="flex-1 border-t md:border-t-0 md:border-l border-slate-200 bg-white h-full overflow-hidden flex flex-col">
                   {workbookPanel}
                 </div>
               </div>
             </div>
-            {/* Mobile note/slide bottom navbar fallback */}
             <div className="md:hidden flex h-14 bg-white border-t border-slate-200 items-center justify-around z-30 shadow-[0_-4px_10px_rgba(0,0,0,0.03)] shrink-0">
               <button
                 onClick={() => setViewMode("focus")}
@@ -366,7 +556,6 @@ function App() {
           </div>
         </div>
       ) : (
-        /* Overview Mode layout */
         <div className="flex-1 flex flex-col overflow-hidden">
           {topBar}
           <div className="flex-1 flex overflow-hidden">
@@ -376,7 +565,6 @@ function App() {
         </div>
       )}
 
-      {/* Lightbox full screen modal */}
       <SlideLightbox
         imageUrl={lightboxUrl}
         isOpen={lightboxOpen}

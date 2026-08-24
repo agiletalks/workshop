@@ -8,6 +8,11 @@ interface WorkbookPanelProps {
   updateInteractionData: (slideId: string, data: any) => void;
   toggleCompleted: (slideId: string) => void;
   onImageClick?: (imageUrl: string) => void;
+
+  // Locks additions
+  activeEditor?: string;
+  onNoteFocus?: (slideId: string) => void;
+  onNoteBlur?: (slideId: string) => void;
 }
 
 const slide3Prompt = `你是一位熟悉 Scrum、Agile 與產品開發的專業講師。請協助我研究並理解 Definition of Done（DoD）與 Definition of Ready（DoR），最後將研究結果製作成一份可以直接在瀏覽器開啟閱讀的完整 HTML 網頁。
@@ -963,7 +968,10 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
   slide,
   getResponse,
   updateNote,
-  onImageClick
+  onImageClick,
+  activeEditor,
+  onNoteFocus,
+  onNoteBlur
 }) => {
   const response = getResponse(slide.id);
   const noteLength = response.personalNote.length;
@@ -1104,13 +1112,34 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
           )}
 
           {/* Input Area (Textarea) */}
-          <textarea
-            value={response.personalNote}
-            onChange={(e) => updateNote(slide.id, e.target.value)}
-            placeholder={slide.notePlaceholder || "記錄你對這張卡片的理解、講師補充、疑問或工作上的聯想……"}
-            maxLength={10000}
-            className="w-full flex-1 p-4 border border-slate-200 focus:border-fubon-blue rounded-2xl outline-none focus:ring-4 focus:ring-fubon-blue-glow transition-all text-sm resize-none leading-relaxed bg-slate-50 focus:bg-white"
-          />
+          <div className="relative flex-1 flex flex-col overflow-hidden">
+            <textarea
+              value={response.personalNote}
+              onChange={(e) => updateNote(slide.id, e.target.value)}
+              onFocus={() => onNoteFocus?.(slide.id)}
+              onBlur={() => onNoteBlur?.(slide.id)}
+              disabled={!!activeEditor}
+              placeholder={
+                activeEditor
+                  ? `🔒 ${activeEditor} 正在編輯此頁筆記，暫時鎖定中...`
+                  : slide.notePlaceholder || "記錄你對這張卡片的理解、講師補充、疑問或工作上的聯想……"
+              }
+              maxLength={10000}
+              className={`w-full flex-1 p-4 border rounded-2xl outline-none transition-all text-sm resize-none leading-relaxed ${
+                activeEditor
+                  ? "border-amber-200 bg-amber-50/20 text-slate-500 cursor-not-allowed select-none"
+                  : "border-slate-200 focus:border-fubon-blue focus:ring-4 focus:ring-fubon-blue-glow bg-slate-50 focus:bg-white"
+              }`}
+            />
+            {activeEditor && (
+              <div className="absolute inset-0 bg-amber-500/5 backdrop-blur-[0.5px] rounded-2xl flex items-center justify-center pointer-events-none select-none">
+                <div className="bg-amber-100/95 border border-amber-200 text-amber-800 text-[11px] font-black px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span>🔒 小組成員「{activeEditor}」正在編輯此頁筆記...</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         /* Examples tab view */
