@@ -112,7 +112,7 @@
 
   .workspace {
     display: flex;
-    gap: 12px;
+    gap: 6px;
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -140,6 +140,11 @@
     flex-direction: column;
     gap: 8px;
     box-sizing: border-box;
+  }
+
+  #sidebarToggle:hover {
+    background: #94a3b8 !important;
+    color: white !important;
   }
 
   .sidebar-card {
@@ -419,13 +424,8 @@
   </div>
 
   <div class="workspace">
-    <!-- Left Side: Table Area -->
-    <div class="table-wrap">
-      <table id="matrix"></table>
-    </div>
-
-    <!-- Right Side: Sidebar Controls -->
-    <div class="sidebar">
+    <!-- Left Side: Sidebar Controls -->
+    <div id="sidebarContainer" class="sidebar">
       <!-- Matrix Switching Card -->
       <div class="sidebar-card">
         <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">📋 矩陣管理</h4>
@@ -455,6 +455,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Collapsible Toggle Bar -->
+    <div id="sidebarToggle" onclick="toggleSidebar()" style="width: 12px; min-width: 12px; cursor: pointer; background: #cbd5e1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 10px; color: #475569; user-select: none; transition: background 0.2s;" title="收合側邊欄">◀</div>
+
+    <!-- Right Side: Table Area -->
+    <div class="table-wrap">
+      <table id="matrix"></table>
+    </div>
   </div>
 </div>
 
@@ -481,7 +489,7 @@ const currentMatrixKey = "current_matrix_id_" + team;
 
 const defaultMatrices = [
   {
-    id: "matrix-default",
+    id: "matrix-default-v2",
     name: "預設狀態矩陣",
     statuses: [...defaultStatuses],
     transitions: {}
@@ -848,6 +856,24 @@ function translateTeamName(t) {
     "Team 6": "第六組 (Team 6)"
   };
   return map[t] || t;
+}
+
+let sidebarCollapsed = false;
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebarContainer");
+  const toggle = document.getElementById("sidebarToggle");
+  sidebarCollapsed = !sidebarCollapsed;
+  if (sidebarCollapsed) {
+    sidebar.style.display = "none";
+    toggle.textContent = "▶";
+    toggle.title = "展開側邊欄";
+  } else {
+    sidebar.style.display = "flex";
+    toggle.textContent = "◀";
+    toggle.title = "收合側邊欄";
+  }
+  // Re-render table to adjust cells to new layout size
+  render();
 }
 
 checkTeamSession();
