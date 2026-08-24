@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>決策表 (Decision Table)</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #d1d5db;
+    --yes: #dcfce7;
+    --yes-text: #166534;
+    --no: #fee2e2;
+    --no-text: #991b1b;
+    --maybe: #f3f4f6;
+    --maybe-text: #4b5563;
+    --header: #eef2ff;
+    --active: #2563eb;
+    --divider: #475569;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .wrap {
+    height: 100vh;
+    max-width: 100%;
+    margin: 0;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .hint {
+    color: var(--muted);
+    margin: 0;
+    font-size: 12px;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+
+  button, select, input {
+    font: inherit;
+  }
+
+  button {
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+
+  button:hover {
+    border-color: var(--active);
+  }
+
+  button.primary {
+    background: var(--active);
+    color: white;
+    border-color: var(--active);
+  }
+
+  .legend {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  .pill {
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+  }
+
+  .pill.yes { background: var(--yes); color: var(--yes-text); }
+  .pill.no { background: var(--no); color: var(--no-text); }
+  .pill.maybe { background: var(--maybe); color: var(--maybe-text); }
+
+  .workspace {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+
+  .table-wrap {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.02);
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .sidebar-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  #sidebarToggle:hover {
+    background: #94a3b8 !important;
+    color: white !important;
+  }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    height: 100%;
+    table-layout: fixed;
+  }
+
+  th, td {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    padding: 4px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  th {
+    background: var(--header);
+    font-weight: 700;
+  }
+
+  tbody th {
+    text-align: left;
+    width: 20%;
+    background: var(--header);
+    padding-left: 8px;
+    font-size: min(1.8vw, 1.8vh, 12px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  thead th {
+    font-size: min(1.8vw, 1.8vh, 12px);
+    background: var(--header);
+  }
+
+  /* Rule Headers */
+  thead th.rule-header {
+    background: #e0e7ff;
+    position: relative;
+    padding-right: 18px;
+  }
+
+  thead th.rule-header .del-rule-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 10px;
+    color: #ef4444;
+    font-weight: bold;
+    display: none;
+  }
+
+  thead th.rule-header:hover .del-rule-btn {
+    display: inline;
+  }
+
+  /* Divider Row Styling */
+  tr.divider-row td, tr.divider-row th {
+    background: var(--divider);
+    color: white;
+    height: 24px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: left;
+    border-bottom: 2px solid #1e293b;
+  }
+
+  .cell {
+    cursor: pointer;
+    user-select: none;
+    font-size: min(2.5vw, 2.5vh, 16px);
+    font-weight: 700;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+
+  .cell:hover {
+    box-shadow: inset 0 0 0 2px var(--active);
+  }
+
+  .yes {
+    background: var(--yes);
+    color: var(--yes-text);
+  }
+
+  .no {
+    background: var(--no);
+    color: var(--no-text);
+  }
+
+  .maybe {
+    background: var(--maybe);
+    color: var(--maybe-text);
+  }
+
+  /* Status list editing items in sidebar */
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 2px 4px;
+    border-radius: 6px;
+  }
+
+  .status-item:hover {
+    border-color: var(--active);
+  }
+
+  .status-item input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    padding: 2px 4px;
+    outline: none;
+    color: var(--text);
+  }
+
+  .status-item button {
+    padding: 2px 4px;
+    font-size: 10px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .status-item button:hover {
+    color: var(--active);
+  }
+
+  .small {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  @media print {
+    .toolbar, .sidebar, .hint, .team-bar, #sidebarToggle { display: none; }
+    body { background: white; }
+    .wrap { margin: 0; max-width: none; }
+    .table-wrap { box-shadow: none; border-radius: 0; width: 100% !important; }
+  }
+
+  /* Team info header bar */
+  .team-bar {
+    background: #1e293b;
+    color: #f3f4f6;
+    padding: 8px 16px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  .team-bar-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .team-bar-badge {
+    background: #10b981;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .team-bar-name {
+    font-weight: bold;
+    color: #fbbf24;
+  }
+  .team-bar-link {
+    color: #93c5fd;
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .team-bar-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Block overlay when not logged in */
+  .block-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.96);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: white;
+    text-align: center;
+  }
+  .block-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 400px;
+    width: 100%;
+    margin: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+  .block-card h2 {
+    color: #ef4444;
+    margin-top: 0;
+    font-size: 22px;
+  }
+  .block-card p {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .block-card a {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  .block-card a:hover {
+    background: #2563eb;
+  }
+</style>
+</head>
+<body>
+<!-- Session Check Block Overlay -->
+<div id="session-block" class="block-overlay" style="display: none;">
+  <div class="block-card">
+    <h2>⚠️ 尚未加入小組</h2>
+    <p>您需要先進入傳送門大廳選擇您的小組，才能開始進行決策表的協作與設定。</p>
+    <a href="../index.html">前往大廳選擇小組</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- Team Info Bar -->
+  <div id="team-bar-display" class="team-bar" style="display: none;">
+    <div class="team-bar-info">
+      <span class="team-bar-badge">🟢 已連線</span>
+      <span>當前小組：<span id="team-name-span" class="team-bar-name"></span></span>
+      <span style="color: #475569;">|</span>
+      <span>暱稱：<span id="nickname-span" style="color: #f3f4f6;"></span></span>
+    </div>
+    <a href="../index.html" class="team-bar-link">返回傳送門首頁 ←</a>
+  </div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+    <h1 style="margin: 0;">決策表 (Decision Table)</h1>
+    <div class="hint" style="margin: 0; font-size: 12px;">
+      定義「多自變數」與「多應變數」間的條件映射規則。點擊單元格切換。
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button onclick="addNewRule()" class="primary">+ 新增規則</button>
+    <button onclick="setAll('—')">全部設為 —</button>
+    <button onclick="clearSaved()">清除儲存</button>
+    <button onclick="exportCSV()">匯出 CSV</button>
+    <button onclick="window.print()">列印 / 存 PDF</button>
+    <div class="legend">
+      <span class="pill yes">Y (是 / 執行)</span>
+      <span class="pill no">N (否 / 禁用)</span>
+      <span class="pill maybe">— (無關 / 忽略)</span>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <!-- Left Side: Collapsible Sidebar -->
+    <div id="sidebarContainer" class="sidebar">
+      <!-- Table Selection Card -->
+      <div class="sidebar-card">
+        <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">📋 表格管理</h4>
+        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+          <select id="dtSelector" onchange="switchTable(this.value)" style="flex: 1; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none; background: #fff;"></select>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
+          <button onclick="createNewTable()" class="primary" style="padding: 4px 0; font-size: 11px;">+ 新增</button>
+          <button onclick="renameCurrentTable()" style="padding: 4px 0; font-size: 11px;">✏️ 命名</button>
+          <button onclick="deleteCurrentTable()" style="padding: 4px 0; font-size: 11px; color: var(--no-text); border-color: rgba(239, 68, 68, 0.3);" class="btn-danger">🗑️ 刪除</button>
+        </div>
+      </div>
+
+      <!-- Inputs Variables Card -->
+      <div class="sidebar-card" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">🔍 自變數 (Inputs / 條件)</h4>
+        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+          <input type="text" id="newInputVar" placeholder="新增自變數..." onkeydown="if(event.key==='Enter') addVariable('inputs')" style="flex: 1; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none;" />
+          <button onclick="addVariable('inputs')" class="primary" style="padding: 4px 8px; font-size: 12px;">+</button>
+        </div>
+        <div id="inputsList" style="flex: 1; overflow-y: auto; padding-right: 2px;">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- Outputs Variables Card -->
+      <div class="sidebar-card" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <h4 style="margin: 0 0 6px; font-size: 12px; color: var(--text);">⚡ 應變數 (Outputs / 動作)</h4>
+        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+          <input type="text" id="newOutputVar" placeholder="新增應變數..." onkeydown="if(event.key==='Enter') addVariable('outputs')" style="flex: 1; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none;" />
+          <button onclick="addVariable('outputs')" class="primary" style="padding: 4px 8px; font-size: 12px;">+</button>
+        </div>
+        <div id="outputsList" style="flex: 1; overflow-y: auto; padding-right: 2px;">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggle Divider -->
+    <div id="sidebarToggle" onclick="toggleSidebar()" style="width: 12px; min-width: 12px; cursor: pointer; background: #cbd5e1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 10px; color: #475569; user-select: none; transition: background 0.2s;" title="收合側邊欄">◀</div>
+
+    <!-- Right Side: Decision Table Grid -->
+    <div class="table-wrap">
+      <table id="decisionTable"></table>
+    </div>
+  </div>
+</div>
+
+<script>
+// Mock data and defaults
+const defaultInputs = ["金額大於十萬", "包含敏感名單", "屬於特急案件"];
+const defaultOutputs = ["直接放行", "送人工覆核", "啟動高額徵信", "發送警示簡訊"];
+
+const defaultRules = [
+  {
+    name: "R1",
+    inputs: { "金額大於十萬": "Y", "包含敏感名單": "N", "屬於特急案件": "—" },
+    outputs: { "直接放行": "N", "送人工覆核": "Y", "啟動高額徵信": "Y", "發送警示簡訊": "—" }
+  },
+  {
+    name: "R2",
+    inputs: { "金額大於十萬": "N", "包含敏感名單": "Y", "屬於特急案件": "—" },
+    outputs: { "直接放行": "N", "送人工覆核": "Y", "啟動高額徵信": "N", "發送警示簡訊": "Y" }
+  },
+  {
+    name: "R3",
+    inputs: { "金額大於十萬": "N", "包含敏感名單": "N", "屬於特急案件": "Y" },
+    outputs: { "直接放行": "Y", "送人工覆核": "—", "啟動高額徵信": "—", "發送警示簡訊": "—" }
+  }
+];
+
+// Active team session check
+const team = localStorage.getItem("ai_arm_team") || "default_team";
+const nickname = localStorage.getItem("ai_arm_nickname") || "Guest";
+
+// Storage Configuration Keys
+const storageKey = "decision_tables_" + team;
+const currentTableKey = "current_dt_id_" + team;
+
+const defaultTables = [
+  {
+    id: "dt-default",
+    name: "預設決策表",
+    inputs: [...defaultInputs],
+    outputs: [...defaultOutputs],
+    rules: [...defaultRules]
+  }
+];
+
+let tables = JSON.parse(localStorage.getItem(storageKey) || "null") || defaultTables;
+let currentTableId = localStorage.getItem(currentTableKey) || tables[0].id;
+
+if (!tables.some(t => t.id === currentTableId)) {
+  currentTableId = tables[0].id;
+}
+
+function getActiveTable() {
+  return tables.find(t => t.id === currentTableId) || tables[0];
+}
+
+function saveTables() {
+  localStorage.setItem(storageKey, JSON.stringify(tables));
+}
+
+function renderTableSelector() {
+  const selector = document.getElementById("dtSelector");
+  selector.innerHTML = "";
+  tables.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = t.name;
+    if (t.id === currentTableId) opt.selected = true;
+    selector.appendChild(opt);
+  });
+}
+
+function switchTable(id) {
+  currentTableId = id;
+  localStorage.setItem(currentTableKey, id);
+  renderTableSelector();
+  render();
+}
+
+function createNewTable() {
+  const name = prompt("請輸入新決策表的名稱：");
+  if (!name || !name.trim()) return;
+  const newId = "dt-" + Date.now();
+  tables.push({
+    id: newId,
+    name: name.trim(),
+    inputs: [...defaultInputs],
+    outputs: [...defaultOutputs],
+    rules: []
+  });
+  saveTables();
+  switchTable(newId);
+}
+
+function renameCurrentTable() {
+  const active = getActiveTable();
+  const newName = prompt("請輸入新的表名稱：", active.name);
+  if (!newName || !newName.trim()) return;
+  active.name = newName.trim();
+  saveTables();
+  renderTableSelector();
+}
+
+function deleteCurrentTable() {
+  if (tables.length <= 1) {
+    alert("必須至少保留一個決策表！");
+    return;
+  }
+  const active = getActiveTable();
+  if (!confirm(`確定要刪除決策表「${active.name}」嗎？此動作無法復原。`)) return;
+
+  tables = tables.filter(t => t.id !== currentTableId);
+  currentTableId = tables[0].id;
+  localStorage.setItem(currentTableKey, currentTableId);
+  saveTables();
+  renderTableSelector();
+  render();
+}
+
+// Next value click cycle: — -> Y -> N -> —
+function nextValue(val) {
+  if (val === "—" || !val) return "Y";
+  if (val === "Y") return "N";
+  return "—";
+}
+
+function labelClass(val) {
+  if (val === "Y") return "yes";
+  if (val === "N") return "no";
+  return "maybe";
+}
+
+function render() {
+  const active = getActiveTable();
+  const inputs = active.inputs;
+  const outputs = active.outputs;
+  const rules = active.rules;
+
+  // 1. Render Left Sidebar Variable Lists
+  renderSidebarList('inputs', inputs);
+  renderSidebarList('outputs', outputs);
+
+  // 2. Render Main Table Grid
+  const tableEl = document.getElementById("decisionTable");
+  tableEl.innerHTML = "";
+
+  // Thead containing Rule labels (R1, R2...)
+  const thead = document.createElement("thead");
+  const trh = document.createElement("tr");
+  
+  const corner = document.createElement("th");
+  corner.textContent = "變數映射關係";
+  corner.style.width = "20%";
+  trh.appendChild(corner);
+
+  rules.forEach((r, idx) => {
+    const th = document.createElement("th");
+    th.className = "rule-header";
+    th.textContent = r.name;
+    th.style.width = `calc(80% / ${rules.length})`;
+    
+    // Rule delete cross button
+    const delBtn = document.createElement("span");
+    delBtn.className = "del-rule-btn";
+    delBtn.innerHTML = "&times;";
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteRule(idx);
+    };
+    th.appendChild(delBtn);
+    trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+  tableEl.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  // A. Independent Variables Rows (Inputs)
+  inputs.forEach(inputName => {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = inputName;
+    th.title = inputName;
+    tr.appendChild(th);
+
+    rules.forEach((rule, ruleIdx) => {
+      const td = document.createElement("td");
+      const val = rule.inputs[inputName] || "—";
+      td.className = "cell " + labelClass(val);
+      td.textContent = val;
+      
+      td.onclick = () => {
+        rule.inputs[inputName] = nextValue(val);
+        saveTables();
+        render();
+      };
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // B. Divider Row separating Inputs and Outputs
+  const dividerTr = document.createElement("tr");
+  dividerTr.className = "divider-row";
+  
+  const dividerTh = document.createElement("th");
+  dividerTh.textContent = "應變數 (Outputs / 動作) ⬇";
+  dividerTr.appendChild(dividerTh);
+  
+  rules.forEach(() => {
+    const td = document.createElement("td");
+    dividerTr.appendChild(td);
+  });
+  tbody.appendChild(dividerTr);
+
+  // C. Dependent Variables Rows (Outputs)
+  outputs.forEach(outputName => {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = outputName;
+    th.title = outputName;
+    tr.appendChild(th);
+
+    rules.forEach((rule, ruleIdx) => {
+      const td = document.createElement("td");
+      const val = rule.outputs[outputName] || "—";
+      td.className = "cell " + labelClass(val);
+      td.textContent = val;
+
+      td.onclick = () => {
+        rule.outputs[outputName] = nextValue(val);
+        saveTables();
+        render();
+      };
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  tableEl.appendChild(tbody);
+}
+
+// Render Sidebar lists for editing variables
+function renderSidebarList(type, list) {
+  const container = document.getElementById(type + "List");
+  container.innerHTML = "";
+
+  list.forEach((itemVal, idx) => {
+    const div = document.createElement("div");
+    div.className = "status-item";
+    div.innerHTML = `
+      <input type="text" value="${escapeHtml(itemVal)}" onchange="renameVariable('${type}', ${idx}, this.value)" />
+      <button onclick="moveVariable('${type}', ${idx}, -1)" title="上移">▲</button>
+      <button onclick="moveVariable('${type}', ${idx}, 1)" title="下移">▼</button>
+      <button onclick="deleteVariable('${type}', ${idx})" title="刪除">🗑</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// Add variable to list
+function addVariable(type) {
+  const inputEl = document.getElementById(type === 'inputs' ? 'newInputVar' : 'newOutputVar');
+  const name = inputEl.value.trim();
+  if (!name) return;
+
+  const active = getActiveTable();
+  const list = active[type];
+
+  if (list.includes(name)) {
+    alert("名稱不能重複！");
+    return;
+  }
+
+  list.push(name);
+  // Initialize values for existing rules
+  active.rules.forEach(r => {
+    r[type][name] = "—";
+  });
+
+  saveTables();
+  inputEl.value = "";
+  render();
+}
+
+// Rename Variable (retains mapped values!)
+function renameVariable(type, idx, newName) {
+  newName = newName.trim();
+  const active = getActiveTable();
+  const list = active[type];
+  const oldName = list[idx];
+
+  if (!newName || newName === oldName) {
+    render();
+    return;
+  }
+
+  if (list.includes(newName)) {
+    alert("名稱不能重複！");
+    render();
+    return;
+  }
+
+  // Update rule mappings keys
+  active.rules.forEach(r => {
+    if (r[type] && r[type][oldName] !== undefined) {
+      r[type][newName] = r[type][oldName];
+      delete r[type][oldName];
+    }
+  });
+
+  list[idx] = newName;
+  saveTables();
+  render();
+}
+
+// Move Variable (reorder)
+function moveVariable(type, idx, direction) {
+  const active = getActiveTable();
+  const list = active[type];
+  const targetIdx = idx + direction;
+  
+  if (targetIdx < 0 || targetIdx >= list.length) return;
+
+  const temp = list[idx];
+  list[idx] = list[targetIdx];
+  list[targetIdx] = temp;
+
+  saveTables();
+  render();
+}
+
+// Delete Variable
+function deleteVariable(type, idx) {
+  const active = getActiveTable();
+  const list = active[type];
+  if (list.length <= 1) {
+    alert("必須至少保留一個變數！");
+    return;
+  }
+
+  const name = list[idx];
+  if (!confirm(`確定要刪除「${name}」嗎？所有規則中此變數的設定將會丟失。`)) return;
+
+  // Clean rule mapping entries
+  active.rules.forEach(r => {
+    if (r[type]) delete r[type][name];
+  });
+
+  list.splice(idx, 1);
+  saveTables();
+  render();
+}
+
+// Add new Rule column
+function addNewRule() {
+  const active = getActiveTable();
+  const ruleNum = active.rules.length + 1;
+  const newRuleName = "R" + ruleNum;
+
+  const newRule = {
+    name: newRuleName,
+    inputs: {},
+    outputs: {}
+  };
+
+  // Populate don't cares
+  active.inputs.forEach(i => newRule.inputs[i] = "—");
+  active.outputs.forEach(o => newRule.outputs[o] = "—");
+
+  active.rules.push(newRule);
+  saveTables();
+  render();
+}
+
+// Delete specific Rule column
+function deleteRule(idx) {
+  const active = getActiveTable();
+  const rName = active.rules[idx].name;
+  if (!confirm(`確定要刪除規則「${rName}」嗎？`)) return;
+
+  active.rules.splice(idx, 1);
+  // Re-index Rule Names
+  active.rules.forEach((r, i) => {
+    r.name = "R" + (i + 1);
+  });
+
+  saveTables();
+  render();
+}
+
+// Set all values in active table to neutral
+function setAll(value) {
+  const active = getActiveTable();
+  active.rules.forEach(r => {
+    active.inputs.forEach(i => r.inputs[i] = value);
+    active.outputs.forEach(o => r.outputs[o] = value);
+  });
+  saveTables();
+  render();
+}
+
+// Clear storage for current team
+function clearSaved() {
+  if (!confirm("確定要重設目前小組的所有決策表並恢復至預設？")) return;
+  localStorage.removeItem(storageKey);
+  localStorage.removeItem(currentTableKey);
+  tables = [
+    {
+      id: "dt-default-v2",
+      name: "預設決策表",
+      inputs: [...defaultInputs],
+      outputs: [...defaultOutputs],
+      rules: JSON.parse(JSON.stringify(defaultRules))
+    }
+  ];
+  currentTableId = tables[0].id;
+  saveTables();
+  renderTableSelector();
+  render();
+}
+
+// Export DT rules to CSV
+function exportCSV() {
+  const active = getActiveTable();
+  const inputs = active.inputs;
+  const outputs = active.outputs;
+  const rules = active.rules;
+
+  const rows = [];
+  rows.push(["自變數與應變數 / 規則", ...rules.map(r => r.name)]);
+
+  // Inputs
+  inputs.forEach(i => {
+    rows.push([i, ...rules.map(r => r.inputs[i] || "—")]);
+  });
+
+  // Split line
+  rows.push(["=== 應變數區 === ", ...rules.map(() => "===")]);
+
+  // Outputs
+  outputs.forEach(o => {
+    rows.push([o, ...rules.map(r => r.outputs[o] || "—")]);
+  });
+
+  const csv = rows.map(r => r.map(c => '"' + String(c).replaceAll('"', '""') + '"').join(",")).join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${active.name}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Sidebar collapsible logic
+let sidebarCollapsed = false;
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebarContainer");
+  const toggle = document.getElementById("sidebarToggle");
+  sidebarCollapsed = !sidebarCollapsed;
+  if (sidebarCollapsed) {
+    sidebar.style.display = "none";
+    toggle.textContent = "▶";
+    toggle.title = "展開側邊欄";
+  } else {
+    sidebar.style.display = "flex";
+    toggle.textContent = "◀";
+    toggle.title = "收合側邊欄";
+  }
+  render();
+}
+
+// Helper to escape HTML characters
+function escapeHtml(string) {
+  return String(string).replace(/[&<>"']/g, function (s) {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[s];
+  });
+}
+
+// Check Active Session Gate
+function checkTeamSession() {
+  const teamId = localStorage.getItem("ai_arm_team");
+  const nicknameVal = localStorage.getItem("ai_arm_nickname");
+
+  if (!teamId || !nicknameVal) {
+    document.getElementById("session-block").style.display = "flex";
+    document.getElementById("team-bar-display").style.display = "none";
+  } else {
+    document.getElementById("session-block").style.display = "none";
+    document.getElementById("team-bar-display").style.display = "flex";
+    document.getElementById("team-name-span").textContent = translateTeamName(teamId);
+    document.getElementById("nickname-span").textContent = nicknameVal;
+  }
+}
+
+function translateTeamName(t) {
+  const map = {
+    "Team 1": "第一組 (Team 1)",
+    "Team 2": "第二組 (Team 2)",
+    "Team 3": "第三組 (Team 3)",
+    "Team 4": "第四組 (Team 4)",
+    "Team 5": "第五組 (Team 5)",
+    "Team 6": "第六組 (Team 6)"
+  };
+  return map[t] || t;
+}
+
+// Initialization calls
+checkTeamSession();
+renderTableSelector();
+render();
+</script>
+</body>
+</html>
