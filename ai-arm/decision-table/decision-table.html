@@ -427,6 +427,26 @@
     font-weight: bold;
     color: #fbbf24;
   }
+  .team-bar-nav {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+  }
+  .team-bar-nav a {
+    color: #94a3b8;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 2px 4px;
+    transition: color 0.15s, border-color 0.15s;
+    border-bottom: 2px solid transparent;
+  }
+  .team-bar-nav a:hover {
+    color: #f3f4f6;
+  }
+  .team-bar-nav a.active {
+    color: #34d399;
+    border-bottom-color: #34d399;
+  }
   .team-bar-link {
     color: #93c5fd;
     text-decoration: none;
@@ -505,7 +525,12 @@
       <span style="color: #475569;">|</span>
       <span>暱稱：<span id="nickname-span" style="color: #f3f4f6;"></span></span>
     </div>
-    <a href="../index.html" class="team-bar-link">返回傳送門首頁 ←</a>
+    <div class="team-bar-nav">
+      <a href="../status-transition-matrix/status-transition-matrix.html">📊 狀態轉換矩陣</a>
+      <a href="../decision-table/decision-table.html" class="active">⚡ 決策表</a>
+      <a href="../event-stormer/event-stormer.html">📌 Event Stormer</a>
+    </div>
+    <a href="../index.html" class="team-bar-link">返回大廳 ←</a>
   </div>
 
   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
@@ -815,7 +840,10 @@ function render() {
   addInputTr.className = "add-row-tr";
   const addInputTh = document.createElement("th");
   addInputTh.innerHTML = `
-    <button onclick="autoAddVariable('inputs')" style="border: 1px dashed var(--border); width: 100%; padding: 4px; text-align: center; border-radius: 6px; font-size: 11px; cursor: pointer; color: var(--active); background: #f8fafc; font-weight: bold;">+ 新增自變數 (Input)</button>
+    <div style="display: flex; gap: 4px;">
+      <button onclick="autoAddVariable('inputs')" style="border: 1px dashed var(--border); flex: 1; padding: 4px; text-align: center; border-radius: 6px; font-size: 11px; cursor: pointer; color: var(--active); background: #f8fafc; font-weight: bold;">+ 新增自變數 (Input)</button>
+      <button onclick="importFromStatusMatrix()" style="border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; color: #4f46e5; background: #eef2ff; font-weight: bold;" title="從同小組的狀態轉換矩陣中匯入狀態作為自變數">📥 匯入狀態</button>
+    </div>
   `;
   addInputTr.appendChild(addInputTh);
   rules.forEach(() => {
@@ -944,6 +972,55 @@ function autoAddVariable(type) {
 
   saveTables();
   render();
+}
+
+// Import all statuses from the team's Status Transition Matrices as inputs
+function importFromStatusMatrix() {
+  const matrixKey = "matrices_" + team;
+  const localMatrices = JSON.parse(localStorage.getItem(matrixKey) || "[]");
+  if (!localMatrices || localMatrices.length === 0) {
+    alert("目前小組尚無任何狀態轉換矩陣，請先至狀態轉換矩陣工具中建立！");
+    return;
+  }
+
+  // Let user select which matrix to import from
+  let message = "請選擇要從哪一個狀態矩陣匯入狀態作為自變數：\n\n";
+  localMatrices.forEach((m, idx) => {
+    message += `${idx + 1}. ${m.name} (${m.statuses.length} 個狀態)\n`;
+  });
+  message += "\n請輸入編號數字選擇 (例如 1)：";
+  
+  const choice = prompt(message);
+  if (!choice) return;
+  const choiceIdx = parseInt(choice.trim(), 10) - 1;
+  if (isNaN(choiceIdx) || choiceIdx < 0 || choiceIdx >= localMatrices.length) {
+    alert("無效的選擇！");
+    return;
+  }
+
+  const selectedMatrix = localMatrices[choiceIdx];
+  const activeTable = getActiveTable();
+  let importCount = 0;
+
+  selectedMatrix.statuses.forEach(statusName => {
+    // If not already in inputs or outputs list, add it
+    if (!activeTable.inputs.includes(statusName) && !activeTable.outputs.includes(statusName)) {
+      activeTable.inputs.push(statusName);
+      // Initialize rules mapping
+      activeTable.rules.forEach(r => {
+        r.inputs[statusName] = "—";
+      });
+      importCount++;
+    }
+  });
+
+  if (importCount > 0) {
+    saveTables();
+    render();
+    alert(`成功從「${selectedMatrix.name}」匯入 ${importCount} 個狀態作為自變數！`);
+  } else {
+    alert("所有狀態名稱已存在於此決策表中，無須重複匯入。");
+  }
 }
 
 // Rename Variable (retains mapped values!)

@@ -390,6 +390,26 @@
     font-weight: bold;
     color: #fbbf24;
   }
+  .team-bar-nav {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+  }
+  .team-bar-nav a {
+    color: #94a3b8;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 2px 4px;
+    transition: color 0.15s, border-color 0.15s;
+    border-bottom: 2px solid transparent;
+  }
+  .team-bar-nav a:hover {
+    color: #f3f4f6;
+  }
+  .team-bar-nav a.active {
+    color: #60a5fa;
+    border-bottom-color: #60a5fa;
+  }
   .team-bar-link {
     color: #93c5fd;
     text-decoration: none;
@@ -468,7 +488,12 @@
       <span style="color: #475569;">|</span>
       <span>暱稱：<span id="nickname-span" style="color: #f3f4f6;"></span></span>
     </div>
-    <a href="../index.html" class="team-bar-link">返回傳送門首頁 ←</a>
+    <div class="team-bar-nav">
+      <a href="../status-transition-matrix/status-transition-matrix.html" class="active">📊 狀態轉換矩陣</a>
+      <a href="../decision-table/decision-table.html">⚡ 決策表</a>
+      <a href="../event-stormer/event-stormer.html">📌 Event Stormer</a>
+    </div>
+    <a href="../index.html" class="team-bar-link">返回大廳 ←</a>
   </div>
 
   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
