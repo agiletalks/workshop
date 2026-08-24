@@ -45,9 +45,43 @@
         </div>
     </div>
     
+    <!-- Team Selection Overlay -->
+    <div id="team-gate" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #0f172a; display: none; align-items: center; justify-content: center; z-index: 99998; font-family: system-ui, -apple-system, sans-serif; color: #f3f4f6;">
+        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 32px; max-width: 420px; width: 100%; margin: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <div style="font-size: 40px; margin-bottom: 16px; text-align: center;">👥</div>
+            <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 8px; color: #ffffff; text-align: center;">選擇您的小組</h2>
+            <p style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin-bottom: 24px; text-align: center;">請選擇您的隊伍並輸入暱稱，這將用於與同組組員共享成果。</p>
+            <form id="team-form" onsubmit="handleTeamSubmit(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 13px; font-weight: 500; color: #94a3b8; margin-bottom: 6px;">您的暱稱</label>
+                    <input type="text" id="team-nickname" style="width: 100%; box-sizing: border-box; padding: 12px; background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #ffffff; font-size: 14px; outline: none; transition: border-color 0.2s;" placeholder="例如：阿峰" required>
+                </div>
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; font-size: 13px; font-weight: 500; color: #94a3b8; margin-bottom: 6px;">選擇小組</label>
+                    <select id="team-select" style="width: 100%; box-sizing: border-box; padding: 12px; background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #ffffff; font-size: 14px; outline: none;">
+                        <option value="Team 1">第一組 (Team 1)</option>
+                        <option value="Team 2">第二組 (Team 2)</option>
+                        <option value="Team 3">第三組 (Team 3)</option>
+                        <option value="Team 4">第四組 (Team 4)</option>
+                        <option value="Team 5">第五組 (Team 5)</option>
+                        <option value="Team 6">第六組 (Team 6)</option>
+                    </select>
+                </div>
+                <button type="submit" style="width: 100%; padding: 12px; background-color: #3b82f6; border: none; border-radius: 8px; color: #ffffff; font-weight: bold; font-size: 14px; cursor: pointer; transition: background-color 0.2s;">確定加入</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         (function() {
-            if (sessionStorage.getItem('workshop_unlocked') === 'true') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlCode = urlParams.get('code');
+            if (urlCode === 'agile-2026') {
+                sessionStorage.setItem('workshop_unlocked', 'true');
+                localStorage.setItem('workshop_unlocked', 'true');
+            }
+
+            if (sessionStorage.getItem('workshop_unlocked') === 'true' || localStorage.getItem('workshop_unlocked') === 'true') {
                 document.getElementById('password-gate').style.display = 'none';
             }
         })();
@@ -59,10 +93,12 @@
             
             if (password === 'agile-2026') {
                 sessionStorage.setItem('workshop_unlocked', 'true');
+                localStorage.setItem('workshop_unlocked', 'true');
                 const gate = document.getElementById('password-gate');
                 gate.style.opacity = '0';
                 setTimeout(() => {
                     gate.style.display = 'none';
+                    checkTeamSession();
                 }, 300);
             } else {
                 errorMsg.style.opacity = '1';
@@ -101,8 +137,53 @@
         </div>
     </header>
 
+    <!-- Team Info Bar -->
+    <div id="team-info-bar" class="bg-slate-800 text-white border-b border-slate-700 py-3 px-4 shadow-sm" style="display: none;">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    🟢 連線中
+                </span>
+                <span class="font-bold text-slate-100">當前小組：<span id="current-team-display" class="text-amber-400"></span></span>
+                <span class="text-slate-400">|</span>
+                <span class="text-slate-300">暱稱：<span id="current-nickname-display" class="font-medium text-slate-100"></span></span>
+            </div>
+            <button onclick="leaveTeam()" class="text-xs text-slate-400 hover:text-rose-400 underline transition-colors focus:outline-none">
+                變更小組 / 登出
+            </button>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
+        <!-- Collaboration Tools Section -->
+        <div id="collaboration-tools-section" class="mb-10" style="display: none;">
+            <h2 class="text-2xl font-bold text-slate-900 mb-3">團隊協作工具箱</h2>
+            <p class="text-slate-600 text-sm mb-6">以下是您這組可以協作使用的工具，點擊即可開啟並開始同步成果。</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Tool 1: Status Transition Matrix -->
+                <a href="./status-transition-matrix/status-transition-matrix.html" class="flex items-start gap-4 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-500/50 transition-all duration-300">
+                    <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 mb-1">狀態轉換矩陣</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            橫軸為目前狀態，縱軸為目標狀態。協作確認流程、規則、狀態與例外，是 Ready Increment 拆解的基石。
+                        </p>
+                        <span class="inline-flex items-center text-xs font-semibold text-indigo-600 mt-3">
+                            進入工具 →
+                        </span>
+                    </div>
+                </a>
+                
+                <!-- Future tools can be added here -->
+            </div>
+        </div>
+
         <!-- Dashboard Intro -->
         <div class="mb-8">
             <h2 class="text-2xl font-bold text-slate-900 mb-2">我的提示詞清單</h2>
@@ -431,8 +512,69 @@
             });
         }
 
+        // Team Session Management
+        function checkTeamSession() {
+            const isUnlocked = sessionStorage.getItem('workshop_unlocked') === 'true' || localStorage.getItem('workshop_unlocked') === 'true';
+            if (!isUnlocked) {
+                document.getElementById('password-gate').style.display = 'flex';
+                return;
+            } else {
+                document.getElementById('password-gate').style.display = 'none';
+            }
+
+            const team = localStorage.getItem('ai_arm_team');
+            const nickname = localStorage.getItem('ai_arm_nickname');
+
+            if (!team || !nickname) {
+                document.getElementById('team-gate').style.display = 'flex';
+                document.getElementById('team-info-bar').style.display = 'none';
+                document.getElementById('collaboration-tools-section').style.display = 'none';
+            } else {
+                document.getElementById('team-gate').style.display = 'none';
+                document.getElementById('team-info-bar').style.display = 'flex';
+                document.getElementById('collaboration-tools-section').style.display = 'block';
+                
+                document.getElementById('current-team-display').textContent = translateTeamName(team);
+                document.getElementById('current-nickname-display').textContent = nickname;
+            }
+        }
+
+        function translateTeamName(team) {
+            const map = {
+                "Team 1": "第一組 (Team 1)",
+                "Team 2": "第二組 (Team 2)",
+                "Team 3": "第三組 (Team 3)",
+                "Team 4": "第四組 (Team 4)",
+                "Team 5": "第五組 (Team 5)",
+                "Team 6": "第六組 (Team 6)"
+            };
+            return map[team] || team;
+        }
+
+        function handleTeamSubmit(e) {
+            e.preventDefault();
+            const nickname = document.getElementById('team-nickname').value.trim();
+            const team = document.getElementById('team-select').value;
+            
+            if (nickname) {
+                localStorage.setItem('ai_arm_team', team);
+                localStorage.setItem('ai_arm_nickname', nickname);
+                localStorage.setItem('ai_arm_session', 'agile-2026');
+                checkTeamSession();
+            }
+        }
+
+        function leaveTeam() {
+            if (confirm("確定要登出並變更小組嗎？")) {
+                localStorage.removeItem('ai_arm_team');
+                localStorage.removeItem('ai_arm_nickname');
+                checkTeamSession();
+            }
+        }
+
         // Init load
         renderPrompts(promptsData);
+        checkTeamSession();
     </script>
 </body>
 </html>

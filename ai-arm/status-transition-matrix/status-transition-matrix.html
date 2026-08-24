@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>狀態轉換矩陣</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #d1d5db;
+    --yes: #dcfce7;
+    --yes-text: #166534;
+    --no: #fee2e2;
+    --no-text: #991b1b;
+    --maybe: #fef9c3;
+    --maybe-text: #854d0e;
+    --header: #eef2ff;
+    --active: #2563eb;
+  }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .wrap {
+    max-width: 1280px;
+    margin: 32px auto;
+    padding: 0 20px 48px;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+  }
+
+  .hint {
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+
+  button, select, input {
+    font: inherit;
+  }
+
+  button {
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    border-color: var(--active);
+  }
+
+  button.primary {
+    background: var(--active);
+    color: white;
+    border-color: var(--active);
+  }
+
+  .legend {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  .pill {
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+  }
+
+  .pill.yes { background: var(--yes); color: var(--yes-text); }
+  .pill.no { background: var(--no); color: var(--no-text); }
+  .pill.maybe { background: var(--maybe); color: var(--maybe-text); }
+
+  .table-wrap {
+    overflow: auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.04);
+  }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  th, td {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    min-width: 118px;
+    height: 72px;
+    padding: 8px;
+  }
+
+  th {
+    background: var(--header);
+    font-weight: 700;
+    position: sticky;
+    z-index: 2;
+  }
+
+  thead th {
+    top: 0;
+  }
+
+  tbody th {
+    left: 0;
+    text-align: left;
+    min-width: 150px;
+  }
+
+  thead th:first-child {
+    left: 0;
+    z-index: 3;
+  }
+
+  .cell {
+    cursor: pointer;
+    user-select: none;
+    font-size: 22px;
+    font-weight: 700;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+
+  .cell:hover {
+    transform: scale(1.03);
+    box-shadow: inset 0 0 0 2px var(--active);
+  }
+
+  .yes {
+    background: var(--yes);
+    color: var(--yes-text);
+  }
+
+  .no {
+    background: var(--no);
+    color: var(--no-text);
+  }
+
+  .maybe {
+    background: var(--maybe);
+    color: var(--maybe-text);
+  }
+
+  .self {
+    background: #e5e7eb;
+    color: #374151;
+  }
+
+  .panel {
+    margin-top: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    box-sizing: border-box;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .small {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  @media print {
+    .toolbar, .panel, .hint, .team-bar { display: none; }
+    body { background: white; }
+    .wrap { margin: 0; max-width: none; }
+    .table-wrap { box-shadow: none; border-radius: 0; }
+  }
+
+  /* Team info header bar */
+  .team-bar {
+    background: #1e293b;
+    color: #f3f4f6;
+    padding: 10px 20px;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 12px;
+    margin-bottom: 20px;
+  }
+  .team-bar-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .team-bar-badge {
+    background: #10b981;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .team-bar-name {
+    font-weight: bold;
+    color: #fbbf24;
+  }
+  .team-bar-link {
+    color: #93c5fd;
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .team-bar-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Block overlay when not logged in */
+  .block-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.96);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: white;
+    text-align: center;
+  }
+  .block-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 400px;
+    width: 100%;
+    margin: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+  .block-card h2 {
+    color: #ef4444;
+    margin-top: 0;
+    font-size: 22px;
+  }
+  .block-card p {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .block-card a {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  .block-card a:hover {
+    background: #2563eb;
+  }
+</style>
+</head>
+<body>
+<!-- Session Check Block Overlay -->
+<div id="session-block" class="block-overlay" style="display: none;">
+  <div class="block-card">
+    <h2>⚠️ 尚未加入小組</h2>
+    <p>您需要先進入傳送門大廳選擇您的小組，才能開始進行狀態轉換矩陣的協作與設定。</p>
+    <a href="../index.html">前往大廳選擇小組</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- Team Info Bar -->
+  <div id="team-bar-display" class="team-bar" style="display: none;">
+    <div class="team-bar-info">
+      <span class="team-bar-badge">🟢 已連線</span>
+      <span>當前小組：<span id="team-name-span" class="team-bar-name"></span></span>
+      <span style="color: #475569;">|</span>
+      <span>暱稱：<span id="nickname-span" style="color: #f3f4f6;"></span></span>
+    </div>
+    <a href="../index.html" class="team-bar-link">返回傳送門首頁 ←</a>
+  </div>
+
+  <h1>狀態轉換矩陣</h1>
+  <div class="hint">
+    橫軸代表「目前狀態」，縱軸代表「目標狀態」。點擊交叉格可切換：可觸發／不可觸發／待確認。
+  </div>
+
+  <div class="toolbar">
+    <button class="primary" onclick="setAll('no')">全部設為不可觸發</button>
+    <button onclick="setAll('maybe')">全部設為待確認</button>
+    <button onclick="clearSaved()">清除儲存</button>
+    <button onclick="exportCSV()">匯出 CSV</button>
+    <button onclick="window.print()">列印 / 存 PDF</button>
+    <div class="legend">
+      <span class="pill yes">✓ 可觸發</span>
+      <span class="pill no">× 不可觸發</span>
+      <span class="pill maybe">? 待確認</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="matrix"></table>
+  </div>
+
+  <div class="panel">
+    <h3>狀態清單</h3>
+    <p class="small">一行一個狀態，修改後按「重建表格」。系統會保留相同狀態名稱的既有設定。</p>
+    <textarea id="statusInput"></textarea>
+    <p>
+      <button class="primary" onclick="rebuildFromInput()">重建表格</button>
+    </p>
+  </div>
+</div>
+
+<script>
+const defaultStatuses = [
+  "0. 退回受理人員",
+  "1. 暫存",
+  "2. 受理人員建檔",
+  "3. 受理人員補件",
+  "4. 完成受理",
+  "5. 退回客戶",
+  "6. 駁退",
+  "7. 結轉股務",
+  "9. 撤件"
+];
+
+let statuses = JSON.parse(localStorage.getItem("statuses") || "null") || defaultStatuses;
+let matrix = JSON.parse(localStorage.getItem("matrix") || "{}");
+
+function key(from, to) {
+  return from + " -> " + to;
+}
+
+function label(value, from, to) {
+  if (from === to) return "—";
+  if (value === "yes") return "✓";
+  if (value === "maybe") return "?";
+  return "×";
+}
+
+function nextValue(value) {
+  if (value === "no") return "yes";
+  if (value === "yes") return "maybe";
+  return "no";
+}
+
+function save() {
+  localStorage.setItem("statuses", JSON.stringify(statuses));
+  localStorage.setItem("matrix", JSON.stringify(matrix));
+}
+
+function render() {
+  document.getElementById("statusInput").value = statuses.join("\n");
+  const table = document.getElementById("matrix");
+  table.innerHTML = "";
+
+  const thead = document.createElement("thead");
+  const trh = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.textContent = "目標狀態 ↓ / 目前狀態 →";
+  trh.appendChild(corner);
+
+  statuses.forEach(s => {
+    const th = document.createElement("th");
+    th.textContent = s;
+    trh.appendChild(th);
+  });
+
+  thead.appendChild(trh);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  statuses.forEach(to => {
+    const tr = document.createElement("tr");
+    const rowHead = document.createElement("th");
+    rowHead.textContent = to;
+    tr.appendChild(rowHead);
+
+    statuses.forEach(from => {
+      const td = document.createElement("td");
+      const k = key(from, to);
+      const value = from === to ? "self" : (matrix[k] || "no");
+      td.className = "cell " + value;
+      td.textContent = label(value, from, to);
+      td.title = from + " 是否可觸發 " + to;
+
+      if (from !== to) {
+        td.onclick = () => {
+          matrix[k] = nextValue(matrix[k] || "no");
+          save();
+          render();
+        };
+      }
+
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+}
+
+function setAll(value) {
+  statuses.forEach(from => {
+    statuses.forEach(to => {
+      if (from !== to) matrix[key(from, to)] = value;
+    });
+  });
+  save();
+  render();
+}
+
+function rebuildFromInput() {
+  const nextStatuses = document.getElementById("statusInput").value
+    .split("\n")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (nextStatuses.length === 0) {
+    alert("請至少保留一個狀態。");
+    return;
+  }
+
+  statuses = nextStatuses;
+  save();
+  render();
+}
+
+function clearSaved() {
+  if (!confirm("確定要清除所有設定並恢復預設狀態？")) return;
+  localStorage.removeItem("statuses");
+  localStorage.removeItem("matrix");
+  statuses = defaultStatuses;
+  matrix = {};
+  render();
+}
+
+function exportCSV() {
+  const rows = [];
+  rows.push(["目標狀態 / 目前狀態", ...statuses]);
+
+  statuses.forEach(to => {
+    const row = [to];
+    statuses.forEach(from => {
+      if (from === to) row.push("-");
+      else {
+        const v = matrix[key(from, to)] || "no";
+        row.push(v === "yes" ? "可觸發" : v === "maybe" ? "待確認" : "不可觸發");
+      }
+    });
+    rows.push(row);
+  });
+
+  const csv = rows.map(r => r.map(c => '"' + String(c).replaceAll('"', '""') + '"').join(",")).join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "status-transition-matrix.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Check Team Session
+function checkTeamSession() {
+  const team = localStorage.getItem("ai_arm_team");
+  const nickname = localStorage.getItem("ai_arm_nickname");
+
+  if (!team || !nickname) {
+    document.getElementById("session-block").style.display = "flex";
+    document.getElementById("team-bar-display").style.display = "none";
+  } else {
+    document.getElementById("session-block").style.display = "none";
+    document.getElementById("team-bar-display").style.display = "flex";
+    document.getElementById("team-name-span").textContent = translateTeamName(team);
+    document.getElementById("nickname-span").textContent = nickname;
+  }
+}
+
+function translateTeamName(team) {
+  const map = {
+    "Team 1": "第一組 (Team 1)",
+    "Team 2": "第二組 (Team 2)",
+    "Team 3": "第三組 (Team 3)",
+    "Team 4": "第四組 (Team 4)",
+    "Team 5": "第五組 (Team 5)",
+    "Team 6": "第六組 (Team 6)"
+  };
+  return map[team] || team;
+}
+
+checkTeamSession();
+render();
+</script>
+</body>
+</html>
