@@ -1180,7 +1180,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         return (
           <div className="manifesto-layout">
             <div className="manifesto-left">
-              <img src="/assets/workshop/manifesto1.png" alt="Manifesto 1" />
+              <img src={`${import.meta.env.BASE_URL}assets/workshop/manifesto1.png`} alt="Manifesto 1" />
             </div>
             <div className="manifesto-right">
               <h2>Individuals and interactions<br />over processes and tools</h2>
@@ -1205,7 +1205,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         return (
           <div className="manifesto-layout">
             <div className="manifesto-left">
-              <img src="/assets/workshop/manifesto2.png" alt="Manifesto 2" />
+              <img src={`${import.meta.env.BASE_URL}assets/workshop/manifesto2.png`} alt="Manifesto 2" />
             </div>
             <div className="manifesto-right">
               <h2>Working software<br />over comprehensive documentation</h2>
@@ -1286,7 +1286,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         return (
           <div className="manifesto-layout">
             <div className="manifesto-left">
-              <img src="/assets/workshop/manifesto3.png" alt="Manifesto 3" />
+              <img src={`${import.meta.env.BASE_URL}assets/workshop/manifesto3.png`} alt="Manifesto 3" />
             </div>
             <div className="manifesto-right">
               <h2>Customer collaboration<br />over contract negotiation</h2>
@@ -1312,7 +1312,7 @@ export const ProjectionView: React.FC<ProjectionProps> = ({ workshopId, isReadOn
         return (
           <div className="manifesto-layout">
             <div className="manifesto-left">
-              <img src="/assets/workshop/manifesto4.png" alt="Manifesto 4" />
+              <img src={`${import.meta.env.BASE_URL}assets/workshop/manifesto4.png`} alt="Manifesto 4" />
             </div>
             <div className="manifesto-right">
               <h2>Responding to change<br />over following a plan</h2>
