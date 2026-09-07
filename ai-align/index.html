@@ -186,7 +186,7 @@
       </button>
 
       <button id="btn-slide-indicator" onclick="openTocDrawer()" class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200/60 shadow-2xs" title="目前進度，點擊展開完整課程大綱目錄">
-        <span id="current-slide-label" class="font-mono text-slate-900">P01 / 40</span>
+        <span id="current-slide-label" class="font-mono text-slate-900">P01 / 46</span>
         <i data-lucide="list" class="w-3.5 h-3.5 text-slate-400"></i>
       </button>
 
@@ -246,7 +246,7 @@
         <span class="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs font-black shadow-2xs">
           AI
         </span>
-        <span>課程目錄 ｜ 40 頁完整教材</span>
+        <span>課程目錄 ｜ 46 頁完整教材</span>
       </div>
       <button onclick="closeTocDrawer()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors" title="收合目錄">
         <i data-lucide="x" class="w-4 h-4"></i>
@@ -270,7 +270,7 @@
           <span>列印筆記</span>
         </button>
       </div>
-      <span class="font-mono font-bold text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded text-[11px]" id="toc-current-badge">P01 / 40</span>
+      <span class="font-mono font-bold text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded text-[11px]" id="toc-current-badge">P01 / 46</span>
     </div>
   </aside>
 
@@ -288,6 +288,16 @@
         <div id="slide-loading" class="hidden absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center z-10">
           <div class="animate-spin rounded-full h-10 w-10 border-4 border-amber-500 border-t-transparent"></div>
         </div>
+
+        <!-- 左下角浮動實戰案例按鈕 (當該頁有範例圖時顯示) -->
+        <div id="slide-example-badge-container" class="hidden absolute bottom-3 left-3 z-10">
+          <button onclick="openExampleLightbox(0)" class="px-3 py-1.5 rounded-xl bg-slate-900/85 hover:bg-slate-900 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-2 transition-all active:scale-95 group cursor-pointer" title="查看本單元真實標竿案例解析">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+            <i data-lucide="images" class="w-4 h-4 text-amber-400"></i>
+            <span id="slide-example-badge-text">實戰案例圖庫</span>
+            <span class="text-[10px] bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded-md border border-amber-400/30 group-hover:bg-amber-500 group-hover:text-white transition-colors">全螢幕導讀</span>
+          </button>
+        </div>
       </div>
 
       <!-- 右上角極簡縮放工具 (浮動微按鈕，不佔版面) -->
@@ -301,43 +311,44 @@
     <!-- 右側：沉浸式小組隨堂筆記區 (50% 寬度，每頁獨立) -->
     <aside class="w-full md:w-1/2 h-1/2 md:h-full bg-white flex flex-col overflow-hidden">
 
-      <!-- 整合式工作台頂部工具列 (單一精簡 44px 列：組別下拉選單 + 翻面 + 同步狀態) -->
+      <!-- 整合式工作台頂部工具列 (單一精簡 44px 列：組別下拉選單 + 組員即時在線 + 翻面 + 同步狀態) -->
       <div class="bg-slate-50/90 border-b border-slate-200 px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
         
-        <!-- 左側：組別快速切換下拉選單 (極簡、不佔寬度) -->
-        <div class="relative flex items-center gap-1.5" id="team-dropdown-container">
-          <button id="btn-team-dropdown" onclick="toggleTeamDropdown(event)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all" title="切換檢視或觀摩各組隨堂筆記">
-            <i data-lucide="users" class="w-3.5 h-3.5 text-amber-600" id="team-dropdown-icon"></i>
-            <span id="team-dropdown-label" class="font-bold text-slate-800">第 1 組 (我的組別)</span>
-            <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
-          </button>
+        <!-- 左側：組別快速切換下拉選單 + 該組組員與在線狀態 -->
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+          <div class="relative flex items-center gap-1.5 flex-shrink-0" id="team-dropdown-container">
+            <button id="btn-team-dropdown" onclick="toggleTeamDropdown(event)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer" title="切換檢視或觀摩各組隨堂筆記">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-amber-600" id="team-dropdown-icon"></i>
+              <span id="team-dropdown-label" class="font-bold text-slate-800">第 1 組 (我的組別)</span>
+              <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+            </button>
 
-          <!-- 快速切回我的組別微按鈕 (觀摩他組時自動浮出) -->
-          <button id="btn-quick-my-team" onclick="switchToMyTeam()" class="hidden px-2 py-0.5 rounded-md text-[11px] font-bold text-sky-700 bg-sky-100 hover:bg-sky-200 border border-sky-300 transition-colors flex items-center gap-1" title="結束觀摩，切回我所屬組別的筆記">
-            <i data-lucide="corner-down-left" class="w-3 h-3"></i>
-            <span>切回我組</span>
-          </button>
+            <!-- 快速切回我的組別微按鈕 (觀摩他組時自動浮出) -->
+            <button id="btn-quick-my-team" onclick="switchToMyTeam()" class="hidden px-2 py-0.5 rounded-md text-[11px] font-bold text-sky-700 bg-sky-100 hover:bg-sky-200 border border-sky-300 transition-colors flex items-center gap-1 cursor-pointer" title="結束觀摩，切回我所屬組別的筆記">
+              <i data-lucide="corner-down-left" class="w-3 h-3"></i>
+              <span>切回我組</span>
+            </button>
 
-          <!-- 下拉選單彈窗浮層 (點擊展開 1~6 組) -->
-          <div id="team-dropdown-menu" class="hidden absolute top-full mt-1.5 left-0 w-52 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50">
-            <div class="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider flex items-center justify-between">
-              <span>切換檢視組別</span>
-              <span class="text-[9px] text-slate-400 font-normal">共 6 組</span>
+            <!-- 下拉選單彈窗浮層 (點擊展開 1~6 組) -->
+            <div id="team-dropdown-menu" class="hidden absolute top-full mt-1.5 left-0 w-52 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50">
+              <div class="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider flex items-center justify-between">
+                <span>切換檢視組別</span>
+                <span class="text-[9px] text-slate-400 font-normal">共 6 組</span>
+              </div>
+              <div id="team-dropdown-items" class="space-y-0.5 mt-0.5"></div>
             </div>
-            <div id="team-dropdown-items" class="space-y-0.5 mt-0.5"></div>
+          </div>
+
+          <!-- 該組組員名單與即時在線狀態 (緊鄰在組別按鈕右側) -->
+          <div id="team-members-presence-container" class="flex items-center gap-1.5 pl-2 border-l border-slate-200 overflow-x-auto py-0.5 max-w-[220px] sm:max-w-[340px] scrollbar-none" title="該組組員與線上狀態">
+            <!-- 由 JS renderTeamMembersPresence() 即時渲染 -->
           </div>
         </div>
 
-        <!-- 右側：操作按鈕與同步狀態 -->
+        <!-- 右側：操作按鈕與同步狀態 (已移除重複出現的學習公約，保留頂部全域公約) -->
         <div class="flex items-center gap-1.5 flex-shrink-0 pl-1">
-          <!-- 課堂學習公約按鈕 (開場 P01/P02 顯示) -->
-          <button id="btn-slide-agreement" onclick="openAgreementModal()" class="hidden px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="查看 8 項課堂學習公約">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-            <span>學習公約</span>
-          </button>
-
           <!-- 翻面看範例按鈕 (有範例時顯示) -->
-          <button id="btn-flip-example" onclick="toggleFlipExample()" class="hidden px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all" title="點擊翻面查看講師示範標竿範例">
+          <button id="btn-flip-example" onclick="toggleFlipExample()" class="hidden px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="點擊翻面查看講師示範標竿範例">
             <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i>
             <span id="btn-flip-text">看範例</span>
           </button>
@@ -378,48 +389,92 @@
 
           <!-- ================= 正面 (Front Face)：100% 滿版沉浸式小組筆記 ================= -->
           <div class="note-front-face h-full flex flex-col p-3 sm:p-4">
+            <!-- 團隊任務專屬：Prompt 快速複製與導讀行動列 (含 prompts 時動態顯示) -->
+            <div id="team-task-prompt-bar" class="hidden flex-shrink-0 mb-3 p-3 bg-gradient-to-r from-amber-50/95 via-orange-50/90 to-amber-50/95 border border-amber-200/90 rounded-2xl shadow-2xs">
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white font-black text-[10px] sm:text-xs flex items-center gap-1 shadow-xs flex-shrink-0">
+                    <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                    <span>AI 實作指令庫</span>
+                  </span>
+                  <span id="prompt-bar-hint" class="text-xs font-bold text-amber-950 truncate">
+                    本實作提供專屬 AI Prompts
+                  </span>
+                </div>
+              </div>
+
+              <!-- 動態渲染的 Prompt 操作按鈕群 -->
+              <div id="prompt-buttons-container" class="flex flex-wrap items-center gap-2"></div>
+            </div>
+
             <!-- 盡量大面積的輸入框 (無遮蔽、充滿全高) -->
             <textarea id="team-memo-input" placeholder="點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）..." class="w-full h-full flex-1 p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed"></textarea>
           </div>
 
-          <!-- ================= 反面 (Back Face)：講師示範標竿範例 ================= -->
-          <div class="note-back-face h-full flex flex-col p-3 sm:p-4 overflow-y-auto">
-            <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-4 sm:p-5 shadow-2xs flex-1 flex flex-col">
+          <!-- ================= 反面 (Back Face)：講師示範標竿範例與實戰圖庫 ================= -->
+          <div class="note-back-face h-full flex flex-col p-3 sm:p-4 overflow-hidden">
+            <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 sm:p-4 shadow-2xs flex-1 flex flex-col overflow-hidden">
               
-              <div class="flex items-center justify-between border-b border-amber-200/60 pb-2.5 mb-3 flex-shrink-0">
+              <!-- 範例頂部標題與複製按鈕 -->
+              <div class="flex items-center justify-between border-b border-amber-200/60 pb-2.5 mb-2.5 flex-shrink-0">
                 <div class="flex items-center gap-2">
                   <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold text-xs">示範</span>
                   <div>
                     <h3 id="example-view-title" class="font-bold text-amber-950 text-sm">產品願景陳述</h3>
-                    <p class="text-[11px] text-amber-700">標竿參考基準</p>
+                    <p class="text-[11px] text-amber-700" id="example-view-subtitle">標竿參考基準與實務範例</p>
                   </div>
                 </div>
 
-                <button onclick="copyExampleToMemo()" class="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all">
-                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                  <span>複製至筆記</span>
+                <div class="flex items-center gap-1.5">
+                  <button id="btn-example-copy-general" onclick="copyExampleToMemo()" class="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="複製示範內容至小組筆記">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    <span>複製文字</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 分頁切換列 (當投影片含有範例圖片時顯示) -->
+              <div id="example-tab-bar" class="hidden flex items-center gap-1 bg-amber-200/60 p-1 rounded-xl mb-2.5 flex-shrink-0">
+                <button id="tab-btn-gallery" onclick="switchExampleTab('gallery')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-white text-amber-950 shadow-2xs cursor-pointer">
+                  <i data-lucide="images" class="w-3.5 h-3.5 text-amber-600"></i>
+                  <span id="tab-label-gallery">實戰案例圖庫 (3)</span>
+                </button>
+                <button id="tab-btn-template" onclick="switchExampleTab('template')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-amber-800 hover:text-amber-950 cursor-pointer">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-600"></i>
+                  <span>示範結構與句型</span>
                 </button>
               </div>
 
-              <!-- 範例卡片正面 (摘要/故事) -->
-              <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs mb-2.5 flex-shrink-0">
-                <div class="text-[11px] uppercase font-bold text-amber-600 tracking-wider flex items-center gap-1 mb-1">
-                  <i data-lucide="bookmark" class="w-3 h-3"></i> 核心主張 (Summary)
-                </div>
-                <p id="example-view-front" class="text-sm font-bold text-slate-800 whitespace-pre-wrap leading-relaxed"></p>
+              <!-- 視角一：實戰案例圖庫 (Gallery View) -->
+              <div id="example-gallery-view" class="flex-1 overflow-y-auto space-y-3 pr-1">
+                <!-- 由 JS renderExampleGalleryCards() 動態渲染 -->
               </div>
 
-              <!-- 範例卡片反面 (細節/AC) -->
-              <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs flex-1 overflow-y-auto">
-                <div class="text-[11px] uppercase font-bold text-indigo-600 tracking-wider flex items-center gap-1 mb-1">
-                  <i data-lucide="list-checks" class="w-3 h-3"></i> 詳細脈絡 / 驗收準則 (Details / AC)
+              <!-- 視角二：示範結構與句型 (Template View) -->
+              <div id="example-template-view" class="hidden flex-1 overflow-y-auto flex-col space-y-2.5 pr-1">
+                <!-- 範例卡片正面 (摘要/故事) -->
+                <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs flex-shrink-0">
+                  <div class="text-[11px] uppercase font-bold text-amber-600 tracking-wider flex items-center gap-1 mb-1">
+                    <i data-lucide="bookmark" class="w-3 h-3"></i> 重點 (Summary)
+                  </div>
+                  <p id="example-view-front" class="text-sm font-bold text-slate-800 whitespace-pre-wrap leading-relaxed"></p>
                 </div>
-                <p id="example-view-back" class="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed"></p>
+
+                <!-- 範例卡片反面 (細節/AC) -->
+                <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs flex-1 overflow-y-auto">
+                  <div class="text-[11px] uppercase font-bold text-indigo-600 tracking-wider flex items-center gap-1 mb-1">
+                    <i data-lucide="list-checks" class="w-3 h-3"></i> 詳細脈絡 / 驗收準則 (Details / AC)
+                  </div>
+                  <p id="example-view-back" class="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed"></p>
+                </div>
               </div>
 
               <!-- 底部按鈕 -->
-              <div class="pt-3 flex justify-end flex-shrink-0">
-                <button onclick="toggleFlipExample()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all">
+              <div class="pt-2.5 flex items-center justify-between border-t border-amber-200/60 mt-2 flex-shrink-0">
+                <div id="example-footer-hint" class="text-[11px] text-amber-800 font-medium truncate max-w-[220px]">
+                  💡 點擊縮圖可開啟全螢幕導讀
+                </div>
+                <button onclick="toggleFlipExample()" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
                   <span>翻回小組筆記</span>
                   <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                 </button>
@@ -645,6 +700,128 @@
     </div>
   </div>
 
+  <!-- ==================== 沉浸式實戰案例大圖燈箱 (Lightbox Modal) ==================== -->
+  <div id="example-lightbox-modal" class="hidden fixed inset-0 bg-slate-950/92 backdrop-blur-md z-50 flex flex-col justify-between overflow-hidden select-none">
+    
+    <!-- 頂部導航列 -->
+    <div class="h-14 px-3 sm:px-5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between gap-3 text-white flex-shrink-0 z-20">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <span id="lightbox-slide-badge" class="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 text-xs font-black flex-shrink-0">P04 制定願景</span>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h3 id="lightbox-title" class="font-bold text-sm sm:text-base text-slate-100 truncate">案例一：經典手寫海報</h3>
+            <span id="lightbox-counter-badge" class="text-[11px] font-mono text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 flex-shrink-0">1 / 3</span>
+          </div>
+          <p id="lightbox-subtitle" class="text-[11px] text-slate-400 truncate hidden sm:block">FA 金融服務業務管理平台</p>
+        </div>
+      </div>
+
+      <!-- 右側工具列：縮放、帶入筆記、關閉 -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <div class="bg-slate-800/90 rounded-xl p-0.5 flex items-center gap-0.5 border border-slate-700 text-xs">
+          <button onclick="zoomLightbox(-0.25)" class="p-1.5 rounded-lg hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer" title="縮小 (-)">
+            <i data-lucide="zoom-out" class="w-4 h-4"></i>
+          </button>
+          <button onclick="resetLightboxZoom()" class="px-2 py-1 rounded-lg hover:bg-slate-700 text-slate-300 hover:text-white font-mono text-[11px] transition-colors cursor-pointer" title="重設縮放 (100%)" id="lightbox-zoom-label">
+            100%
+          </button>
+          <button onclick="zoomLightbox(0.25)" class="p-1.5 rounded-lg hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer" title="放大 (+)">
+            <i data-lucide="zoom-in" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <button id="btn-lightbox-copy-template" onclick="copyCurrentLightboxTemplate()" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer" title="將此案例的模板結構複製並帶入小組筆記">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span class="hidden md:inline">帶入此模板至筆記</span>
+          <span class="md:hidden">帶入筆記</span>
+        </button>
+
+        <button onclick="closeExampleLightbox()" class="p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer" title="關閉燈箱 (Esc)">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 燈箱中心圖檔展示與平移縮放區 -->
+    <div class="flex-1 relative flex items-center justify-center overflow-hidden p-2 sm:p-4" id="lightbox-viewport" onclick="handleLightboxBackdropClick(event)">
+      <!-- 上一張按鈕 -->
+      <button id="btn-lightbox-prev" onclick="navigateLightbox(-1)" class="absolute left-2 sm:left-4 z-20 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white shadow-xl flex items-center justify-center border border-slate-700 transition-all active:scale-90 cursor-pointer" title="上一張案例 (← 方向鍵)">
+        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+      </button>
+
+      <!-- 圖片容器 -->
+      <div id="lightbox-img-wrapper" class="max-w-full max-h-full flex items-center justify-center transition-transform duration-150 cursor-grab active:cursor-grabbing">
+        <img id="lightbox-img" src="" alt="範例大圖" class="max-w-full max-h-[76vh] object-contain rounded-xl shadow-2xl border border-slate-800 transition-all" draggable="false" />
+      </div>
+
+      <!-- 下一張按鈕 -->
+      <button id="btn-lightbox-next" onclick="navigateLightbox(1)" class="absolute right-2 sm:right-4 z-20 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white shadow-xl flex items-center justify-center border border-slate-700 transition-all active:scale-90 cursor-pointer" title="下一張案例 (→ 方向鍵)">
+        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+      </button>
+    </div>
+
+    <!-- 燈箱底部：教學重點導讀與縮圖導航列 -->
+    <div class="bg-slate-900/95 border-t border-slate-800 p-2.5 sm:p-3 text-white flex flex-col gap-2 z-20 flex-shrink-0">
+      <div class="max-w-4xl mx-auto w-full">
+        <div class="flex items-center justify-between text-xs mb-1">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span class="font-bold text-amber-400">💡 案例教學重點導讀</span>
+            <span id="lightbox-badge-pill" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700"></span>
+          </div>
+          <button onclick="toggleLightboxGuide()" class="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 transition-colors cursor-pointer" id="btn-toggle-guide">
+            <span id="text-toggle-guide">收合導讀</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform" id="icon-toggle-guide"></i>
+          </button>
+        </div>
+        <div id="lightbox-guide-content" class="text-xs text-slate-300 space-y-1.5 bg-slate-950/70 p-2.5 sm:p-3 rounded-xl border border-slate-800/80 transition-all max-h-32 overflow-y-auto">
+          <p id="lightbox-guide-desc" class="text-slate-300 leading-relaxed"></p>
+          <ul id="lightbox-guide-takeaways" class="space-y-1 text-slate-400 text-[11px] list-disc list-inside"></ul>
+        </div>
+      </div>
+
+      <!-- 底部多圖切換縮圖條 (當該頁有多張案例圖時呈現) -->
+      <div id="lightbox-thumbs-container" class="flex items-center justify-center gap-2 overflow-x-auto py-0.5"></div>
+    </div>
+  </div>
+
+  <!-- ==================== Prompt 完整指令檢視與複製 Modal ==================== -->
+  <div id="prompt-preview-modal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-5">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 border-b border-slate-200 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span id="prompt-modal-badge" class="px-2.5 py-1 rounded-md text-xs font-bold text-white bg-amber-500 flex-shrink-0">步驟 4</span>
+          <div class="min-w-0">
+            <h3 id="prompt-modal-title" class="font-bold text-slate-900 text-sm sm:text-base truncate">Prompt 指令全文</h3>
+            <p id="prompt-modal-desc" class="text-xs text-slate-500 truncate mt-0.5">點擊下方按鈕即可一鍵複製全文</p>
+          </div>
+        </div>
+        <button onclick="closePromptModal()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer" title="關閉視窗 (Esc)">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Prompt Text) -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-5 bg-slate-900 text-slate-100 font-mono text-xs sm:text-sm leading-relaxed whitespace-pre-wrap select-text" id="prompt-modal-content">
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-shrink-0">
+        <span class="text-xs text-slate-500 hidden sm:inline">複製後可直接貼至 AI 工具執行</span>
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button onclick="closePromptModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer">
+            關閉
+          </button>
+          <button id="btn-modal-copy-prompt" onclick="copyCurrentModalPrompt()" class="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span id="btn-modal-copy-prompt-text">複製完整 Prompt</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== 核心邏輯 Javascript ==================== -->
   <script>
     const COURSE_PASSWORD = "agile-2026";
@@ -685,6 +862,9 @@
         }
         db = firebase.firestore();
         updateSyncStatus('online', '雲端同步就緒');
+        if (currentUser) {
+          initPresence();
+        }
       } catch (err) {
         console.warn("Firebase 初始化異常:", err);
         updateSyncStatus('offline', '本地離線模式');
@@ -826,6 +1006,7 @@
       document.getElementById('user-display-name').innerText = currentUser.name;
       renderTeamTabs();
       updatePermissionUI();
+      initPresence();
     }
 
     function getTeamDisplayName(teamId) {
@@ -888,34 +1069,504 @@
       // 判斷是否顯示「線上白板」與「翻面看範例」
       updateSlideToolsBar(slide);
 
+      // 更新輸入框情境提示詞
+      const memoInput = document.getElementById('team-memo-input');
+      if (memoInput) {
+        memoInput.placeholder = (slide.cardContext && slide.cardContext.frontPlaceholder)
+          ? slide.cardContext.frontPlaceholder
+          : "點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）...";
+      }
+
+      // 渲染團隊任務 AI Prompt 快捷列
+      renderTeamTaskPrompts(slide);
+
       // 訂閱當前頁面與當前組別的 Firestore 筆記
       subscribeToFirestore();
     }
 
+    // --- 團隊任務 AI Prompt 指令庫與複製控制器 (通用架構，後續任務直接複用) ---
+    let currentViewingPrompt = null;
+
+    function renderTeamTaskPrompts(slide) {
+      const bar = document.getElementById('team-task-prompt-bar');
+      const container = document.getElementById('prompt-buttons-container');
+      if (!bar || !container) return;
+
+      if (!slide || !slide.prompts || slide.prompts.length === 0) {
+        bar.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+      }
+
+      bar.classList.remove('hidden');
+      container.innerHTML = '';
+
+      slide.prompts.forEach((prompt, pIdx) => {
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'inline-flex items-center rounded-xl shadow-2xs overflow-hidden border border-amber-300 bg-white hover:border-amber-400 transition-all';
+
+        // 複製按鈕 (主動作)
+        const copyBtn = document.createElement('button');
+        copyBtn.id = `btn-copy-prompt-${pIdx}`;
+        copyBtn.className = 'px-3 py-1.5 bg-amber-100/90 hover:bg-amber-200 active:scale-95 text-amber-950 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer';
+        copyBtn.title = `點擊一鍵複製「${prompt.title}」全文至剪貼簿`;
+        copyBtn.onclick = () => copyPromptToClipboard(pIdx);
+        
+        const badgeColorCls = (prompt.badgeColor === 'indigo') 
+          ? 'bg-indigo-600 text-white' 
+          : 'bg-amber-600 text-white';
+
+        copyBtn.innerHTML = `
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-black ${badgeColorCls}">${prompt.stepBadge || 'Prompt'}</span>
+          <i data-lucide="copy" class="w-3.5 h-3.5 text-amber-800"></i>
+          <span id="prompt-btn-label-${pIdx}">${prompt.actionLabel || prompt.shortTitle || prompt.title}</span>
+        `;
+
+        // 預覽按鈕 (查看全文)
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'px-2 py-1.5 bg-white hover:bg-amber-50 text-slate-500 hover:text-amber-800 border-l border-amber-200 text-xs flex items-center justify-center transition-colors cursor-pointer';
+        viewBtn.title = '預覽與檢視 Prompt 完整指令全文';
+        viewBtn.onclick = () => openPromptModal(pIdx);
+        viewBtn.innerHTML = `<i data-lucide="eye" class="w-3.5 h-3.5"></i>`;
+
+        btnGroup.appendChild(copyBtn);
+        btnGroup.appendChild(viewBtn);
+        container.appendChild(btnGroup);
+      });
+
+      if (window.lucide) lucide.createIcons({ scope: container });
+    }
+
+    function copyPromptToClipboard(promptIndex) {
+      const slide = SLIDES_DATA[currentSlideIndex - 1];
+      if (!slide || !slide.prompts || !slide.prompts[promptIndex]) return;
+      const p = slide.prompts[promptIndex];
+
+      const handleSuccess = () => {
+        const labelEl = document.getElementById(`prompt-btn-label-${promptIndex}`);
+        if (labelEl) {
+          const originalText = labelEl.innerText;
+          labelEl.innerHTML = '<span class="text-emerald-700 font-black">✓ 已複製！</span>';
+          setTimeout(() => {
+            labelEl.innerText = originalText;
+          }, 2000);
+        }
+        showToast(`已成功複製「${p.title}」！`);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(p.content).then(handleSuccess).catch(() => {
+          fallbackCopyText(p.content, handleSuccess);
+        });
+      } else {
+        fallbackCopyText(p.content, handleSuccess);
+      }
+    }
+
+    function fallbackCopyText(text, callback) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand('copy');
+        if (callback) callback();
+      } catch (err) {
+        alert('瀏覽器不支援自動複製，請點擊「預覽」手動選取文字複製。');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function openPromptModal(promptIndex) {
+      const slide = SLIDES_DATA[currentSlideIndex - 1];
+      if (!slide || !slide.prompts || !slide.prompts[promptIndex]) return;
+      const p = slide.prompts[promptIndex];
+      currentViewingPrompt = p;
+
+      const badgeEl = document.getElementById('prompt-modal-badge');
+      if (badgeEl) {
+        badgeEl.innerText = p.stepBadge || 'Prompt';
+        badgeEl.className = `px-2.5 py-1 rounded-md text-xs font-bold text-white ${p.badgeColor === 'indigo' ? 'bg-indigo-600' : 'bg-amber-500'} flex-shrink-0`;
+      }
+      const titleEl = document.getElementById('prompt-modal-title');
+      if (titleEl) titleEl.innerText = p.title;
+      const descEl = document.getElementById('prompt-modal-desc');
+      if (descEl) descEl.innerText = p.desc || 'AI 實作專屬任務指令';
+      const contentEl = document.getElementById('prompt-modal-content');
+      if (contentEl) contentEl.innerText = p.content;
+
+      const modal = document.getElementById('prompt-preview-modal');
+      if (modal) modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons({ scope: modal });
+    }
+
+    function closePromptModal() {
+      const modal = document.getElementById('prompt-preview-modal');
+      if (modal) modal.classList.add('hidden');
+      currentViewingPrompt = null;
+    }
+
+    function isPromptModalOpen() {
+      const modal = document.getElementById('prompt-preview-modal');
+      return modal && !modal.classList.contains('hidden');
+    }
+
+    function copyCurrentModalPrompt() {
+      if (!currentViewingPrompt) return;
+      const handleSuccess = () => {
+        const btnText = document.getElementById('btn-modal-copy-prompt-text');
+        if (btnText) {
+          btnText.innerText = '✓ 已複製！';
+          setTimeout(() => {
+            btnText.innerText = '複製完整 Prompt';
+          }, 2000);
+        }
+        showToast(`已成功複製「${currentViewingPrompt.title}」！`);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(currentViewingPrompt.content).then(handleSuccess).catch(() => {
+          fallbackCopyText(currentViewingPrompt.content, handleSuccess);
+        });
+      } else {
+        fallbackCopyText(currentViewingPrompt.content, handleSuccess);
+      }
+    }
+
+    // --- 實戰案例圖庫與燈箱互動控制器 ---
+    let currentLightboxImages = [];
+    let currentLightboxIndex = 0;
+    let lightboxZoomScale = 1.0;
+    let isLightboxGuideExpanded = true;
+    let currentExampleTab = 'gallery'; // 'gallery' or 'template'
+
     function updateSlideToolsBar(slide) {
       const flipBtn = document.getElementById('btn-flip-example');
-      const agreeBtn = document.getElementById('btn-slide-agreement');
+      const slideBadge = document.getElementById('slide-example-badge-container');
+      const slideBadgeTxt = document.getElementById('slide-example-badge-text');
 
-      // 課堂公約引導按鈕 (P01 封面與 P02 目錄開場時醒目顯示)
-      if (agreeBtn) {
-        if (slide.index === 1 || slide.index === 2) {
-          agreeBtn.classList.remove('hidden');
+      const hasExample = !!slide.example;
+      const hasImages = hasExample && Array.isArray(slide.example.images) && slide.example.images.length > 0;
+
+      // 1. 左側投影片浮動實戰案例標籤
+      if (slideBadge) {
+        if (hasImages) {
+          slideBadge.classList.remove('hidden');
+          const count = slide.example.images.length;
+          if (slide.id === "p04-envision" || slide.index === 4) {
+            slideBadgeTxt.innerText = "3 大願景標竿實例";
+          } else if (slide.id === "p24-analyze-process" || slide.index === 25) {
+            slideBadgeTxt.innerText = "全流程分析實戰案例";
+          } else if (slide.id === "p35-requirement-hierarchy" || slide.index === 36) {
+            slideBadgeTxt.innerText = "故事地圖經典實例";
+          } else {
+            slideBadgeTxt.innerText = `實戰案例圖庫 (${count})`;
+          }
+        } else if (slide.isTeamTask) {
+          slideBadge.classList.remove('hidden');
+          slideBadgeTxt.innerText = "團隊實作任務說明";
         } else {
-          agreeBtn.classList.add('hidden');
+          slideBadge.classList.add('hidden');
         }
       }
 
-      // 翻面看範例按鈕 (若該頁有提供範例)
+      // 2. 右側「看範例」翻轉板控制
       if (flipBtn) {
-        if (slide.example) {
+        if (hasExample) {
           flipBtn.classList.remove('hidden');
-          document.getElementById('example-view-title').innerText = slide.example.title;
-          document.getElementById('example-view-front').innerText = slide.example.front || '（無示範）';
-          document.getElementById('example-view-back').innerText = slide.example.back || '（無示範細節）';
+          const flipText = document.getElementById('btn-flip-text');
+          if (flipText) flipText.innerText = slide.isTeamTask ? "任務指引" : "看範例";
+          const titleEl = document.getElementById('example-view-title');
+          const subEl = document.getElementById('example-view-subtitle');
+          const frontEl = document.getElementById('example-view-front');
+          const backEl = document.getElementById('example-view-back');
+          const tabBar = document.getElementById('example-tab-bar');
+          const tabLabel = document.getElementById('tab-label-gallery');
+
+          if (titleEl) titleEl.innerText = slide.example.title || '示範案例';
+          if (subEl) subEl.innerText = hasImages ? `含 ${slide.example.images.length} 項標竿實例與示範句型` : '標竿參考基準與實務範例';
+          if (frontEl) frontEl.innerText = slide.example.front || '（無示範）';
+          if (backEl) backEl.innerText = slide.example.back || '（無示範細節）';
+
+          if (hasImages) {
+            tabBar.classList.remove('hidden');
+            tabLabel.innerText = `實戰案例圖庫 (${slide.example.images.length})`;
+            renderExampleGalleryCards(slide.example.images);
+            switchExampleTab('gallery');
+          } else {
+            tabBar.classList.add('hidden');
+            switchExampleTab('template');
+          }
         } else {
           flipBtn.classList.add('hidden');
         }
       }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function switchExampleTab(tab) {
+      currentExampleTab = tab;
+      const galleryView = document.getElementById('example-gallery-view');
+      const templateView = document.getElementById('example-template-view');
+      const tabBtnGallery = document.getElementById('tab-btn-gallery');
+      const tabBtnTemplate = document.getElementById('tab-btn-template');
+      const copyGeneralBtn = document.getElementById('btn-example-copy-general');
+
+      if (tab === 'gallery') {
+        if (galleryView) galleryView.classList.remove('hidden');
+        if (templateView) templateView.classList.add('hidden');
+        if (tabBtnGallery) {
+          tabBtnGallery.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-white text-amber-950 shadow-2xs cursor-pointer";
+        }
+        if (tabBtnTemplate) {
+          tabBtnTemplate.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-amber-800 hover:text-amber-950 cursor-pointer";
+        }
+        if (copyGeneralBtn) copyGeneralBtn.classList.add('hidden');
+      } else {
+        if (galleryView) galleryView.classList.add('hidden');
+        if (templateView) templateView.classList.remove('hidden');
+        if (tabBtnGallery) {
+          tabBtnGallery.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-amber-800 hover:text-amber-950 cursor-pointer";
+        }
+        if (tabBtnTemplate) {
+          tabBtnTemplate.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-white text-amber-950 shadow-2xs cursor-pointer";
+        }
+        if (copyGeneralBtn) copyGeneralBtn.classList.remove('hidden');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderExampleGalleryCards(images) {
+      const container = document.getElementById('example-gallery-view');
+      if (!container) return;
+      container.innerHTML = '';
+
+      images.forEach((img, idx) => {
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-xl p-3 border border-amber-200/80 shadow-2xs hover:shadow-xs transition-all space-y-2.5";
+
+        const badgeColorClass = img.badgeColor === 'emerald' 
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+          : (img.badgeColor === 'indigo'
+              ? 'bg-indigo-100 text-indigo-800 border-indigo-200'
+              : (img.badgeColor === 'rose'
+                  ? 'bg-rose-100 text-rose-800 border-rose-200'
+                  : 'bg-amber-100 text-amber-800 border-amber-200'));
+
+        const takeawaysHtml = (img.keyTakeaways || []).map(item => `
+          <li class="flex items-start gap-1.5 text-[11px] text-slate-600 leading-snug">
+            <span class="text-amber-500 font-black mt-0.5">•</span>
+            <span>${item}</span>
+          </li>
+        `).join('');
+
+        card.innerHTML = `
+          <!-- 卡片頂部標題與標籤 -->
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColorClass}">${img.badge || '實戰範例'}</span>
+                <span class="text-[11px] font-mono text-slate-400 font-semibold">#${idx + 1}</span>
+              </div>
+              <h4 class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">${img.title}</h4>
+              <p class="text-[11px] text-slate-500">${img.subtitle || ''}</p>
+            </div>
+          </div>
+
+          <!-- 縮圖預覽 (點擊開啟燈箱) -->
+          <div onclick="openExampleLightbox(${idx})" class="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer aspect-16/10 flex items-center justify-center">
+            <img src="${img.url}" alt="${img.title}" class="w-full h-full object-contain group-hover:scale-103 transition-transform duration-200" loading="lazy" />
+            <div class="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white font-bold text-xs">
+              <i data-lucide="zoom-in" class="w-4 h-4 text-amber-400"></i>
+              <span>點擊全螢幕導讀</span>
+            </div>
+          </div>
+
+          <!-- 簡短說明與亮點清單 -->
+          <p class="text-[11px] text-slate-600 leading-relaxed">${img.description || ''}</p>
+          ${takeawaysHtml ? `<ul class="space-y-1 bg-slate-50 p-2 rounded-lg border border-slate-100">${takeawaysHtml}</ul>` : ''}
+
+          <!-- 操作按鈕列 -->
+          <div class="pt-1 flex items-center gap-2">
+            <button onclick="openExampleLightbox(${idx})" class="flex-1 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer">
+              <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+              <span>全螢幕導讀</span>
+            </button>
+            <button onclick="copyImageTemplateToMemo(${idx})" class="flex-1 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="帶入此案例模板至小組筆記">
+              <i data-lucide="copy" class="w-3.5 h-3.5 text-amber-600"></i>
+              <span>帶入筆記</span>
+            </button>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // --- 燈箱控制 ---
+    function openExampleLightbox(imgIndex = 0) {
+      const slide = SLIDES_DATA[currentSlideIndex - 1];
+      if (!slide || !slide.example || !slide.example.images || slide.example.images.length === 0) return;
+
+      currentLightboxImages = slide.example.images;
+      currentLightboxIndex = Math.max(0, Math.min(imgIndex, currentLightboxImages.length - 1));
+      lightboxZoomScale = 1.0;
+
+      const modal = document.getElementById('example-lightbox-modal');
+      if (modal) modal.classList.remove('hidden');
+
+      renderLightboxCurrent();
+    }
+
+    function closeExampleLightbox() {
+      const modal = document.getElementById('example-lightbox-modal');
+      if (modal) modal.classList.add('hidden');
+      resetLightboxZoom();
+    }
+
+    function isExampleLightboxOpen() {
+      const modal = document.getElementById('example-lightbox-modal');
+      return modal && !modal.classList.contains('hidden');
+    }
+
+    function navigateLightbox(delta) {
+      if (!currentLightboxImages || currentLightboxImages.length <= 1) return;
+      currentLightboxIndex = (currentLightboxIndex + delta + currentLightboxImages.length) % currentLightboxImages.length;
+      resetLightboxZoom();
+      renderLightboxCurrent();
+    }
+
+    function renderLightboxCurrent() {
+      if (!currentLightboxImages || currentLightboxImages.length === 0) return;
+      const img = currentLightboxImages[currentLightboxIndex];
+      const slide = SLIDES_DATA[currentSlideIndex - 1];
+
+      // 頂部標題與頁碼指示
+      const slideBadge = document.getElementById('lightbox-slide-badge');
+      const title = document.getElementById('lightbox-title');
+      const subtitle = document.getElementById('lightbox-subtitle');
+      const counterBadge = document.getElementById('lightbox-counter-badge');
+      const imgEl = document.getElementById('lightbox-img');
+      const badgePill = document.getElementById('lightbox-badge-pill');
+      const guideDesc = document.getElementById('lightbox-guide-desc');
+      const guideTakeaways = document.getElementById('lightbox-guide-takeaways');
+      const prevBtn = document.getElementById('btn-lightbox-prev');
+      const nextBtn = document.getElementById('btn-lightbox-next');
+      const thumbsContainer = document.getElementById('lightbox-thumbs-container');
+
+      if (slideBadge) slideBadge.innerText = `P${String(slide.index).padStart(2, '0')} ${slide.title}`;
+      if (title) title.innerText = img.title;
+      if (subtitle) subtitle.innerText = img.subtitle || '';
+      if (counterBadge) counterBadge.innerText = `${currentLightboxIndex + 1} / ${currentLightboxImages.length}`;
+      if (badgePill) badgePill.innerText = img.badge || '標竿案例';
+
+      if (imgEl) {
+        imgEl.src = img.url;
+        imgEl.alt = img.title;
+      }
+
+      if (guideDesc) guideDesc.innerText = img.description || '';
+      if (guideTakeaways) {
+        guideTakeaways.innerHTML = (img.keyTakeaways || []).map(t => `<li>${t}</li>`).join('');
+      }
+
+      // 上一張/下一張按鈕控制
+      if (currentLightboxImages.length <= 1) {
+        if (prevBtn) prevBtn.classList.add('hidden');
+        if (nextBtn) nextBtn.classList.add('hidden');
+        if (thumbsContainer) thumbsContainer.classList.add('hidden');
+      } else {
+        if (prevBtn) prevBtn.classList.remove('hidden');
+        if (nextBtn) nextBtn.classList.remove('hidden');
+        if (thumbsContainer) {
+          thumbsContainer.classList.remove('hidden');
+          thumbsContainer.innerHTML = '';
+          currentLightboxImages.forEach((thumb, tIdx) => {
+            const isCur = (tIdx === currentLightboxIndex);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.onclick = () => {
+              currentLightboxIndex = tIdx;
+              resetLightboxZoom();
+              renderLightboxCurrent();
+            };
+            btn.className = `w-12 h-9 sm:w-16 sm:h-11 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 cursor-pointer ${
+              isCur ? 'border-amber-400 ring-2 ring-amber-400/40 scale-105 shadow-md' : 'border-slate-700 opacity-60 hover:opacity-100'
+            }`;
+            btn.innerHTML = `<img src="${thumb.url}" alt="${thumb.title}" class="w-full h-full object-cover" />`;
+            thumbsContainer.appendChild(btn);
+          });
+        }
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function zoomLightbox(delta) {
+      lightboxZoomScale = Math.max(0.5, Math.min(3.5, lightboxZoomScale + delta));
+      const wrapper = document.getElementById('lightbox-img-wrapper');
+      const label = document.getElementById('lightbox-zoom-label');
+      if (wrapper) wrapper.style.transform = `scale(${lightboxZoomScale})`;
+      if (label) label.innerText = `${Math.round(lightboxZoomScale * 100)}%`;
+    }
+
+    function resetLightboxZoom() {
+      lightboxZoomScale = 1.0;
+      const wrapper = document.getElementById('lightbox-img-wrapper');
+      const label = document.getElementById('lightbox-zoom-label');
+      if (wrapper) wrapper.style.transform = `scale(1)`;
+      if (label) label.innerText = `100%`;
+    }
+
+    function toggleLightboxGuide() {
+      isLightboxGuideExpanded = !isLightboxGuideExpanded;
+      const content = document.getElementById('lightbox-guide-content');
+      const txt = document.getElementById('text-toggle-guide');
+      const icon = document.getElementById('icon-toggle-guide');
+
+      if (isLightboxGuideExpanded) {
+        if (content) content.classList.remove('hidden');
+        if (txt) txt.innerText = '收合導讀';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      } else {
+        if (content) content.classList.add('hidden');
+        if (txt) txt.innerText = '展開導讀';
+        if (icon) icon.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    function handleLightboxBackdropClick(e) {
+      if (e.target.id === 'lightbox-viewport' || e.target.id === 'lightbox-img-wrapper') {
+        closeExampleLightbox();
+      }
+    }
+
+    function copyCurrentLightboxTemplate() {
+      copyImageTemplateToMemo(currentLightboxIndex);
+    }
+
+    function copyImageTemplateToMemo(imgIndex) {
+      const slide = SLIDES_DATA[currentSlideIndex - 1];
+      if (!slide || !slide.example || !slide.example.images) return;
+      const img = slide.example.images[imgIndex];
+      if (!img) return;
+
+      const template = `【參考標竿案例：${img.title}】\n${img.templateSnippet || img.description}\n\n`;
+      const memoInput = document.getElementById('team-memo-input');
+
+      acquireLock();
+      currentTeamData.memo = (currentTeamData.memo ? currentTeamData.memo + "\n\n" : "") + template;
+      if (memoInput) memoInput.value = currentTeamData.memo;
+      saveTeamDataToCloud();
+
+      showToast(`已將【${img.badge || img.title}】範例模板帶入小組筆記！`);
     }
 
     // 開啟小組線上白板 (另開新分頁，6 組各一專屬白板，全域通用)
@@ -1022,7 +1673,10 @@
           }`;
 
           let tags = '';
-          if (s.example) {
+          if (s.isTeamTask) {
+            tags += `<span class="text-[9px] px-1.5 py-0.5 rounded ${isCurrent ? 'bg-amber-600 text-white' : 'bg-amber-500 text-white'} font-bold">任務</span>`;
+          }
+          if (s.example && !s.isTeamTask) {
             tags += `<span class="text-[9px] px-1.5 py-0.5 rounded ${isCurrent ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-800'} font-bold">範例</span>`;
           }
           if (s.hasExercise) {
@@ -1196,6 +1850,7 @@
       renderTeamTabs();
       updatePermissionUI();
       subscribeToFirestore();
+      subscribeTeamPresence();
     }
 
     function switchToMyTeam() {
@@ -1238,6 +1893,148 @@
       } else {
         memoInput.placeholder = "點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）...";
       }
+    }
+
+    // --- 組員即時在線狀態追蹤 (Team Presence System) ---
+    const PRESENCE_COLLECTION = 'ai_align_presence';
+    let presenceUnsubscribe = null;
+    let presenceHeartbeatTimer = null;
+    let currentTeamMembers = [];
+
+    function initPresence() {
+      if (!currentUser || !currentUser.name || !currentUser.team) return;
+
+      // 1. 發送首次在線心跳
+      sendPresenceHeartbeat(true);
+
+      // 2. 啟動定時心跳 (每 25 秒更新一次 lastSeen)
+      if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
+      presenceHeartbeatTimer = setInterval(() => {
+        sendPresenceHeartbeat(true);
+      }, 25000);
+
+      // 3. 離線前標記
+      window.addEventListener('beforeunload', () => {
+        sendPresenceHeartbeat(false);
+      });
+
+      // 4. 訂閱當前選定組別的組員在線狀況
+      subscribeTeamPresence();
+    }
+
+    function sendPresenceHeartbeat(isOnline = true) {
+      if (!db || !currentUser || !currentUser.name || !currentUser.team) return;
+      const docId = `${currentUser.team}_${encodeURIComponent(currentUser.name)}`;
+      db.collection(PRESENCE_COLLECTION).doc(docId).set({
+        team: currentUser.team,
+        name: currentUser.name,
+        lastSeen: Date.now(),
+        isOnline: isOnline
+      }, { merge: true }).catch(err => {
+        console.warn("Presence heartbeat error:", err);
+      });
+    }
+
+    function subscribeTeamPresence() {
+      if (presenceUnsubscribe) {
+        presenceUnsubscribe();
+        presenceUnsubscribe = null;
+      }
+
+      if (!db) {
+        renderTeamMembersPresence([]);
+        return;
+      }
+
+      presenceUnsubscribe = db.collection(PRESENCE_COLLECTION)
+        .where('team', '==', activeTeamId)
+        .onSnapshot(snapshot => {
+          const members = [];
+          const now = Date.now();
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const isRecent = (now - (data.lastSeen || 0)) < 65000;
+            members.push({
+              name: data.name,
+              team: data.team,
+              lastSeen: data.lastSeen,
+              isOnline: data.isOnline !== false && isRecent
+            });
+          });
+          currentTeamMembers = members;
+          renderTeamMembersPresence(members);
+        }, err => {
+          console.warn("Presence subscription error:", err);
+          renderTeamMembersPresence([]);
+        });
+    }
+
+    function renderTeamMembersPresence(members = currentTeamMembers) {
+      const container = document.getElementById('team-members-presence-container');
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      // 確保如果 currentUser 在該組，名單中一定包含自己
+      const list = [...(members || [])];
+      if (currentUser && currentUser.team === activeTeamId) {
+        const hasSelf = list.some(m => m.name === currentUser.name);
+        if (!hasSelf) {
+          list.unshift({
+            name: currentUser.name,
+            team: currentUser.team,
+            lastSeen: Date.now(),
+            isOnline: true
+          });
+        }
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `<span class="text-[10px] text-slate-400 italic">尚無組員加入</span>`;
+        return;
+      }
+
+      // 排序：自己在最前，在線者優先，依姓名排序
+      list.sort((a, b) => {
+        const isSelfA = currentUser && a.name === currentUser.name;
+        const isSelfB = currentUser && b.name === currentUser.name;
+        if (isSelfA) return -1;
+        if (isSelfB) return 1;
+        if (a.isOnline !== b.isOnline) return b.isOnline ? 1 : -1;
+        return a.name.localeCompare(b.name);
+      });
+
+      // 統計在線人數
+      const onlineCount = list.filter(m => m.isOnline).length;
+
+      // 渲染前綴統計微徽章
+      const countPill = document.createElement('div');
+      countPill.className = "flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md flex-shrink-0";
+      countPill.innerHTML = `<span>組員</span><span class="text-emerald-600 font-mono">${onlineCount}</span><span class="text-slate-400">/${list.length}</span>`;
+      container.appendChild(countPill);
+
+      list.forEach(m => {
+        const isSelf = currentUser && m.name === currentUser.name;
+        const pill = document.createElement('div');
+        const displayName = isSelf ? `${m.name} (我)` : m.name;
+
+        if (m.isOnline) {
+          pill.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold shadow-2xs flex-shrink-0 transition-all";
+          pill.title = `${m.name}：在線上`;
+          pill.innerHTML = `
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="truncate max-w-[75px]">${displayName}</span>
+          `;
+        } else {
+          pill.className = "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-400 border border-slate-200 text-[10px] font-medium flex-shrink-0 transition-all opacity-75";
+          pill.title = `${m.name}：離線`;
+          pill.innerHTML = `
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            <span class="truncate max-w-[70px]">${displayName}</span>
+          `;
+        }
+        container.appendChild(pill);
+      });
     }
 
     // --- Firebase 逐頁綁定與鎖定 (一頁一筆記) ---
@@ -1424,6 +2221,25 @@
           closeTeamDropdown();
           closePrintNotesModal();
           closeAgreementModal();
+          closeExampleLightbox();
+          closePromptModal();
+        } else if (isExampleLightboxOpen()) {
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            navigateLightbox(-1);
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            navigateLightbox(1);
+          } else if (e.key === '+' || e.key === '=') {
+            e.preventDefault();
+            zoomLightbox(0.25);
+          } else if (e.key === '-' || e.key === '_') {
+            e.preventDefault();
+            zoomLightbox(-0.25);
+          } else if (e.key === '0') {
+            e.preventDefault();
+            resetLightboxZoom();
+          }
         } else if (isAgreementModalOpen()) {
           if (e.key === 'ArrowLeft') {
             e.preventDefault();
