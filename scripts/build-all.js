@@ -84,6 +84,22 @@ try {
   } else {
     console.warn('Warning: Root index.html not found, skipping.');
   }
+  // Create dist/index.html redirect to /workshop/
+  const redirectHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=/workshop/">
+  <title>Redirecting...</title>
+  <script>location.href = '/workshop/';</script>
+</head>
+<body>
+  <p>Redirecting to <a href="/workshop/">/workshop/</a>...</p>
+</body>
+</html>
+`;
+  fs.writeFileSync(path.join(distDir, 'index.html'), redirectHtml, 'utf8');
+  console.log('✓ Dist root redirect to /workshop/ created.');
 } catch (err) {
   console.error('Error: Failed to copy root index.html:', err.message);
   process.exit(1);
@@ -98,6 +114,18 @@ try {
   console.log('✓ Hook static files copied successfully.');
 } catch (err) {
   console.error('Error: Failed to copy hook files:', err.message);
+  process.exit(1);
+}
+
+// 6. Copy ai-align files to dist/workshop/ai-align
+console.log('Copying ai-align static files...');
+try {
+  const aiAlignSrc = path.join(rootDir, 'ai-align');
+  const aiAlignDist = path.join(distWorkshopDir, 'ai-align');
+  copyFolderSync(aiAlignSrc, aiAlignDist);
+  console.log('✓ AI-Align static files copied successfully.');
+} catch (err) {
+  console.error('Error: Failed to copy ai-align files:', err.message);
   process.exit(1);
 }
 

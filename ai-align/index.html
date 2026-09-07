@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 賦能敏捷：跨部門溝通萃取需求 ｜ 互動教材與分組共創系統</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              200: '#fde68a',
+              300: '#fcd34d',
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+              800: '#92400e',
+              900: '#78350f'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase App & Firestore SDKs (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- Slides Data -->
+  <script src="slides-data.js"></script>
+
+  <style>
+    /* 3D 翻轉筆記板 */
+    .note-flipper {
+      perspective: 1400px;
+    }
+    .note-flipper-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .note-flipper.flipped .note-flipper-inner {
+      transform: rotateY(180deg);
+    }
+    .note-front-face, .note-back-face {
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+    .note-back-face {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: rotateY(180deg);
+    }
+
+    /* 捲軸美化 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.02);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.5);
+      border-radius: 3px;
+    }
+    /* 列印與 PDF 匯出專用樣式 */
+    @media print {
+      body {
+        background: white !important;
+        color: #0f172a !important;
+        overflow: visible !important;
+        height: auto !important;
+      }
+      /* 隱藏網頁非列印 UI 元素 */
+      header, main, #toc-drawer, #toc-backdrop, #login-modal, .no-print {
+        display: none !important;
+      }
+      /* 列印 Modal 轉化為紙本畫布 */
+      #print-modal {
+        position: static !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        padding: 0 !important;
+        display: block !important;
+        z-index: auto !important;
+        inset: auto !important;
+      }
+      #print-modal-card {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        max-height: none !important;
+      }
+      #print-modal-header {
+        display: none !important;
+      }
+      #print-modal-body {
+        padding: 0 !important;
+        background: white !important;
+        overflow: visible !important;
+        max-height: none !important;
+      }
+      #printable-notes-area {
+        display: block !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .print-chapter-section {
+        page-break-inside: auto;
+      }
+      .print-note-card {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 1.25rem !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-100 text-slate-800 flex flex-col font-sans overflow-hidden select-none">
+
+  <!-- ==================== 頂部主導覽列 ==================== -->
+  <header class="h-14 bg-white border-b border-slate-200 px-3 sm:px-4 flex items-center justify-between shadow-2xs z-30 flex-shrink-0 gap-2">
+    <!-- 左側：漢堡包目錄按鈕 ＋ 標題與章節主題 (整合收納，取代原浮動條) -->
+    <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
+      <!-- 漢堡包目錄按鈕 (唯一全域課程大綱目錄) -->
+      <button id="btn-toggle-toc" onclick="toggleTocDrawer()" class="px-2.5 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 active:scale-95 transition-all flex items-center gap-1.5 border border-slate-200 shadow-2xs cursor-pointer" title="開啟完整課程大綱目錄 (快捷鍵：M 或點擊頁碼)">
+        <i data-lucide="menu" class="w-4 h-4 text-slate-600"></i>
+        <span class="text-xs font-bold hidden sm:inline text-slate-700">目錄</span>
+      </button>
+
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <span class="w-8 h-8 rounded-lg bg-amber-500 text-white font-black text-sm flex items-center justify-center shadow-2xs flex-shrink-0">AI</span>
+        <div class="hidden sm:block">
+          <h1 class="text-sm font-bold text-slate-900 leading-tight">AI 賦能敏捷</h1>
+          <p class="text-[10px] text-slate-500 font-medium">跨部門溝通萃取需求</p>
+        </div>
+      </div>
+
+      <div class="h-5 w-[1px] bg-slate-200 hidden md:block"></div>
+
+      <!-- 章節 Badge 與投影片標題 -->
+      <div class="hidden md:flex items-center gap-2 truncate max-w-xs lg:max-w-md xl:max-w-lg">
+        <div id="header-chapter-badge" class="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/80 flex-shrink-0">
+          <span id="header-chapter-code">WHY</span>
+          <span class="text-amber-400">·</span>
+          <span id="header-chapter-name">目標</span>
+        </div>
+        <div class="truncate text-xs font-semibold text-slate-700">
+          <span id="header-slide-title" class="font-bold text-slate-800"></span>
+          <span id="header-slide-subtitle" class="text-slate-400 text-[11px] ml-1.5 hidden lg:inline"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中間：極簡換頁控制器與目前頁碼 (點擊頁碼可直接展開左側課程目錄) -->
+    <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+      <button id="btn-prev-slide" onclick="navigateSlide(-1)" class="p-1.5 sm:px-2.5 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer" title="上一頁 (← / PageUp)">
+        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">上一頁</span>
+      </button>
+
+      <button id="btn-slide-indicator" onclick="openTocDrawer()" class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200/60 shadow-2xs" title="目前進度，點擊展開完整課程大綱目錄">
+        <span id="current-slide-label" class="font-mono text-slate-900">P01 / 40</span>
+        <i data-lucide="list" class="w-3.5 h-3.5 text-slate-400"></i>
+      </button>
+
+      <button id="btn-next-slide" onclick="navigateSlide(1)" class="p-1.5 sm:px-2.5 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer" title="下一頁 (→ / PageDown / Space)">
+        <span class="hidden sm:inline">下一頁</span>
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- 右側：全域白板、學員身分、全螢幕 -->
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <!-- 全域課堂學習公約按鈕 (常駐頂部，隨時呼叫 8 大敏捷協作守則) -->
+      <button id="btn-learning-agreement" onclick="openAgreementModal()" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer flex-shrink-0" title="開啟課堂學習公約 (8 項敏捷協作心法)">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+        <span>學習公約</span>
+      </button>
+
+      <!-- 全域小組線上白板按鈕 (常駐頂部，點擊新分頁開啟該組專屬大白板) -->
+      <button id="btn-global-board" onclick="openTeamWhiteboard()" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all flex-shrink-0 cursor-pointer" title="在新分頁開啟小組專屬共享線上白板 (整門課專屬 8000px 大畫布)">
+        <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+        <span>小組線上白板</span>
+        <i data-lucide="external-link" class="w-3 h-3 opacity-80 hidden sm:inline"></i>
+      </button>
+
+      <!-- 全域列印筆記按鈕 (依主題章節完整彙整輸出 PDF) -->
+      <button id="btn-print-notes" onclick="openPrintNotesModal()" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer flex-shrink-0" title="列印全課程小組筆記為 PDF (依主題章節彙整)">
+        <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-600"></i>
+        <span class="hidden xl:inline">列印筆記</span>
+      </button>
+
+      <!-- 學員身分徽章 -->
+      <div id="user-badge" class="flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl text-xs">
+        <i data-lucide="users" class="w-3.5 h-3.5 text-indigo-600"></i>
+        <span id="user-team-name" class="font-bold text-indigo-700">第 1 組</span>
+        <span class="text-slate-300">|</span>
+        <span id="user-display-name" class="font-medium text-slate-700">學員</span>
+      </div>
+
+      <!-- 切換身分 / 登出 -->
+      <button onclick="openLoginModal(true)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors" title="更換組別或姓名">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </button>
+
+      <!-- 全螢幕切換 -->
+      <button onclick="toggleFullScreen()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors hidden md:block" title="切換全螢幕">
+        <i data-lucide="maximize" class="w-4 h-4" id="fullscreen-icon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== 可收合課程目錄側邊抽屜 (TOC Drawer) ==================== -->
+  <div id="toc-backdrop" onclick="closeTocDrawer()" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-40 transition-opacity"></div>
+  <aside id="toc-drawer" class="fixed top-0 left-0 bottom-0 w-80 sm:w-96 bg-white shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-r border-slate-200">
+    <!-- 抽屜頂部標題列 -->
+    <div class="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/90 flex-shrink-0">
+      <div class="flex items-center gap-2 font-bold text-sm text-slate-900">
+        <span class="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs font-black shadow-2xs">
+          AI
+        </span>
+        <span>課程目錄 ｜ 40 頁完整教材</span>
+      </div>
+      <button onclick="closeTocDrawer()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors" title="收合目錄">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- 章節與投影片分組清單 -->
+    <div class="flex-1 overflow-y-auto p-3 space-y-3" id="toc-drawer-list">
+      <!-- 由 JS renderTocDrawer() 動態依章節分類渲染 -->
+    </div>
+
+    <!-- 抽屜底部狀態、學習公約與列印入口 -->
+    <div class="px-3 py-2.5 border-t border-slate-200 bg-slate-50/90 flex items-center justify-between gap-2 text-xs text-slate-600 flex-shrink-0">
+      <div class="flex items-center gap-1.5">
+        <button onclick="openAgreementModal(); closeTocDrawer();" class="flex items-center gap-1 font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1.5 rounded-lg border border-amber-300 shadow-2xs transition-colors cursor-pointer" title="開啟課堂學習公約 (8 項敏捷心法)">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-700"></i>
+          <span>學習公約</span>
+        </button>
+        <button onclick="openPrintNotesModal(); closeTocDrawer();" class="flex items-center gap-1 font-bold text-slate-700 bg-white hover:bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer" title="列印全課程筆記為 PDF (依主題分類)">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-600"></i>
+          <span>列印筆記</span>
+        </button>
+      </div>
+      <span class="font-mono font-bold text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded text-[11px]" id="toc-current-badge">P01 / 40</span>
+    </div>
+  </aside>
+
+  <!-- ==================== 主工作區 (永遠維持左右雙欄 md:flex-row) ==================== -->
+  <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+    <!-- 左側：投影片瀏覽器 (高清晰、滿版、無遮蔽、沉浸式) -->
+    <section class="w-full md:w-1/2 h-1/2 md:h-full bg-slate-100/60 flex flex-col items-center justify-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 flex-shrink-0">
+      
+      <!-- 投影片圖檔展示容器 -->
+      <div id="slide-container" class="w-full h-full flex items-center justify-center p-3 sm:p-5 lg:p-6 overflow-hidden relative">
+        <img id="slide-img" src="assets/投影片1.PNG" alt="投影片內容" class="max-w-full max-h-full object-contain rounded-xl shadow-md border border-slate-200/80 transition-all duration-150 select-none pointer-events-none" />
+        
+        <!-- 載入中動畫 -->
+        <div id="slide-loading" class="hidden absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center z-10">
+          <div class="animate-spin rounded-full h-10 w-10 border-4 border-amber-500 border-t-transparent"></div>
+        </div>
+      </div>
+
+      <!-- 右上角極簡縮放工具 (浮動微按鈕，不佔版面) -->
+      <div class="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
+        <button onclick="toggleSlideZoom()" class="p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 shadow-xs border border-slate-200 transition-all" title="適應視窗 / 100% 原始比例">
+          <i data-lucide="zoom-in" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- 右側：沉浸式小組隨堂筆記區 (50% 寬度，每頁獨立) -->
+    <aside class="w-full md:w-1/2 h-1/2 md:h-full bg-white flex flex-col overflow-hidden">
+
+      <!-- 整合式工作台頂部工具列 (單一精簡 44px 列：組別下拉選單 + 翻面 + 同步狀態) -->
+      <div class="bg-slate-50/90 border-b border-slate-200 px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
+        
+        <!-- 左側：組別快速切換下拉選單 (極簡、不佔寬度) -->
+        <div class="relative flex items-center gap-1.5" id="team-dropdown-container">
+          <button id="btn-team-dropdown" onclick="toggleTeamDropdown(event)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all" title="切換檢視或觀摩各組隨堂筆記">
+            <i data-lucide="users" class="w-3.5 h-3.5 text-amber-600" id="team-dropdown-icon"></i>
+            <span id="team-dropdown-label" class="font-bold text-slate-800">第 1 組 (我的組別)</span>
+            <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+          </button>
+
+          <!-- 快速切回我的組別微按鈕 (觀摩他組時自動浮出) -->
+          <button id="btn-quick-my-team" onclick="switchToMyTeam()" class="hidden px-2 py-0.5 rounded-md text-[11px] font-bold text-sky-700 bg-sky-100 hover:bg-sky-200 border border-sky-300 transition-colors flex items-center gap-1" title="結束觀摩，切回我所屬組別的筆記">
+            <i data-lucide="corner-down-left" class="w-3 h-3"></i>
+            <span>切回我組</span>
+          </button>
+
+          <!-- 下拉選單彈窗浮層 (點擊展開 1~6 組) -->
+          <div id="team-dropdown-menu" class="hidden absolute top-full mt-1.5 left-0 w-52 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50">
+            <div class="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider flex items-center justify-between">
+              <span>切換檢視組別</span>
+              <span class="text-[9px] text-slate-400 font-normal">共 6 組</span>
+            </div>
+            <div id="team-dropdown-items" class="space-y-0.5 mt-0.5"></div>
+          </div>
+        </div>
+
+        <!-- 右側：操作按鈕與同步狀態 -->
+        <div class="flex items-center gap-1.5 flex-shrink-0 pl-1">
+          <!-- 課堂學習公約按鈕 (開場 P01/P02 顯示) -->
+          <button id="btn-slide-agreement" onclick="openAgreementModal()" class="hidden px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="查看 8 項課堂學習公約">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>學習公約</span>
+          </button>
+
+          <!-- 翻面看範例按鈕 (有範例時顯示) -->
+          <button id="btn-flip-example" onclick="toggleFlipExample()" class="hidden px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all" title="點擊翻面查看講師示範標竿範例">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i>
+            <span id="btn-flip-text">看範例</span>
+          </button>
+
+          <!-- 即時同步狀態指示 -->
+          <div id="memo-save-status-pill" class="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium px-2 py-0.5 rounded-md bg-white border border-slate-200 shadow-2xs">
+            <span id="memo-sync-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span id="memo-save-status">已同步</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 狀態通知橫幅區 (唯讀觀摩 / 併發鎖定提示，平時隱藏) -->
+      <div id="status-banner-container" class="flex-shrink-0">
+        <!-- 唯讀觀摩提示 -->
+        <div id="readonly-banner" class="hidden bg-sky-50 border-b border-sky-100 px-3 py-1.5 flex items-center justify-between text-xs text-sky-800">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="eye" class="w-3.5 h-3.5 text-sky-600"></i>
+            <span>觀摩 <strong id="readonly-team-name">第 2 組</strong> 筆記中</span>
+          </div>
+          <button onclick="switchToMyTeam()" class="text-xs font-bold text-sky-600 hover:text-sky-800 underline">切回我的組別</button>
+        </div>
+
+        <!-- 併發鎖定警告提示 -->
+        <div id="lock-banner" class="hidden bg-amber-500 text-white px-3 py-1.5 flex items-center justify-between text-xs shadow-md">
+          <div class="flex items-center gap-1.5 font-medium">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+            <span>組員 <strong id="lock-username">Alex</strong> 編輯中 (鎖定保護中)</span>
+          </div>
+          <span class="text-[10px] opacity-80">自動同步</span>
+        </div>
+      </div>
+
+      <!-- 筆記區核心本體 (3D 翻轉結構：正面為滿版筆記，反面為講師範例) -->
+      <div id="note-flipper-container" class="note-flipper flex-1 min-h-0 overflow-hidden relative bg-white">
+        <div class="note-flipper-inner h-full">
+
+          <!-- ================= 正面 (Front Face)：100% 滿版沉浸式小組筆記 ================= -->
+          <div class="note-front-face h-full flex flex-col p-3 sm:p-4">
+            <!-- 盡量大面積的輸入框 (無遮蔽、充滿全高) -->
+            <textarea id="team-memo-input" placeholder="點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）..." class="w-full h-full flex-1 p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed"></textarea>
+          </div>
+
+          <!-- ================= 反面 (Back Face)：講師示範標竿範例 ================= -->
+          <div class="note-back-face h-full flex flex-col p-3 sm:p-4 overflow-y-auto">
+            <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-4 sm:p-5 shadow-2xs flex-1 flex flex-col">
+              
+              <div class="flex items-center justify-between border-b border-amber-200/60 pb-2.5 mb-3 flex-shrink-0">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold text-xs">示範</span>
+                  <div>
+                    <h3 id="example-view-title" class="font-bold text-amber-950 text-sm">產品願景陳述</h3>
+                    <p class="text-[11px] text-amber-700">標竿參考基準</p>
+                  </div>
+                </div>
+
+                <button onclick="copyExampleToMemo()" class="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  <span>複製至筆記</span>
+                </button>
+              </div>
+
+              <!-- 範例卡片正面 (摘要/故事) -->
+              <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs mb-2.5 flex-shrink-0">
+                <div class="text-[11px] uppercase font-bold text-amber-600 tracking-wider flex items-center gap-1 mb-1">
+                  <i data-lucide="bookmark" class="w-3 h-3"></i> 核心主張 (Summary)
+                </div>
+                <p id="example-view-front" class="text-sm font-bold text-slate-800 whitespace-pre-wrap leading-relaxed"></p>
+              </div>
+
+              <!-- 範例卡片反面 (細節/AC) -->
+              <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs flex-1 overflow-y-auto">
+                <div class="text-[11px] uppercase font-bold text-indigo-600 tracking-wider flex items-center gap-1 mb-1">
+                  <i data-lucide="list-checks" class="w-3 h-3"></i> 詳細脈絡 / 驗收準則 (Details / AC)
+                </div>
+                <p id="example-view-back" class="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed"></p>
+              </div>
+
+              <!-- 底部按鈕 -->
+              <div class="pt-3 flex justify-end flex-shrink-0">
+                <button onclick="toggleFlipExample()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all">
+                  <span>翻回小組筆記</span>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ==================== 登入與身分門禁 Modal ==================== -->
+  <div id="login-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative">
+      <button id="btn-close-login" onclick="closeLoginModal()" class="hidden absolute top-5 right-5 text-slate-400 hover:text-slate-600 rounded-full p-1.5 hover:bg-slate-100 transition-colors">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 rounded-2xl bg-amber-500 text-white font-black text-2xl mx-auto flex items-center justify-center shadow-lg shadow-amber-500/30">
+          AI
+        </div>
+        <h2 class="text-xl font-black text-slate-900">AI 賦能敏捷：跨部門溝通</h2>
+        <p class="text-xs text-slate-500">請輸入課程通行密碼並完成身分報到以加入即時共筆</p>
+      </div>
+
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="mt-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">課程通行密碼</label>
+          <div class="relative">
+            <input type="password" id="input-password" required placeholder="請輸入密碼 (agile-2026)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm outline-none transition-all pl-9" />
+            <i data-lucide="key-round" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+          </div>
+          <p id="password-error" class="hidden text-xs text-rose-500 mt-1 font-medium">密碼不正確，請洽詢講師！</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">學員姓名 / 稱呼</label>
+          <div class="relative">
+            <input type="text" id="input-username" required placeholder="例如：Alex、小美" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm outline-none transition-all pl-9" />
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">選擇您所屬的組別 (共 6 組)</label>
+          <div class="grid grid-cols-3 gap-2" id="login-team-selector"></div>
+          <input type="hidden" id="input-team-val" value="team-1" />
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 active:scale-98 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 mt-2">
+          <span>進入課程工作坊</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== 小組筆記匯出與列印預覽 Modal ==================== -->
+  <div id="print-modal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
+    <div id="print-modal-card" class="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      
+      <!-- 頂部列印控制列 (列印時由 @media print 自動隱藏) -->
+      <div id="print-modal-header" class="p-3.5 sm:p-4 border-b border-slate-200 bg-slate-50/90 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-tight">全課程筆記彙編 ｜ 列印與 PDF 匯出</h3>
+            <p class="text-[11px] text-slate-500">依四大主題（WHY / WHO / HOW / WHAT）完整歸納呈現</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <!-- 組別切換選擇器 -->
+          <div class="flex items-center gap-1.5 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1">
+            <span class="text-slate-500 font-medium">組別：</span>
+            <select id="print-team-select" onchange="changePrintTeam(this.value)" class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
+              <option value="team-1">第 1 組</option>
+              <option value="team-2">第 2 組</option>
+              <option value="team-3">第 3 組</option>
+              <option value="team-4">第 4 組</option>
+              <option value="team-5">第 5 組</option>
+              <option value="team-6">第 6 組</option>
+            </select>
+          </div>
+
+          <!-- 僅列印有填寫筆記勾選 -->
+          <label class="flex items-center gap-1.5 text-xs text-slate-700 font-medium cursor-pointer px-2 py-1 hover:bg-slate-100 rounded-lg transition-colors">
+            <input type="checkbox" id="print-filter-empty" checked onchange="renderPrintNotesUI()" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer">
+            <span>僅含筆記頁</span>
+          </label>
+
+          <!-- 立即列印按鈕 -->
+          <button onclick="triggerPrintNotes()" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>列印 / 另存 PDF</span>
+          </button>
+
+          <!-- 關閉按鈕 -->
+          <button onclick="closePrintNotesModal()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" title="關閉預覽">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 列印內容可視滾動區 (在列印時將由 @media print 自動展開為紙本) -->
+      <div id="print-modal-body" class="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/60">
+        
+        <!-- 載入中動畫 -->
+        <div id="print-loading" class="hidden py-20 text-center space-y-3">
+          <div class="animate-spin rounded-full h-8 w-8 border-3 border-amber-500 border-t-transparent mx-auto"></div>
+          <p class="text-xs text-slate-500 font-medium">正在自雲端即時載入小組筆記資料庫...</p>
+        </div>
+
+        <!-- 真正要印出的報表容器 -->
+        <div id="printable-notes-area" class="max-w-3xl mx-auto bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200 text-slate-800 space-y-6">
+          <!-- 由 JS renderPrintNotesUI() 動態渲染 -->
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 課堂學習公約 (Learning Agreement) Modal ==================== -->
+  <div id="agreement-modal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
+    <div id="agreement-modal-card" class="bg-white rounded-3xl max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      
+      <!-- 彈窗頂部列 -->
+      <div class="p-3.5 sm:p-4 border-b border-slate-200 bg-slate-50/90 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-tight">課堂學習公約 ｜ 敏捷協作心法</h3>
+              <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 hidden sm:inline">Learning Agreement</span>
+            </div>
+            <p class="text-[11px] text-slate-500">8 項敏捷工作坊互動守則 · 啟動跨部門高能量共創模式</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 模式切換：全部卡片 vs 單張輪播 -->
+          <div class="bg-slate-200/80 p-0.5 rounded-xl flex items-center gap-0.5 text-xs">
+            <button id="btn-agreement-view-grid" onclick="setAgreementViewMode('grid')" class="px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-slate-900 shadow-2xs">
+              <i data-lucide="grid" class="w-3.5 h-3.5"></i>
+              <span>全部卡片</span>
+            </button>
+            <button id="btn-agreement-view-carousel" onclick="setAgreementViewMode('carousel')" class="px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900">
+              <i data-lucide="presentation" class="w-3.5 h-3.5"></i>
+              <span>輪播導引</span>
+            </button>
+          </div>
+
+          <!-- 關閉按鈕 -->
+          <button onclick="closeAgreementModal()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" title="關閉公約 (快捷鍵：Esc)">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 彈窗內容區 -->
+      <div id="agreement-modal-body" class="flex-1 overflow-y-auto bg-slate-100/50 p-3 sm:p-5">
+        
+        <!-- 視角 1：卡片畫廊一覽 (Grid View) -->
+        <div id="agreement-grid-view" class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
+          <!-- 由 JS renderAgreementGrid() 動態渲染 8 張卡片 -->
+        </div>
+
+        <!-- 視角 2：單張大圖輪播 (Carousel View) -->
+        <div id="agreement-carousel-view" class="hidden max-w-4xl mx-auto flex flex-col items-center justify-center">
+          <!-- 輪播主體區 -->
+          <div class="relative w-full flex items-center justify-center py-1 sm:py-2">
+            <!-- 上一張按鈕 -->
+            <button onclick="navigateAgreement(-1)" class="absolute left-0 sm:left-2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg text-slate-700 hover:text-slate-900 flex items-center justify-center border border-slate-200 transition-all active:scale-90 cursor-pointer" title="上一張 (← 方向鍵)">
+              <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+
+            <!-- 海報圖片展示容器 -->
+            <div class="relative flex flex-col items-center max-w-sm sm:max-w-md w-full px-8 sm:px-0">
+              <div class="bg-white p-2 rounded-2xl shadow-xl border border-slate-200/90 w-full flex items-center justify-center">
+                <img id="agreement-carousel-img" src="" alt="學習公約" class="max-h-[50vh] sm:max-h-[56vh] w-auto object-contain rounded-xl select-none" />
+              </div>
+
+              <!-- 卡片說明卡 -->
+              <div class="mt-2.5 w-full bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <span id="agreement-carousel-tag" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200"></span>
+                    <h4 id="agreement-carousel-title" class="font-extrabold text-slate-900 text-sm sm:text-base"></h4>
+                  </div>
+                  <p id="agreement-carousel-slogan" class="text-xs font-bold text-amber-600"></p>
+                  <p id="agreement-carousel-desc" class="text-[11px] sm:text-xs text-slate-600 leading-relaxed"></p>
+                </div>
+                <div class="flex-shrink-0 flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                  <span id="agreement-carousel-counter" class="font-mono text-xs font-bold text-slate-500">1 / 8</span>
+                  <button onclick="setAgreementViewMode('grid')" class="text-xs text-amber-700 hover:text-amber-800 font-bold hover:underline cursor-pointer flex items-center gap-1">
+                    <i data-lucide="grid" class="w-3 h-3"></i>
+                    <span>全部卡片</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 下一張按鈕 -->
+            <button onclick="navigateAgreement(1)" class="absolute right-0 sm:right-2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg text-slate-700 hover:text-slate-900 flex items-center justify-center border border-slate-200 transition-all active:scale-90 cursor-pointer" title="下一張 (→ 方向鍵)">
+              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <!-- 底部小圓點分頁器 -->
+          <div class="flex items-center gap-2 mt-2 sm:mt-3" id="agreement-dots-container"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 核心邏輯 Javascript ==================== -->
+  <script>
+    const COURSE_PASSWORD = "agile-2026";
+    const TOTAL_TEAMS = 6;
+    const APP_STORAGE_KEY = "ai_align_auth_user";
+
+    let currentSlideIndex = 1; // 1-based (P01 ~ P40)
+    let activeTeamId = 'team-1';
+    let currentUser = null; // { name: '', team: 'team-1', loggedInAt: 0 }
+    let isExampleFlipped = false;
+
+    // 當前頁面與當前組別的資料狀態 (一頁一筆記)
+    let currentTeamData = {
+      memo: '',
+      lock: { isLocked: false, lockedBy: '', lockedAt: 0 }
+    };
+
+    let db = null;
+    let currentDocUnsubscribe = null;
+    let memoDebounceTimer = null;
+    let lockHeartbeatTimer = null;
+    let isHoldingLock = false;
+
+    // --- Firebase 初始化 ---
+    function initFirebase() {
+      const firebaseConfig = {
+        projectId: "marshmallow-agile-3b4b",
+        appId: "1:85151952712:web:9399da5bfad4f88b0ecd7d",
+        storageBucket: "marshmallow-agile-3b4b.firebasestorage.app",
+        apiKey: "AIzaSyBRVKNOnj3DB4QY9IgCBzC4JcG09XNKVhQ",
+        authDomain: "marshmallow-agile-3b4b.firebaseapp.com",
+        messagingSenderId: "85151952712"
+      };
+
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.firestore();
+        updateSyncStatus('online', '雲端同步就緒');
+      } catch (err) {
+        console.warn("Firebase 初始化異常:", err);
+        updateSyncStatus('offline', '本地離線模式');
+      }
+    }
+
+    function updateSyncStatus(status, text) {
+      const el = document.getElementById('sync-status');
+      const txt = document.getElementById('sync-status-text');
+      if (el && txt) {
+        if (status === 'online') {
+          el.className = 'hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200';
+          txt.innerText = text || '雲端同步中';
+        } else if (status === 'syncing') {
+          el.className = 'hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200';
+          txt.innerText = text || '儲存更新中...';
+        } else {
+          el.className = 'hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200';
+          txt.innerText = text || '本地離線';
+        }
+      }
+
+      const dot = document.getElementById('memo-sync-dot');
+      const memoTxt = document.getElementById('memo-save-status');
+      if (memoTxt) {
+        memoTxt.innerText = text || (status === 'online' ? '已同步' : (status === 'syncing' ? '儲存中...' : '離線'));
+      }
+      if (dot) {
+        if (status === 'online') {
+          dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+        } else if (status === 'syncing') {
+          dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping';
+        } else {
+          dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
+        }
+      }
+    }
+
+    // --- 身分驗證 ---
+    function checkExistingAuth() {
+      const saved = localStorage.getItem(APP_STORAGE_KEY);
+      if (saved) {
+        try {
+          currentUser = JSON.parse(saved);
+          if (currentUser && currentUser.name && currentUser.team) {
+            activeTeamId = currentUser.team;
+            applyUserIdentityUI();
+            closeLoginModal();
+            return true;
+          }
+        } catch (e) {}
+      }
+      openLoginModal(false);
+      return false;
+    }
+
+    function openLoginModal(canClose = true) {
+      const modal = document.getElementById('login-modal');
+      const closeBtn = document.getElementById('btn-close-login');
+      modal.classList.remove('hidden');
+
+      if (canClose && currentUser) {
+        closeBtn.classList.remove('hidden');
+      } else {
+        closeBtn.classList.add('hidden');
+      }
+
+      renderLoginTeamOptions();
+      if (currentUser) {
+        document.getElementById('input-username').value = currentUser.name;
+        selectLoginTeam(currentUser.team);
+      }
+    }
+
+    function closeLoginModal() {
+      document.getElementById('login-modal').classList.add('hidden');
+    }
+
+    function renderLoginTeamOptions() {
+      const container = document.getElementById('login-team-selector');
+      container.innerHTML = '';
+      for (let i = 1; i <= TOTAL_TEAMS; i++) {
+        const tId = `team-${i}`;
+        const isSel = (tId === (currentUser ? currentUser.team : 'team-1'));
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = `login-opt-${tId}`;
+        btn.onclick = () => selectLoginTeam(tId);
+        btn.className = `py-2 rounded-xl text-xs font-bold border transition-all ${isSel ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`;
+        btn.innerText = `第 ${i} 組`;
+        container.appendChild(btn);
+      }
+    }
+
+    function selectLoginTeam(teamId) {
+      document.getElementById('input-team-val').value = teamId;
+      for (let i = 1; i <= TOTAL_TEAMS; i++) {
+        const tId = `team-${i}`;
+        const btn = document.getElementById(`login-opt-${tId}`);
+        if (btn) {
+          if (tId === teamId) {
+            btn.className = 'py-2 rounded-xl text-xs font-bold border bg-amber-500 text-white border-amber-500 shadow-sm';
+          } else {
+            btn.className = 'py-2 rounded-xl text-xs font-bold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+          }
+        }
+      }
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const pwd = document.getElementById('input-password').value.trim();
+      const name = document.getElementById('input-username').value.trim();
+      const team = document.getElementById('input-team-val').value;
+      const errEl = document.getElementById('password-error');
+
+      if (pwd !== COURSE_PASSWORD) {
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+
+      currentUser = {
+        name: name,
+        team: team,
+        loggedInAt: Date.now()
+      };
+      localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
+      activeTeamId = team;
+
+      applyUserIdentityUI();
+      closeLoginModal();
+      subscribeToFirestore();
+    }
+
+    function applyUserIdentityUI() {
+      if (!currentUser) return;
+      document.getElementById('user-team-name').innerText = getTeamDisplayName(currentUser.team);
+      document.getElementById('user-display-name').innerText = currentUser.name;
+      renderTeamTabs();
+      updatePermissionUI();
+    }
+
+    function getTeamDisplayName(teamId) {
+      const num = teamId.replace('team-', '');
+      return `第 ${num} 組`;
+    }
+
+    // --- 投影片導覽與頁面切換 ---
+    function renderSlide(index) {
+      if (index < 1) index = 1;
+      if (index > SLIDES_DATA.length) index = SLIDES_DATA.length;
+      currentSlideIndex = index;
+
+      // 換頁時一律重設為正面筆記視角
+      if (isExampleFlipped) {
+        isExampleFlipped = false;
+        document.getElementById('note-flipper-container').classList.remove('flipped');
+        document.getElementById('btn-flip-text').innerText = "翻面看範例";
+      }
+
+      const slide = SLIDES_DATA[index - 1];
+      const imgEl = document.getElementById('slide-img');
+      const loader = document.getElementById('slide-loading');
+
+      loader.classList.remove('hidden');
+      imgEl.style.opacity = '0.3';
+
+      const tempImg = new Image();
+      tempImg.src = slide.image;
+      tempImg.onload = () => {
+        imgEl.src = slide.image;
+        imgEl.style.opacity = '1';
+        loader.classList.add('hidden');
+      };
+      tempImg.onerror = () => {
+        imgEl.src = slide.image;
+        imgEl.style.opacity = '1';
+        loader.classList.add('hidden');
+      };
+
+      // 頁面指示與章節標題
+      const pageStr = `P${String(index).padStart(2, '0')}`;
+      document.getElementById('current-slide-label').innerText = `${pageStr} / ${SLIDES_DATA.length}`;
+      if (document.getElementById('header-slide-title')) {
+        document.getElementById('header-slide-title').innerText = slide.title;
+      }
+      if (document.getElementById('header-slide-subtitle')) {
+        document.getElementById('header-slide-subtitle').innerText = slide.subtitle;
+      }
+
+      // 章節指示
+      const chapter = CHAPTERS.find(c => c.id === slide.chapterId) || CHAPTERS[0];
+      document.getElementById('header-chapter-code').innerText = chapter.code;
+      document.getElementById('header-chapter-name').innerText = chapter.name.replace(/^[A-Z]+\s*/, '');
+
+      // 按鈕狀態
+      document.getElementById('btn-prev-slide').disabled = (index === 1);
+      document.getElementById('btn-next-slide').disabled = (index === SLIDES_DATA.length);
+
+      // 判斷是否顯示「線上白板」與「翻面看範例」
+      updateSlideToolsBar(slide);
+
+      // 訂閱當前頁面與當前組別的 Firestore 筆記
+      subscribeToFirestore();
+    }
+
+    function updateSlideToolsBar(slide) {
+      const flipBtn = document.getElementById('btn-flip-example');
+      const agreeBtn = document.getElementById('btn-slide-agreement');
+
+      // 課堂公約引導按鈕 (P01 封面與 P02 目錄開場時醒目顯示)
+      if (agreeBtn) {
+        if (slide.index === 1 || slide.index === 2) {
+          agreeBtn.classList.remove('hidden');
+        } else {
+          agreeBtn.classList.add('hidden');
+        }
+      }
+
+      // 翻面看範例按鈕 (若該頁有提供範例)
+      if (flipBtn) {
+        if (slide.example) {
+          flipBtn.classList.remove('hidden');
+          document.getElementById('example-view-title').innerText = slide.example.title;
+          document.getElementById('example-view-front').innerText = slide.example.front || '（無示範）';
+          document.getElementById('example-view-back').innerText = slide.example.back || '（無示範細節）';
+        } else {
+          flipBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    // 開啟小組線上白板 (另開新分頁，6 組各一專屬白板，全域通用)
+    function openTeamWhiteboard() {
+      if (!currentUser || !currentUser.team) {
+        openLoginModal(true);
+        return;
+      }
+      const myTeam = currentUser.team;
+      const userName = currentUser.name || '學員';
+      const boardUrl = `board.html?room=ai-align-${myTeam}&team=${myTeam}&user=${encodeURIComponent(userName)}`;
+      window.open(boardUrl, '_blank');
+    }
+
+    // 翻轉筆記板 (看範例 ⇄ 小組筆記)
+    function toggleFlipExample() {
+      const flipper = document.getElementById('note-flipper-container');
+      const flipText = document.getElementById('btn-flip-text');
+      isExampleFlipped = !isExampleFlipped;
+
+      if (isExampleFlipped) {
+        flipper.classList.add('flipped');
+        flipText.innerText = "翻回小組筆記";
+      } else {
+        flipper.classList.remove('flipped');
+        flipText.innerText = "翻面看範例";
+      }
+      lucide.createIcons();
+    }
+
+    // 複製範例至小組筆記
+    function copyExampleToMemo() {
+      const slide = SLIDES_DATA[currentSlideIndex - 1];
+      if (!slide || !slide.example) return;
+
+      const exampleText = `【參考範例】\n${slide.example.front}\n\n【詳細細節 / 驗收標準】\n${slide.example.back}\n\n`;
+      const memoInput = document.getElementById('team-memo-input');
+
+      acquireLock();
+      currentTeamData.memo = (currentTeamData.memo ? currentTeamData.memo + "\n\n" : "") + exampleText;
+      memoInput.value = currentTeamData.memo;
+      saveTeamDataToCloud();
+      
+      toggleFlipExample(); // 自動翻回小組筆記
+      showToast("已將範例帶入小組筆記區！");
+    }
+
+    function navigateSlide(delta) {
+      releaseLock();
+      renderSlide(currentSlideIndex + delta);
+    }
+
+    function jumpToSlide(idx) {
+      releaseLock();
+      renderSlide(idx);
+      closeTocDrawer();
+    }
+
+    // --- 課程目錄側邊可收合抽屜 (TOC Drawer) ---
+    function renderTocDrawer() {
+      const container = document.getElementById('toc-drawer-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const currentBadge = document.getElementById('toc-current-badge');
+      if (currentBadge) {
+        currentBadge.innerText = `P${String(currentSlideIndex).padStart(2, '0')} / ${SLIDES_DATA.length}`;
+      }
+
+      CHAPTERS.forEach(chap => {
+        const chapSlides = SLIDES_DATA.filter(s => s.chapterId === chap.id);
+        if (chapSlides.length === 0) return;
+
+        const chapBox = document.createElement('div');
+        chapBox.className = 'rounded-xl border border-slate-200/80 bg-slate-50/60 p-2';
+
+        // 章節標題
+        const chapHeader = document.createElement('div');
+        chapHeader.className = 'flex items-center justify-between px-2 py-1 mb-1.5';
+        chapHeader.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <span class="font-mono text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200/80">${chap.code}</span>
+            <span class="text-xs font-bold text-slate-800">${chap.name}</span>
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">P${String(chap.start).padStart(2, '0')}~P${String(chap.end).padStart(2, '0')}</span>
+        `;
+        chapBox.appendChild(chapHeader);
+
+        // 章節投影片清單
+        const slideItems = document.createElement('div');
+        slideItems.className = 'space-y-0.5';
+
+        chapSlides.forEach(s => {
+          const isCurrent = (s.index === currentSlideIndex);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.onclick = () => {
+            jumpToSlide(s.index);
+          };
+          btn.className = `w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
+            isCurrent 
+              ? 'bg-amber-500 text-white font-bold shadow-2xs' 
+              : 'hover:bg-white text-slate-700'
+          }`;
+
+          let tags = '';
+          if (s.example) {
+            tags += `<span class="text-[9px] px-1.5 py-0.5 rounded ${isCurrent ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-800'} font-bold">範例</span>`;
+          }
+          if (s.hasExercise) {
+            tags += `<span class="text-[9px] px-1.5 py-0.5 rounded ${isCurrent ? 'bg-rose-600 text-white' : 'bg-rose-100 text-rose-800'} font-bold">演練</span>`;
+          }
+
+          btn.innerHTML = `
+            <div class="flex items-center gap-2 truncate pr-2">
+              <span class="font-mono text-[10px] ${isCurrent ? 'text-white' : 'text-slate-400'} font-bold">P${String(s.index).padStart(2, '0')}</span>
+              <span class="truncate">${s.title}</span>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0">${tags}</div>
+          `;
+          slideItems.appendChild(btn);
+        });
+
+        chapBox.appendChild(slideItems);
+        container.appendChild(chapBox);
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleTocDrawer() {
+      const drawer = document.getElementById('toc-drawer');
+      if (!drawer) return;
+      if (drawer.classList.contains('-translate-x-full')) {
+        openTocDrawer();
+      } else {
+        closeTocDrawer();
+      }
+    }
+
+    function openTocDrawer() {
+      const drawer = document.getElementById('toc-drawer');
+      const backdrop = document.getElementById('toc-backdrop');
+      if (!drawer) return;
+      renderTocDrawer();
+      drawer.classList.remove('-translate-x-full');
+      if (backdrop) backdrop.classList.remove('hidden');
+    }
+
+    function closeTocDrawer() {
+      const drawer = document.getElementById('toc-drawer');
+      const backdrop = document.getElementById('toc-backdrop');
+      if (!drawer) return;
+      drawer.classList.add('-translate-x-full');
+      if (backdrop) backdrop.classList.add('hidden');
+    }
+
+    // --- 組別下拉選單與權限管理 ---
+    function renderTeamTabs() {
+      const label = document.getElementById('team-dropdown-label');
+      const icon = document.getElementById('team-dropdown-icon');
+      const btn = document.getElementById('btn-team-dropdown');
+      const quickBtn = document.getElementById('btn-quick-my-team');
+      const itemsContainer = document.getElementById('team-dropdown-items');
+
+      const isMyTeam = currentUser && (activeTeamId === currentUser.team);
+      const activeNum = activeTeamId.replace('team-', '');
+
+      // 更新下拉主按鈕標籤與視覺風格
+      if (label) {
+        if (isMyTeam) {
+          label.innerText = `第 ${activeNum} 組 (我的組別)`;
+          if (btn) {
+            btn.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all";
+          }
+          if (icon) {
+            icon.className = "w-3.5 h-3.5 text-amber-600";
+            icon.setAttribute('data-lucide', 'users');
+          }
+        } else {
+          label.innerText = `觀摩 第 ${activeNum} 組`;
+          if (btn) {
+            btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 shadow-2xs flex items-center gap-1.5 transition-all";
+          }
+          if (icon) {
+            icon.className = "w-3.5 h-3.5 text-sky-600";
+            icon.setAttribute('data-lucide', 'eye');
+          }
+        }
+      }
+
+      // 當處於觀摩模式時，顯示 [切回我組] 快捷按鈕
+      if (quickBtn) {
+        if (!isMyTeam) {
+          quickBtn.classList.remove('hidden');
+        } else {
+          quickBtn.classList.add('hidden');
+        }
+      }
+
+      // 生成下拉選單 1~6 組項目
+      if (itemsContainer) {
+        itemsContainer.innerHTML = '';
+        for (let i = 1; i <= TOTAL_TEAMS; i++) {
+          const tId = `team-${i}`;
+          const isActive = (tId === activeTeamId);
+          const isSelf = currentUser && (tId === currentUser.team);
+
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.onclick = (e) => {
+            e.stopPropagation();
+            switchTeamTab(tId);
+            closeTeamDropdown();
+          };
+
+          let badgeText = '';
+          if (isSelf) {
+            badgeText = `<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200/80">我的組</span>`;
+          } else {
+            badgeText = `<span class="text-[10px] text-slate-400">觀摩</span>`;
+          }
+
+          item.className = `w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between ${
+            isActive 
+              ? 'bg-amber-500 text-white font-bold shadow-2xs' 
+              : 'hover:bg-slate-100 text-slate-700'
+          }`;
+
+          item.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : (isSelf ? 'bg-amber-500' : 'bg-slate-300')}"></span>
+              <span>第 ${i} 組</span>
+            </div>
+            ${isActive ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white"></i>' : badgeText}
+          `;
+          itemsContainer.appendChild(item);
+        }
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleTeamDropdown(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('team-dropdown-menu');
+      if (!menu) return;
+      if (menu.classList.contains('hidden')) {
+        openTeamDropdown();
+      } else {
+        closeTeamDropdown();
+      }
+    }
+
+    function openTeamDropdown() {
+      const menu = document.getElementById('team-dropdown-menu');
+      if (menu) menu.classList.remove('hidden');
+      document.addEventListener('click', handleOutsideClickTeamDropdown);
+    }
+
+    function closeTeamDropdown() {
+      const menu = document.getElementById('team-dropdown-menu');
+      if (menu) menu.classList.add('hidden');
+      document.removeEventListener('click', handleOutsideClickTeamDropdown);
+    }
+
+    function handleOutsideClickTeamDropdown(e) {
+      const wrapper = document.getElementById('team-dropdown-container');
+      if (wrapper && !wrapper.contains(e.target)) {
+        closeTeamDropdown();
+      }
+    }
+
+    function switchTeamTab(teamId) {
+      if (teamId === activeTeamId) return;
+      releaseLock();
+      activeTeamId = teamId;
+      renderTeamTabs();
+      updatePermissionUI();
+      subscribeToFirestore();
+    }
+
+    function switchToMyTeam() {
+      if (currentUser && currentUser.team) {
+        switchTeamTab(currentUser.team);
+      }
+    }
+
+    function updatePermissionUI() {
+      const isMyTeam = currentUser && (activeTeamId === currentUser.team);
+      const isLockedByOther = currentTeamData.lock && currentTeamData.lock.isLocked && currentTeamData.lock.lockedBy !== (currentUser ? currentUser.name : '');
+
+      const readonlyBanner = document.getElementById('readonly-banner');
+      const lockBanner = document.getElementById('lock-banner');
+      const memoInput = document.getElementById('team-memo-input');
+
+      // 唯讀觀摩橫幅
+      if (!isMyTeam) {
+        readonlyBanner.classList.remove('hidden');
+        document.getElementById('readonly-team-name').innerText = getTeamDisplayName(activeTeamId);
+      } else {
+        readonlyBanner.classList.add('hidden');
+      }
+
+      // 併發鎖定橫幅
+      if (isMyTeam && isLockedByOther) {
+        lockBanner.classList.remove('hidden');
+        document.getElementById('lock-username').innerText = currentTeamData.lock.lockedBy || '其他組員';
+      } else {
+        lockBanner.classList.add('hidden');
+      }
+
+      // 輸入權限
+      const canEdit = isMyTeam && !isLockedByOther;
+      memoInput.disabled = !canEdit;
+      if (!isMyTeam) {
+        memoInput.placeholder = "唯讀觀摩模式：此為該組同學的討論紀錄。";
+      } else if (isLockedByOther) {
+        memoInput.placeholder = `🔒 ${currentTeamData.lock.lockedBy} 正在編輯中，請稍候...`;
+      } else {
+        memoInput.placeholder = "點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）...";
+      }
+    }
+
+    // --- Firebase 逐頁綁定與鎖定 (一頁一筆記) ---
+    const NOTES_COLLECTION = 'aigile_boards';
+
+    function getDocKey() {
+      const slide = SLIDES_DATA[currentSlideIndex - 1];
+      return `ai_align_note_${slide.id}_${activeTeamId}`;
+    }
+
+    function subscribeToFirestore() {
+      if (currentDocUnsubscribe) {
+        currentDocUnsubscribe();
+        currentDocUnsubscribe = null;
+      }
+
+      const docKey = getDocKey();
+
+      // 本地快取讀取
+      const localCached = localStorage.getItem(`cache_${docKey}`);
+      if (localCached) {
+        try {
+          currentTeamData = JSON.parse(localCached);
+          renderTeamNotesUI();
+        } catch (e) {}
+      } else {
+        currentTeamData = {
+          memo: '',
+          lock: { isLocked: false, lockedBy: '', lockedAt: 0 }
+        };
+        renderTeamNotesUI();
+      }
+
+      if (!db) return;
+      updateSyncStatus('syncing', '連接中...');
+      
+      const docRef = db.collection(NOTES_COLLECTION).doc(docKey);
+      currentDocUnsubscribe = docRef.onSnapshot(doc => {
+        updateSyncStatus('online', '雲端同步');
+        if (doc.exists) {
+          const data = doc.data();
+          let lock = data.lock || { isLocked: false, lockedBy: '', lockedAt: 0 };
+          if (lock.isLocked && (Date.now() - (lock.lockedAt || 0) > 60000)) {
+            lock = { isLocked: false, lockedBy: '', lockedAt: 0 };
+          }
+
+          currentTeamData = {
+            memo: data.memo || '',
+            lock: lock
+          };
+        } else {
+          currentTeamData = {
+            memo: '',
+            lock: { isLocked: false, lockedBy: '', lockedAt: 0 }
+          };
+        }
+
+        localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
+        renderTeamNotesUI();
+        updatePermissionUI();
+      }, err => {
+        console.error("Firestore 錯誤:", err);
+        updateSyncStatus('offline', '離線暫存');
+      });
+    }
+
+    function acquireLock() {
+      if (!currentUser || activeTeamId !== currentUser.team || isHoldingLock) return;
+      
+      isHoldingLock = true;
+      const docKey = getDocKey();
+      const lockData = {
+        isLocked: true,
+        lockedBy: currentUser.name,
+        lockedAt: Date.now()
+      };
+
+      currentTeamData.lock = lockData;
+
+      if (db) {
+        db.collection(NOTES_COLLECTION).doc(docKey).set({
+          lock: lockData
+        }, { merge: true }).catch(err => console.error("獲取鎖定失敗:", err));
+      }
+
+      if (lockHeartbeatTimer) clearInterval(lockHeartbeatTimer);
+      lockHeartbeatTimer = setInterval(() => {
+        if (isHoldingLock && db) {
+          db.collection(NOTES_COLLECTION).doc(docKey).set({
+            lock: {
+              isLocked: true,
+              lockedBy: currentUser.name,
+              lockedAt: Date.now()
+            }
+          }, { merge: true });
+        }
+      }, 25000);
+    }
+
+    function releaseLock() {
+      if (!isHoldingLock) return;
+      isHoldingLock = false;
+      if (lockHeartbeatTimer) {
+        clearInterval(lockHeartbeatTimer);
+        lockHeartbeatTimer = null;
+      }
+
+      const docKey = getDocKey();
+      const unlockData = {
+        isLocked: false,
+        lockedBy: '',
+        lockedAt: 0
+      };
+      currentTeamData.lock = unlockData;
+
+      if (db) {
+        db.collection(NOTES_COLLECTION).doc(docKey).set({
+          lock: unlockData
+        }, { merge: true }).catch(err => console.error("釋放鎖定失敗:", err));
+      }
+    }
+
+    function saveTeamDataToCloud() {
+      const docKey = getDocKey();
+      localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
+
+      if (!db) return;
+      updateSyncStatus('syncing', '儲存中...');
+      
+      db.collection(NOTES_COLLECTION).doc(docKey).set({
+        slideId: SLIDES_DATA[currentSlideIndex - 1].id,
+        teamId: activeTeamId,
+        memo: currentTeamData.memo || '',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).then(() => {
+        updateSyncStatus('online', '已即時儲存');
+        document.getElementById('memo-save-status').innerText = '已同步';
+      }).catch(err => {
+        console.error("寫入 Firestore 失敗:", err);
+        updateSyncStatus('offline', '寫入失敗');
+      });
+    }
+
+    // --- 筆記區 UI 渲染 ---
+    function renderTeamNotesUI() {
+      const memoInput = document.getElementById('team-memo-input');
+      if (document.activeElement !== memoInput) {
+        memoInput.value = currentTeamData.memo || '';
+      }
+    }
+
+    // --- 備忘輸入框即時鎖定與防抖儲存 ---
+    function setupMemoListeners() {
+      const memoInput = document.getElementById('team-memo-input');
+
+      memoInput.addEventListener('focus', () => {
+        acquireLock();
+      });
+
+      memoInput.addEventListener('input', (e) => {
+        currentTeamData.memo = e.target.value;
+        document.getElementById('memo-save-status').innerText = '儲存中...';
+
+        if (memoDebounceTimer) clearTimeout(memoDebounceTimer);
+        memoDebounceTimer = setTimeout(() => {
+          saveTeamDataToCloud();
+        }, 800);
+      });
+
+      memoInput.addEventListener('blur', () => {
+        saveTeamDataToCloud();
+        releaseLock();
+      });
+    }
+
+    // --- 鍵盤事件與視窗控制 ---
+    function setupKeyboardShortcuts() {
+      window.addEventListener('keydown', (e) => {
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+        if (e.key === 'Escape') {
+          closeTocDrawer();
+          closeLoginModal();
+          closeTeamDropdown();
+          closePrintNotesModal();
+          closeAgreementModal();
+        } else if (isAgreementModalOpen()) {
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            navigateAgreement(-1);
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            navigateAgreement(1);
+          }
+        } else if (e.key === 'a' || e.key === 'A') {
+          e.preventDefault();
+          toggleAgreementModal();
+        } else if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          toggleTocDrawer();
+        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+          e.preventDefault();
+          navigateSlide(-1);
+        } else if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+          e.preventDefault();
+          navigateSlide(1);
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          jumpToSlide(1);
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          jumpToSlide(SLIDES_DATA.length);
+        }
+      });
+    }
+
+    // --- 課堂學習公約 (Learning Agreement) 控制 ---
+    let currentAgreementIndex = 1; // 1 to 8
+    let agreementViewMode = 'grid'; // 'grid' or 'carousel'
+
+    function isAgreementModalOpen() {
+      const modal = document.getElementById('agreement-modal');
+      return modal && !modal.classList.contains('hidden');
+    }
+
+    function openAgreementModal(initialIndex) {
+      const modal = document.getElementById('agreement-modal');
+      if (!modal) return;
+
+      renderAgreementGrid();
+
+      if (typeof initialIndex === 'number' && initialIndex >= 1 && initialIndex <= LEARNING_AGREEMENTS.length) {
+        currentAgreementIndex = initialIndex;
+        setAgreementViewMode('carousel');
+      } else {
+        setAgreementViewMode('grid');
+      }
+
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeAgreementModal() {
+      const modal = document.getElementById('agreement-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function toggleAgreementModal() {
+      if (isAgreementModalOpen()) {
+        closeAgreementModal();
+      } else {
+        openAgreementModal();
+      }
+    }
+
+    function setAgreementViewMode(mode) {
+      agreementViewMode = mode;
+      const gridView = document.getElementById('agreement-grid-view');
+      const carouselView = document.getElementById('agreement-carousel-view');
+      const btnGrid = document.getElementById('btn-agreement-view-grid');
+      const btnCarousel = document.getElementById('btn-agreement-view-carousel');
+
+      if (mode === 'grid') {
+        if (gridView) gridView.classList.remove('hidden');
+        if (carouselView) carouselView.classList.add('hidden');
+
+        if (btnGrid) btnGrid.className = "px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-slate-900 shadow-2xs";
+        if (btnCarousel) btnCarousel.className = "px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900";
+      } else {
+        if (gridView) gridView.classList.add('hidden');
+        if (carouselView) carouselView.classList.remove('hidden');
+
+        if (btnGrid) btnGrid.className = "px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900";
+        if (btnCarousel) btnCarousel.className = "px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-slate-900 shadow-2xs";
+
+        updateAgreementCarouselUI();
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function selectAgreementCard(index) {
+      currentAgreementIndex = index;
+      setAgreementViewMode('carousel');
+    }
+
+    function navigateAgreement(delta) {
+      if (!window.LEARNING_AGREEMENTS || LEARNING_AGREEMENTS.length === 0) return;
+      const total = LEARNING_AGREEMENTS.length;
+      currentAgreementIndex = ((currentAgreementIndex - 1 + delta + total) % total) + 1;
+      updateAgreementCarouselUI();
+    }
+
+    function renderAgreementGrid() {
+      const container = document.getElementById('agreement-grid-view');
+      if (!container || !window.LEARNING_AGREEMENTS) return;
+
+      container.innerHTML = LEARNING_AGREEMENTS.map(item => `
+        <div onclick="selectAgreementCard(${item.index})" class="group cursor-pointer bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xl hover:border-amber-400/80 transition-all duration-200 overflow-hidden flex flex-col hover:-translate-y-1">
+          <!-- 海報圖片容器 (2:3 比例) -->
+          <div class="w-full bg-slate-100 overflow-hidden relative aspect-[2/3] flex items-center justify-center">
+            <img src="${encodeURI(item.image)}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+            <!-- 懸浮提示遮罩 -->
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2.5">
+              <span class="text-white text-[11px] font-bold flex items-center gap-1">
+                <i data-lucide="zoom-in" class="w-3.5 h-3.5 text-amber-400"></i>
+                點擊放大引導
+              </span>
+            </div>
+            <!-- 卡片序號 Badge -->
+            <div class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-xs text-[10px] font-mono font-black text-slate-800 shadow-xs border border-slate-200/80">
+              #0${item.index}
+            </div>
+          </div>
+
+          <!-- 卡片文字資訊 -->
+          <div class="p-2.5 sm:p-3 flex-1 flex flex-col justify-between bg-white border-t border-slate-100">
+            <div>
+              <div class="flex items-center justify-between gap-1 mb-1">
+                <h4 class="font-black text-slate-900 text-sm group-hover:text-amber-600 transition-colors">${item.title}</h4>
+                <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60">${item.tag}</span>
+              </div>
+              <p class="text-[11px] font-bold text-amber-600 line-clamp-1 leading-tight">${item.slogan}</p>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateAgreementCarouselUI() {
+      if (!window.LEARNING_AGREEMENTS) return;
+      const item = LEARNING_AGREEMENTS[currentAgreementIndex - 1];
+      if (!item) return;
+
+      const imgEl = document.getElementById('agreement-carousel-img');
+      const titleEl = document.getElementById('agreement-carousel-title');
+      const sloganEl = document.getElementById('agreement-carousel-slogan');
+      const descEl = document.getElementById('agreement-carousel-desc');
+      const tagEl = document.getElementById('agreement-carousel-tag');
+      const counterEl = document.getElementById('agreement-carousel-counter');
+      const dotsEl = document.getElementById('agreement-dots-container');
+
+      if (imgEl) imgEl.src = encodeURI(item.image);
+      if (titleEl) titleEl.innerText = item.title;
+      if (sloganEl) sloganEl.innerText = item.slogan;
+      if (descEl) descEl.innerText = item.desc;
+      if (tagEl) tagEl.innerText = item.tag;
+      if (counterEl) counterEl.innerText = `${item.index} / ${LEARNING_AGREEMENTS.length}`;
+
+      if (dotsEl) {
+        dotsEl.innerHTML = LEARNING_AGREEMENTS.map(a => `
+          <button onclick="selectAgreementCard(${a.index})" class="transition-all cursor-pointer rounded-full ${
+            a.index === currentAgreementIndex 
+              ? 'w-6 h-2 bg-amber-500 shadow-xs' 
+              : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+          }" title="#0${a.index} ${a.title}"></button>
+        `).join('');
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+        document.getElementById('fullscreen-icon').setAttribute('data-lucide', 'minimize');
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        document.getElementById('fullscreen-icon').setAttribute('data-lucide', 'maximize');
+      }
+      lucide.createIcons();
+    }
+
+    let isZoomedFit = true;
+    function toggleSlideZoom() {
+      const img = document.getElementById('slide-img');
+      isZoomedFit = !isZoomedFit;
+      if (isZoomedFit) {
+        img.className = 'max-w-full max-h-full object-contain rounded-2xl shadow-xl border border-slate-200/80 transition-all duration-200 select-none pointer-events-none';
+      } else {
+        img.className = 'w-full h-auto object-cover rounded-2xl shadow-xl border border-slate-200/80 transition-all duration-200 select-none pointer-events-none';
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-5 right-5 bg-slate-900/90 backdrop-blur-sm text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-2xl z-50 transition-all duration-300 transform translate-y-3 opacity-0';
+      toast.innerText = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.classList.remove('translate-y-3', 'opacity-0'); }, 10);
+      setTimeout(() => {
+        toast.classList.add('translate-y-3', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // --- 全課程小組筆記列印與 PDF 匯出 ---
+    let printNotesData = [];
+    let printSelectedTeam = 'team-1';
+
+    async function openPrintNotesModal() {
+      const modal = document.getElementById('print-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+
+      printSelectedTeam = activeTeamId || (currentUser ? currentUser.team : 'team-1');
+      const selectEl = document.getElementById('print-team-select');
+      if (selectEl) selectEl.value = printSelectedTeam;
+
+      await loadAllNotesForPrint(printSelectedTeam);
+      renderPrintNotesUI();
+      if (window.lucide) lucide.createIcons({ scope: modal });
+    }
+
+    function closePrintNotesModal() {
+      const modal = document.getElementById('print-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function changePrintTeam(newTeam) {
+      printSelectedTeam = newTeam;
+      await loadAllNotesForPrint(newTeam);
+      renderPrintNotesUI();
+    }
+
+    async function loadAllNotesForPrint(teamId) {
+      const loader = document.getElementById('print-loading');
+      const area = document.getElementById('printable-notes-area');
+      if (loader) loader.classList.remove('hidden');
+      if (area) area.classList.add('hidden');
+
+      const promises = SLIDES_DATA.map(async (slide) => {
+        const docKey = `ai_align_note_${slide.id}_${teamId}`;
+        let memo = '';
+        const cached = localStorage.getItem(`cache_${docKey}`);
+        if (cached) {
+          try { memo = JSON.parse(cached).memo || ''; } catch(e) {}
+        }
+        if (db) {
+          try {
+            const doc = await db.collection(NOTES_COLLECTION).doc(docKey).get();
+            if (doc.exists && doc.data() && doc.data().memo) {
+              memo = doc.data().memo;
+            }
+          } catch(e) {}
+        }
+        return { slide, memo };
+      });
+
+      printNotesData = await Promise.all(promises);
+
+      if (loader) loader.classList.add('hidden');
+      if (area) area.classList.remove('hidden');
+    }
+
+    function renderPrintNotesUI() {
+      const area = document.getElementById('printable-notes-area');
+      if (!area) return;
+
+      const filterEmpty = document.getElementById('print-filter-empty')?.checked ?? true;
+      const teamNum = printSelectedTeam.replace('team-', '');
+      const teamName = `第 ${teamNum} 組`;
+      const exportTime = new Date().toLocaleString('zh-TW', { hour12: false });
+      const activeUser = (currentUser && currentUser.name) ? currentUser.name : '學員';
+
+      const totalWithNotes = printNotesData.filter(d => d.memo && d.memo.trim().length > 0).length;
+
+      let html = `
+        <!-- 報表首頁與抬頭 -->
+        <div class="border-b-2 border-slate-900 pb-5 mb-6">
+          <div class="flex items-center justify-between text-xs font-bold text-amber-700 tracking-wider mb-1 uppercase">
+            <span>AI 賦能敏捷工作坊 ｜ 實戰筆記彙編</span>
+            <span>${teamName} 專屬交付物</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
+            AI 賦能敏捷：跨部門溝通萃取需求
+          </h1>
+          <p class="text-sm text-slate-600 mt-1">
+            小組研討、業務痛點萃取與規格共識總結報告
+          </p>
+          
+          <div class="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div>
+              <span class="text-slate-400 block text-[10px]">研討小組</span>
+              <strong class="text-slate-900 text-sm font-bold">${teamName}</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">匯出人員</span>
+              <strong class="text-slate-900 font-bold">${escapeHtml(activeUser)}</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">匯出時間</span>
+              <span class="text-slate-700 font-mono">${exportTime}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">筆記涵蓋度</span>
+              <strong class="text-amber-700 font-bold font-mono">${totalWithNotes} / ${SLIDES_DATA.length} 頁</strong>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (totalWithNotes === 0 && filterEmpty) {
+        html += `
+          <div class="py-12 text-center text-slate-400 text-sm space-y-2">
+            <p class="text-base font-bold text-slate-600">${teamName} 目前尚未在投影片中填寫筆記內容。</p>
+            <p class="text-xs text-slate-400">若想列印全套講義留白結構，可取消勾選上方「僅含筆記頁」。</p>
+          </div>
+        `;
+      } else {
+        CHAPTERS.forEach(chap => {
+          const chapItems = printNotesData.filter(d => d.slide.chapterId === chap.id);
+          const filteredItems = filterEmpty ? chapItems.filter(d => d.memo && d.memo.trim().length > 0) : chapItems;
+
+          if (filteredItems.length === 0) return;
+
+          html += `
+            <div class="print-chapter-section pt-3 mb-6">
+              <!-- 章節標題 Banner -->
+              <div class="bg-slate-900 text-white px-4 py-2.5 rounded-xl flex items-center justify-between mb-3.5">
+                <div class="flex items-center gap-2">
+                  <span class="bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded text-xs font-mono">${chap.code}</span>
+                  <span class="font-bold text-sm">${chap.name}</span>
+                </div>
+                <span class="text-xs text-slate-400 font-mono">P${String(chap.start).padStart(2,'0')} ~ P${String(chap.end).padStart(2,'0')}</span>
+              </div>
+
+              <!-- 投影片筆記卡片清單 -->
+              <div class="space-y-3.5">
+          `;
+
+          filteredItems.forEach(item => {
+            const s = item.slide;
+            const memoText = item.memo ? item.memo.trim() : '';
+            const pageStr = `P${String(s.index).padStart(2, '0')}`;
+
+            let tagsHtml = '';
+            if (s.hasExercise) {
+              tagsHtml += '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold border border-rose-200">實戰演練</span>';
+            }
+
+            html += `
+              <div class="print-note-card rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">${pageStr}</span>
+                    <h3 class="font-bold text-slate-900 text-sm sm:text-base">${s.title}</h3>
+                  </div>
+                  <div>${tagsHtml}</div>
+                </div>
+
+                ${s.subtitle ? `<p class="text-xs text-slate-500 mb-2.5 font-medium">${s.subtitle}</p>` : ''}
+
+                <!-- 小組討論實戰筆記本文 -->
+                <div class="bg-slate-50/80 border border-slate-200 rounded-lg p-3.5 sm:p-4 text-xs sm:text-sm text-slate-800 leading-relaxed">
+                  <div class="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <span>📝 ${teamName} 實戰討論筆記 / 萃取結果：</span>
+                  </div>
+                  ${memoText ? `<div class="whitespace-pre-wrap font-sans text-slate-900 font-medium">${escapeHtml(memoText)}</div>` : `<span class="text-slate-400 italic">（本頁尚未填寫紀錄）</span>`}
+                </div>
+
+                ${s.example ? `
+                  <div class="mt-2.5 bg-amber-50/50 border border-amber-200/60 rounded-lg p-2.5 text-xs text-slate-700">
+                    <span class="text-[10px] font-bold text-amber-800 block mb-1">💡 標竿參考範例：${s.example.title}</span>
+                    <p class="font-medium text-slate-800 mb-0.5 text-[11px]">${s.example.front}</p>
+                    <p class="text-slate-500 whitespace-pre-wrap text-[11px]">${s.example.back}</p>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          });
+
+          html += `
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      area.innerHTML = html;
+      if (window.lucide) lucide.createIcons({ scope: area });
+    }
+
+    function triggerPrintNotes() {
+      window.print();
+    }
+
+    window.addEventListener('beforeunload', () => {
+      releaseLock();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initFirebase();
+      renderSlide(1);
+      setupMemoListeners();
+      setupKeyboardShortcuts();
+      checkExistingAuth();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
