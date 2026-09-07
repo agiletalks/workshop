@@ -6,6 +6,6 @@
     "build": "node scripts/build-all.js",
     "start": "node scripts/serve.js",
     "serve": "node scripts/serve.js",
-    "deploy": "npx --prefix marshmallow firebase deploy"
+    "deploy": "node scripts/build-all.js && npx firebase-tools deploy --only hosting"
   }
 }
