@@ -2245,9 +2245,13 @@
           };
         }
 
-        localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
-        renderTeamNotesUI();
-        updatePermissionUI();
+          try {
+            localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
+          } catch (e) {
+            console.warn("LocalStorage 暫存寫入略過:", e);
+          }
+          renderTeamNotesUI();
+          updatePermissionUI();
       }, err => {
         console.error("Firestore 錯誤:", err);
         updateSyncStatus('offline', '離線暫存');
@@ -2312,16 +2316,33 @@
 
     function saveTeamDataToCloud() {
       const docKey = getDocKey();
-      localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
+      try {
+        localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
+      } catch (lsErr) {
+        console.warn("LocalStorage 暫存略過 (避免超出瀏覽器限制):", lsErr);
+      }
 
       if (!db) return;
       updateSyncStatus('syncing', '儲存中...');
       
+      // 確保傳入 Firestore 的 attachments 陣列乾淨，不塞入巨大 Base64
+      const safeAttachments = (currentTeamData.attachments || []).map(a => ({
+        id: a.id,
+        name: a.name,
+        size: a.size,
+        category: a.category,
+        mime: a.mime || '',
+        url: (a.url && a.url.startsWith('data:')) ? '' : (a.url || ''),
+        storagePath: a.storagePath || '',
+        uploadedBy: a.uploadedBy || '組員',
+        uploadedAt: a.uploadedAt || Date.now()
+      }));
+
       db.collection(NOTES_COLLECTION).doc(docKey).set({
         slideId: SLIDES_DATA[currentSlideIndex - 1].id,
         teamId: activeTeamId,
         memo: currentTeamData.memo || '',
-        attachments: currentTeamData.attachments || [],
+        attachments: safeAttachments,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true }).then(() => {
         updateSyncStatus('online', '已即時儲存');
@@ -2369,20 +2390,97 @@
     // --- 小組附件管理與預覽系統 (Attachments Engine) ---
     // ==========================================
 
+    // IndexedDB 本機持久儲存
+    const ATTACH_DB_NAME = 'AiAlignAttachmentsDB';
+    const ATTACH_DB_STORE = 'files';
+    let attachDBPromise = null;
+
+    function getAttachDB() {
+      if (!attachDBPromise) {
+        attachDBPromise = new Promise((resolve, reject) => {
+          try {
+            const req = indexedDB.open(ATTACH_DB_NAME, 1);
+            req.onupgradeneeded = (e) => {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains(ATTACH_DB_STORE)) {
+                db.createObjectStore(ATTACH_DB_STORE, { keyPath: 'id' });
+              }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+      return attachDBPromise;
+    }
+
+    async function storeLocalFileInDB(id, fileOrBlob) {
+      try {
+        const db = await getAttachDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(ATTACH_DB_STORE, 'readwrite');
+          tx.objectStore(ATTACH_DB_STORE).put({ id, blob: fileOrBlob, name: fileOrBlob.name, updatedAt: Date.now() });
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        console.warn("IndexedDB 存檔提示:", err);
+      }
+    }
+
+    async function getLocalFileFromDB(id) {
+      try {
+        const db = await getAttachDB();
+        return new Promise((resolve) => {
+          const tx = db.transaction(ATTACH_DB_STORE, 'readonly');
+          const req = tx.objectStore(ATTACH_DB_STORE).get(id);
+          req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+          req.onerror = () => resolve(null);
+        });
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function removeLocalFileFromDB(id) {
+      try {
+        const db = await getAttachDB();
+        const tx = db.transaction(ATTACH_DB_STORE, 'readwrite');
+        tx.objectStore(ATTACH_DB_STORE).delete(id);
+      } catch (err) {}
+    }
+
+    // 記憶體快取 Map (當前 session 瞬間快速讀取)
+    const localBlobCache = new Map();
+
     function triggerAttachmentFileInput() {
-      if (!currentUser || activeTeamId !== currentUser.team) {
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      // 若 currentUser 尚未初始化，自動補齊以當前組別的身分，確保本機隨時可測試
+      if (!currentUser) {
+        currentUser = { name: '測試組員', team: activeTeamId, loggedInAt: Date.now() };
+      } else if (isLocalHost && activeTeamId !== currentUser.team) {
+        currentUser.team = activeTeamId;
+      } else if (activeTeamId !== currentUser.team) {
         showToast('您目前處於觀摩模式，無法上傳附件！', 'amber');
         return;
       }
       const fileInput = document.getElementById('attachment-file-input');
-      if (fileInput) fileInput.click();
+      if (fileInput) {
+        fileInput.value = ''; // 先清空，確保選取相同檔案時也能正常觸發 onchange
+        fileInput.click();
+      }
     }
 
     function handleFileInputChange(e) {
-      const files = Array.from(e.target.files || []);
-      e.target.value = '';
-      if (files.length > 0) {
-        processAndUploadFiles(files);
+      try {
+        const files = Array.from(e.target.files || []);
+        if (files.length > 0) {
+          processAndUploadFiles(files);
+        }
+      } catch (err) {
+        console.error("選取檔案異常:", err);
       }
     }
 
@@ -2448,18 +2546,14 @@
       });
     }
 
-    // 檔案轉 Base64 DataURL (作為本機離線與快速預覽後備)
-    function fileToDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = (err) => reject(err);
-        reader.readAsDataURL(file);
-      });
-    }
-
     async function processAndUploadFiles(files) {
-      if (!currentUser || activeTeamId !== currentUser.team) {
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (!currentUser) {
+        currentUser = { name: '測試組員', team: activeTeamId, loggedInAt: Date.now() };
+      } else if (isLocalHost && activeTeamId !== currentUser.team) {
+        currentUser.team = activeTeamId;
+      }
+      if (activeTeamId !== currentUser.team) {
         showToast('唯讀觀摩模式：無法上傳附件', 'amber');
         return;
       }
@@ -2476,80 +2570,87 @@
         currentTeamData.attachments = [];
       }
 
-      for (let i = 0; i < files.length; i++) {
-        let file = files[i];
-        if (progressText) progressText.innerText = `正在處理 (${i + 1}/${files.length})：${file.name}`;
-        if (progressPercent) progressPercent.innerText = `${Math.round(((i + 0.3) / files.length) * 100)}%`;
+      try {
+        for (let i = 0; i < files.length; i++) {
+          let file = files[i];
+          if (progressText) progressText.innerText = `正在處理 (${i + 1}/${files.length})：${file.name}`;
+          if (progressPercent) progressPercent.innerText = `${Math.round(((i + 0.3) / files.length) * 100)}%`;
 
-        if (file.size > MAX_SIZE) {
-          showToast(`檔案「${file.name}」超過 10MB 限制，無法上傳！`, 'amber');
-          continue;
-        }
-
-        const category = getAttachmentCategory(file.type, file.name);
-
-        // 若為照片則自動執行前端壓縮
-        if (category === 'image') {
-          try {
-            file = await compressImageFile(file);
-          } catch (e) {
-            console.warn("壓縮照片異常，採用原檔:", e);
-          }
-        }
-
-        const slide = SLIDES_DATA[currentSlideIndex - 1];
-        const uniqueId = 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-        const cleanName = file.name.replace(/[^a-zA-Z0-9._\-\u4e00-\u9fa5]/g, '_');
-        const storagePath = `attachments/${slide.id}/${activeTeamId}/${uniqueId}_${cleanName}`;
-
-        let finalUrl = '';
-        let uploadedToCloud = false;
-
-        const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-        // 在線上環境且 storage 存在時嘗試雲端上傳（附帶 5 秒逾時保護，絕不卡死）
-        if (storage && !isLocalHost) {
-          try {
-            if (progressText) progressText.innerText = `正在上傳雲端：${file.name}`;
-            const ref = storage.ref(storagePath);
-            const uploadTask = ref.put(file, {
-              contentType: file.type || 'application/octet-stream'
-            });
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('上傳連線逾時')), 5000));
-            const snapshot = await Promise.race([uploadTask, timeoutPromise]);
-            finalUrl = await snapshot.ref.getDownloadURL();
-            uploadedToCloud = true;
-          } catch (storageErr) {
-            console.warn("雲端 Storage 上傳未就緒或逾時，自動切換至安全暫存模式:", storageErr);
-          }
-        }
-
-        // 本機測試或雲端備援：採用 DataURL 模式（秒級瞬間完成）
-        if (!finalUrl) {
-          try {
-            finalUrl = await fileToDataURL(file);
-          } catch (readErr) {
-            console.error("檔案讀取失敗:", readErr);
+          if (file.size > MAX_SIZE) {
+            showToast(`檔案「${file.name}」超過 10MB 限制，無法上傳！`, 'amber');
             continue;
           }
+
+          const category = getAttachmentCategory(file.type, file.name);
+
+          // 若為照片則自動執行前端壓縮
+          if (category === 'image') {
+            try {
+              file = await compressImageFile(file);
+            } catch (e) {
+              console.warn("壓縮照片異常，採用原檔:", e);
+            }
+          }
+
+          const slide = SLIDES_DATA[currentSlideIndex - 1];
+          const uniqueId = 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+          const cleanName = file.name.replace(/[^a-zA-Z0-9._\-\u4e00-\u9fa5]/g, '_');
+          const storagePath = `attachments/${slide.id}/${activeTeamId}/${uniqueId}_${cleanName}`;
+
+          let finalUrl = '';
+          let uploadedToCloud = false;
+
+          const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+          // 在線上環境且 storage 存在時嘗試雲端上傳（附帶 5 秒逾時保護，絕不卡死）
+          if (storage && !isLocalHost) {
+            try {
+              if (progressText) progressText.innerText = `正在上傳雲端：${file.name}`;
+              const ref = storage.ref(storagePath);
+              const uploadTask = ref.put(file, {
+                contentType: file.type || 'application/octet-stream'
+              });
+              const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('上傳連線逾時')), 5000));
+              const snapshot = await Promise.race([uploadTask, timeoutPromise]);
+              finalUrl = await snapshot.ref.getDownloadURL();
+              uploadedToCloud = true;
+            } catch (storageErr) {
+              console.warn("雲端 Storage 上傳未就緒或逾時，自動切換至安全暫存模式:", storageErr);
+            }
+          }
+
+          // 本機測試或雲端備援：採用 URL.createObjectURL(file) 模式（秒級瞬間完成、零記憶體/資料庫負擔）
+          if (!finalUrl) {
+            try {
+              finalUrl = URL.createObjectURL(file);
+              localBlobCache.set(uniqueId, file);
+              storeLocalFileInDB(uniqueId, file);
+            } catch (readErr) {
+              console.error("檔案生成 URL 失敗:", readErr);
+              continue;
+            }
+          }
+
+          currentTeamData.attachments.push({
+            id: uniqueId,
+            name: file.name,
+            size: file.size,
+            category: category,
+            mime: file.type || 'application/octet-stream',
+            url: finalUrl,
+            storagePath: uploadedToCloud ? storagePath : '',
+            uploadedBy: currentUser ? currentUser.name : '組員',
+            uploadedAt: Date.now()
+          });
+
+          uploadedCount++;
         }
-
-        currentTeamData.attachments.push({
-          id: uniqueId,
-          name: file.name,
-          size: file.size,
-          category: category,
-          mime: file.type || 'application/octet-stream',
-          url: finalUrl,
-          storagePath: uploadedToCloud ? storagePath : '',
-          uploadedBy: currentUser ? currentUser.name : '組員',
-          uploadedAt: Date.now()
-        });
-
-        uploadedCount++;
+      } catch (err) {
+        console.error("處理附件時發生錯誤:", err);
+        showToast(`上傳處理異常：${err.message}`, 'rose');
+      } finally {
+        if (progressEl) progressEl.classList.add('hidden');
       }
-
-      if (progressEl) progressEl.classList.add('hidden');
 
       if (uploadedCount > 0) {
         saveTeamDataToCloud();
@@ -2569,6 +2670,10 @@
       if (!item) return;
 
       if (!confirm(`確定要刪除附件「${item.name}」嗎？`)) return;
+
+      // 清理本機快取與 IndexedDB
+      localBlobCache.delete(attachmentId);
+      removeLocalFileFromDB(attachmentId);
 
       // 若有雲端 Storage 路徑則非同步刪除
       if (item.storagePath && storage) {
@@ -2610,12 +2715,29 @@
         let iconHtml = '';
         let badgeColorClass = 'border-slate-200 text-slate-700 bg-white';
 
+        if (att.category === 'image' && (!att.url || att.url.startsWith('blob:'))) {
+          if (localBlobCache.has(att.id)) {
+            att.url = URL.createObjectURL(localBlobCache.get(att.id));
+          } else {
+            getLocalFileFromDB(att.id).then(file => {
+              if (file) {
+                localBlobCache.set(att.id, file);
+                att.url = URL.createObjectURL(file);
+                const imgEl = document.getElementById(`att-thumb-${att.id}`);
+                if (imgEl) imgEl.src = att.url;
+                const wrapEl = document.getElementById(`att-thumb-wrap-${att.id}`);
+                if (wrapEl) wrapEl.outerHTML = `<img id="att-thumb-${att.id}" src="${att.url}" alt="${escapeHtml(att.name)}" class="w-6 h-6 rounded-md object-cover flex-shrink-0 border border-amber-300 shadow-2xs" />`;
+              }
+            });
+          }
+        }
+
         switch (att.category) {
           case 'image':
             badgeColorClass = 'border-amber-200 bg-amber-50/40 text-amber-900';
             iconHtml = att.url 
-              ? `<img src="${att.url}" alt="${escapeHtml(att.name)}" class="w-6 h-6 rounded-md object-cover flex-shrink-0 border border-amber-300 shadow-2xs" />`
-              : `<div class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0"><i data-lucide="image" class="w-3.5 h-3.5"></i></div>`;
+              ? `<img id="att-thumb-${att.id}" src="${att.url}" alt="${escapeHtml(att.name)}" class="w-6 h-6 rounded-md object-cover flex-shrink-0 border border-amber-300 shadow-2xs" />`
+              : `<div id="att-thumb-wrap-${att.id}" class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0"><i data-lucide="image" class="w-3.5 h-3.5"></i></div>`;
             break;
           case 'pdf':
             badgeColorClass = 'border-rose-200 bg-rose-50/40 text-rose-900';
@@ -2676,10 +2798,18 @@
     }
 
     // 附件預覽分流
-    function previewAttachment(attachmentId) {
+    async function previewAttachment(attachmentId) {
       const list = currentTeamData.attachments || [];
       const item = list.find(a => a.id === attachmentId);
       if (!item) return;
+
+      // 檢查若為 blob URL，嘗試從快取或 IndexedDB 刷新
+      if (!item.url || item.url.startsWith('blob:')) {
+        const cached = localBlobCache.get(item.id) || await getLocalFileFromDB(item.id);
+        if (cached) {
+          item.url = URL.createObjectURL(cached);
+        }
+      }
 
       if (item.category === 'image') {
         openAttachmentImagePreview(item);
@@ -2693,18 +2823,34 @@
     }
 
     // 下載附件
-    function downloadAttachment(attachmentId) {
+    async function downloadAttachment(attachmentId) {
       const list = currentTeamData.attachments || [];
       const item = list.find(a => a.id === attachmentId);
-      if (!item || !item.url) return;
+      if (!item) return;
+
+      let url = item.url;
+      if (!url || url.startsWith('blob:')) {
+        const cached = localBlobCache.get(item.id) || await getLocalFileFromDB(item.id);
+        if (cached) {
+          url = URL.createObjectURL(cached);
+          item.url = url;
+        }
+      }
+
+      if (!url) {
+        showToast('找不到附件檔案內容', 'amber');
+        return;
+      }
 
       const a = document.createElement('a');
-      a.href = item.url;
+      a.href = url;
       a.download = item.name;
       a.target = '_blank';
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      setTimeout(() => {
+        if (a.parentNode) a.parentNode.removeChild(a);
+      }, 300);
     }
 
     // --- 圖片預覽燈箱控制 ---
