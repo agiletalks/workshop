@@ -37,6 +37,7 @@
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
   <!-- Slides Data -->
   <script src="slides-data.js"></script>
@@ -408,7 +409,43 @@
             </div>
 
             <!-- 盡量大面積的輸入框 (無遮蔽、充滿全高) -->
-            <textarea id="team-memo-input" placeholder="點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）..." class="w-full h-full flex-1 p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed"></textarea>
+            <textarea id="team-memo-input" placeholder="點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）..." class="w-full flex-1 p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed min-h-[120px]"></textarea>
+
+            <!-- 小組附件管理區 (Attachments Panel) -->
+            <div id="team-attachments-section" class="flex-shrink-0 mt-2.5 pt-2.5 border-t border-slate-200/90 flex flex-col gap-2">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <div class="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <span class="text-xs font-bold text-slate-800">小組實作附件</span>
+                  <span id="attachments-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-slate-200 text-slate-700">0</span>
+                  <span class="text-[10px] text-slate-400 hidden md:inline">支援 照片 / PDF / Word / Excel / HTML (≤10MB)</span>
+                </div>
+
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <input type="file" id="attachment-file-input" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.docx,.doc,.xlsx,.xls,.csv,.html,.htm" class="hidden" onchange="handleFileInputChange(event)" />
+                  <button id="btn-add-attachment" type="button" onclick="triggerAttachmentFileInput()" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="上傳白板照片、簡報、試算表或原型">
+                    <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                    <span>上傳附件</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 上傳中進度指示器 -->
+              <div id="attachment-upload-progress" class="hidden p-2 bg-amber-50/90 border border-amber-200 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-900 animate-pulse">
+                <div class="flex items-center gap-2 min-w-0 truncate">
+                  <div class="w-3.5 h-3.5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                  <span id="upload-progress-text" class="truncate font-medium">正在處理並上傳檔案...</span>
+                </div>
+                <span id="upload-progress-percent" class="font-mono font-bold text-[11px] text-amber-700 flex-shrink-0">上傳中</span>
+              </div>
+
+              <!-- 附件卡片清單 / 空狀態提示 -->
+              <div id="attachments-list-container" class="flex flex-wrap items-center gap-2 max-h-36 overflow-y-auto pr-1">
+                <!-- 由 renderAttachmentsUI() 動態渲染 -->
+              </div>
+            </div>
           </div>
 
           <!-- ================= 反面 (Back Face)：講師示範標竿範例與實戰圖庫 ================= -->
@@ -822,6 +859,95 @@
     </div>
   </div>
 
+  <!-- ==================== 附件圖片預覽燈箱 Modal ==================== -->
+  <div id="attachment-image-modal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex flex-col justify-between overflow-hidden select-none">
+    <div class="h-14 px-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between gap-3 text-white flex-shrink-0 z-20">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-xs font-black flex-shrink-0">圖片預覽</span>
+        <h3 id="attachment-image-title" class="font-bold text-sm text-slate-100 truncate">附件圖片</h3>
+        <span id="attachment-image-size" class="text-[11px] font-mono text-slate-400 flex-shrink-0"></span>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button id="btn-download-image-modal" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>下載原圖</span>
+        </button>
+        <button onclick="closeAttachmentImageModal()" class="p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer" title="關閉 (Esc)">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+    <div class="flex-1 relative flex items-center justify-center overflow-hidden p-4" onclick="handleImageModalBackdropClick(event)">
+      <img id="attachment-image-preview" src="" alt="預覽圖" class="max-h-[85vh] max-w-[95vw] object-contain rounded-xl shadow-2xl transition-transform" />
+    </div>
+  </div>
+
+  <!-- ==================== 附件 HTML 原型沙盒預覽 Modal ==================== -->
+  <div id="attachment-html-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-5xl w-full h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="p-3.5 sm:p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+            <i data-lucide="code-2" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 id="attachment-html-title" class="font-bold text-slate-900 text-sm sm:text-base truncate">HTML 原型預覽</h3>
+            <p class="text-[11px] text-slate-500">安全沙盒模式預覽學員實作產出</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button id="btn-open-html-tab" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 flex items-center gap-1.5 transition-all cursor-pointer">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            <span>新分頁開啟</span>
+          </button>
+          <button id="btn-download-html-modal" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>下載 HTML</span>
+          </button>
+          <button onclick="closeAttachmentHtmlModal()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" title="關閉 (Esc)">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 p-2 sm:p-4 bg-slate-100">
+        <iframe id="attachment-html-frame" sandbox="allow-scripts allow-forms allow-same-origin" class="w-full h-full bg-white rounded-2xl border border-slate-200 shadow-inner"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 附件 PDF 文件預覽 Modal ==================== -->
+  <div id="attachment-pdf-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-5xl w-full h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="p-3.5 sm:p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 id="attachment-pdf-title" class="font-bold text-slate-900 text-sm sm:text-base truncate">PDF 文件預覽</h3>
+            <p class="text-[11px] text-slate-500">線上文件檢視與閱讀</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button id="btn-open-pdf-tab" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 flex items-center gap-1.5 transition-all cursor-pointer">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            <span>新分頁閱讀</span>
+          </button>
+          <button id="btn-download-pdf-modal" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>下載 PDF</span>
+          </button>
+          <button onclick="closeAttachmentPdfModal()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" title="關閉 (Esc)">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 p-2 sm:p-4 bg-slate-800">
+        <iframe id="attachment-pdf-frame" class="w-full h-full bg-slate-900 rounded-2xl border border-slate-700"></iframe>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== 核心邏輯 Javascript ==================== -->
   <script>
     const COURSE_PASSWORD = "agile-2026";
@@ -836,10 +962,13 @@
     // 當前頁面與當前組別的資料狀態 (一頁一筆記)
     let currentTeamData = {
       memo: '',
-      lock: { isLocked: false, lockedBy: '', lockedAt: 0 }
+      lock: { isLocked: false, lockedBy: '', lockedAt: 0 },
+      attachments: []
     };
 
     let db = null;
+    let storage = null;
+    let currentPreviewAttachment = null;
     let currentDocUnsubscribe = null;
     let memoDebounceTimer = null;
     let lockHeartbeatTimer = null;
@@ -861,6 +990,13 @@
           firebase.initializeApp(firebaseConfig);
         }
         db = firebase.firestore();
+        try {
+          if (firebase.storage) {
+            storage = firebase.storage();
+          }
+        } catch (storageErr) {
+          console.warn("Storage init warning:", storageErr);
+        }
         updateSyncStatus('online', '雲端同步就緒');
         if (currentUser) {
           initPresence();
@@ -1893,6 +2029,17 @@
       } else {
         memoInput.placeholder = "點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）...";
       }
+
+      // 附件操作權限控制
+      const btnAddAttachment = document.getElementById('btn-add-attachment');
+      if (btnAddAttachment) {
+        if (!isMyTeam) {
+          btnAddAttachment.classList.add('hidden');
+        } else {
+          btnAddAttachment.classList.remove('hidden');
+        }
+      }
+      renderAttachmentsUI();
     }
 
     // --- 組員即時在線狀態追蹤 (Team Presence System) ---
@@ -2058,12 +2205,16 @@
       if (localCached) {
         try {
           currentTeamData = JSON.parse(localCached);
+          if (!Array.isArray(currentTeamData.attachments)) {
+            currentTeamData.attachments = [];
+          }
           renderTeamNotesUI();
         } catch (e) {}
       } else {
         currentTeamData = {
           memo: '',
-          lock: { isLocked: false, lockedBy: '', lockedAt: 0 }
+          lock: { isLocked: false, lockedBy: '', lockedAt: 0 },
+          attachments: []
         };
         renderTeamNotesUI();
       }
@@ -2083,12 +2234,14 @@
 
           currentTeamData = {
             memo: data.memo || '',
-            lock: lock
+            lock: lock,
+            attachments: Array.isArray(data.attachments) ? data.attachments : []
           };
         } else {
           currentTeamData = {
             memo: '',
-            lock: { isLocked: false, lockedBy: '', lockedAt: 0 }
+            lock: { isLocked: false, lockedBy: '', lockedAt: 0 },
+            attachments: []
           };
         }
 
@@ -2168,6 +2321,7 @@
         slideId: SLIDES_DATA[currentSlideIndex - 1].id,
         teamId: activeTeamId,
         memo: currentTeamData.memo || '',
+        attachments: currentTeamData.attachments || [],
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true }).then(() => {
         updateSyncStatus('online', '已即時儲存');
@@ -2184,6 +2338,7 @@
       if (document.activeElement !== memoInput) {
         memoInput.value = currentTeamData.memo || '';
       }
+      renderAttachmentsUI();
     }
 
     // --- 備忘輸入框即時鎖定與防抖儲存 ---
@@ -2210,6 +2365,504 @@
       });
     }
 
+    // ==========================================
+    // --- 小組附件管理與預覽系統 (Attachments Engine) ---
+    // ==========================================
+
+    function triggerAttachmentFileInput() {
+      if (!currentUser || activeTeamId !== currentUser.team) {
+        showToast('您目前處於觀摩模式，無法上傳附件！', 'amber');
+        return;
+      }
+      const fileInput = document.getElementById('attachment-file-input');
+      if (fileInput) fileInput.click();
+    }
+
+    function handleFileInputChange(e) {
+      const files = Array.from(e.target.files || []);
+      e.target.value = '';
+      if (files.length > 0) {
+        processAndUploadFiles(files);
+      }
+    }
+
+    function getAttachmentCategory(fileType, fileName) {
+      const ext = (fileName.split('.').pop() || '').toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) || (fileType && fileType.startsWith('image/'))) return 'image';
+      if (ext === 'pdf' || fileType === 'application/pdf') return 'pdf';
+      if (['doc', 'docx'].includes(ext) || (fileType && (fileType.includes('word') || fileType.includes('officedocument.wordprocessingml')))) return 'word';
+      if (['xls', 'xlsx', 'csv'].includes(ext) || (fileType && (fileType.includes('sheet') || fileType.includes('excel') || fileType.includes('csv')))) return 'excel';
+      if (['html', 'htm'].includes(ext) || fileType === 'text/html') return 'html';
+      return 'other';
+    }
+
+    function formatFileSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // 前端智慧壓縮 (Canvas 等比縮放至長邊最大 1920px，JPEG 82% 品質)
+    function compressImageFile(file) {
+      return new Promise((resolve) => {
+        if (!file.type || !file.type.startsWith('image/') || file.type === 'image/gif') {
+          return resolve(file);
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_DIM = 1920;
+            let width = img.width;
+            let height = img.height;
+            if (width > MAX_DIM || height > MAX_DIM) {
+              if (width > height) {
+                height = Math.round((height * MAX_DIM) / width);
+                width = MAX_DIM;
+              } else {
+                width = Math.round((width * MAX_DIM) / height);
+                height = MAX_DIM;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+              if (blob && blob.size < file.size) {
+                const newName = file.name.replace(/\.[^.]+$/, '.jpg');
+                const compressedFile = new File([blob], newName, { type: 'image/jpeg' });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            }, 'image/jpeg', 0.82);
+          };
+          img.onerror = () => resolve(file);
+          img.src = event.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // 檔案轉 Base64 DataURL (作為本機離線與快速預覽後備)
+    function fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (err) => reject(err);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function processAndUploadFiles(files) {
+      if (!currentUser || activeTeamId !== currentUser.team) {
+        showToast('唯讀觀摩模式：無法上傳附件', 'amber');
+        return;
+      }
+
+      const progressEl = document.getElementById('attachment-upload-progress');
+      const progressText = document.getElementById('upload-progress-text');
+      const progressPercent = document.getElementById('upload-progress-percent');
+      if (progressEl) progressEl.classList.remove('hidden');
+
+      const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+      let uploadedCount = 0;
+
+      if (!Array.isArray(currentTeamData.attachments)) {
+        currentTeamData.attachments = [];
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+        if (progressText) progressText.innerText = `正在處理 (${i + 1}/${files.length})：${file.name}`;
+        if (progressPercent) progressPercent.innerText = `${Math.round(((i + 0.3) / files.length) * 100)}%`;
+
+        if (file.size > MAX_SIZE) {
+          showToast(`檔案「${file.name}」超過 10MB 限制，無法上傳！`, 'amber');
+          continue;
+        }
+
+        const category = getAttachmentCategory(file.type, file.name);
+
+        // 若為照片則自動執行前端壓縮
+        if (category === 'image') {
+          try {
+            file = await compressImageFile(file);
+          } catch (e) {
+            console.warn("壓縮照片異常，採用原檔:", e);
+          }
+        }
+
+        const slide = SLIDES_DATA[currentSlideIndex - 1];
+        const uniqueId = 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+        const cleanName = file.name.replace(/[^a-zA-Z0-9._\-\u4e00-\u9fa5]/g, '_');
+        const storagePath = `attachments/${slide.id}/${activeTeamId}/${uniqueId}_${cleanName}`;
+
+        let finalUrl = '';
+        let uploadedToCloud = false;
+
+        const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+        // 在線上環境且 storage 存在時嘗試雲端上傳（附帶 5 秒逾時保護，絕不卡死）
+        if (storage && !isLocalHost) {
+          try {
+            if (progressText) progressText.innerText = `正在上傳雲端：${file.name}`;
+            const ref = storage.ref(storagePath);
+            const uploadTask = ref.put(file, {
+              contentType: file.type || 'application/octet-stream'
+            });
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('上傳連線逾時')), 5000));
+            const snapshot = await Promise.race([uploadTask, timeoutPromise]);
+            finalUrl = await snapshot.ref.getDownloadURL();
+            uploadedToCloud = true;
+          } catch (storageErr) {
+            console.warn("雲端 Storage 上傳未就緒或逾時，自動切換至安全暫存模式:", storageErr);
+          }
+        }
+
+        // 本機測試或雲端備援：採用 DataURL 模式（秒級瞬間完成）
+        if (!finalUrl) {
+          try {
+            finalUrl = await fileToDataURL(file);
+          } catch (readErr) {
+            console.error("檔案讀取失敗:", readErr);
+            continue;
+          }
+        }
+
+        currentTeamData.attachments.push({
+          id: uniqueId,
+          name: file.name,
+          size: file.size,
+          category: category,
+          mime: file.type || 'application/octet-stream',
+          url: finalUrl,
+          storagePath: uploadedToCloud ? storagePath : '',
+          uploadedBy: currentUser ? currentUser.name : '組員',
+          uploadedAt: Date.now()
+        });
+
+        uploadedCount++;
+      }
+
+      if (progressEl) progressEl.classList.add('hidden');
+
+      if (uploadedCount > 0) {
+        saveTeamDataToCloud();
+        renderAttachmentsUI();
+        showToast(`已成功上傳 ${uploadedCount} 個附件！`, 'emerald');
+      }
+    }
+
+    function deleteAttachment(attachmentId) {
+      if (!currentUser || activeTeamId !== currentUser.team) {
+        showToast('唯讀觀摩模式：無法刪除其他組別的附件', 'amber');
+        return;
+      }
+
+      const list = currentTeamData.attachments || [];
+      const item = list.find(a => a.id === attachmentId);
+      if (!item) return;
+
+      if (!confirm(`確定要刪除附件「${item.name}」嗎？`)) return;
+
+      // 若有雲端 Storage 路徑則非同步刪除
+      if (item.storagePath && storage) {
+        storage.ref(item.storagePath).delete().catch(err => {
+          console.warn("雲端 Storage 檔案刪除提示:", err);
+        });
+      }
+
+      currentTeamData.attachments = list.filter(a => a.id !== attachmentId);
+      saveTeamDataToCloud();
+      renderAttachmentsUI();
+      showToast('附件已刪除', 'slate');
+    }
+
+    function renderAttachmentsUI() {
+      const container = document.getElementById('attachments-list-container');
+      const countBadge = document.getElementById('attachments-count-badge');
+      if (!container) return;
+
+      const list = currentTeamData.attachments || [];
+      if (countBadge) countBadge.innerText = list.length;
+
+      const isMyTeam = currentUser && (activeTeamId === currentUser.team);
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="w-full py-1.5 px-2 text-center text-[11px] text-slate-400 italic rounded-lg border border-dashed border-slate-200/80 bg-slate-50/50">
+            ${isMyTeam ? '尚無附件，可點擊上方按鈕上傳白板照片、簡報或原型（支援拖曳上傳與貼上截圖）' : '該組尚無上傳附件'}
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+
+      list.forEach(att => {
+        const chip = document.createElement('div');
+
+        let iconHtml = '';
+        let badgeColorClass = 'border-slate-200 text-slate-700 bg-white';
+
+        switch (att.category) {
+          case 'image':
+            badgeColorClass = 'border-amber-200 bg-amber-50/40 text-amber-900';
+            iconHtml = att.url 
+              ? `<img src="${att.url}" alt="${escapeHtml(att.name)}" class="w-6 h-6 rounded-md object-cover flex-shrink-0 border border-amber-300 shadow-2xs" />`
+              : `<div class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0"><i data-lucide="image" class="w-3.5 h-3.5"></i></div>`;
+            break;
+          case 'pdf':
+            badgeColorClass = 'border-rose-200 bg-rose-50/40 text-rose-900';
+            iconHtml = `<div class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="file-text" class="w-3.5 h-3.5"></i></div>`;
+            break;
+          case 'word':
+            badgeColorClass = 'border-blue-200 bg-blue-50/40 text-blue-900';
+            iconHtml = `<div class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="file-signature" class="w-3.5 h-3.5"></i></div>`;
+            break;
+          case 'excel':
+            badgeColorClass = 'border-emerald-200 bg-emerald-50/40 text-emerald-900';
+            iconHtml = `<div class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="sheet" class="w-3.5 h-3.5"></i></div>`;
+            break;
+          case 'html':
+            badgeColorClass = 'border-indigo-200 bg-indigo-50/40 text-indigo-900';
+            iconHtml = `<div class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="code-2" class="w-3.5 h-3.5"></i></div>`;
+            break;
+          default:
+            iconHtml = `<div class="w-6 h-6 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="file" class="w-3.5 h-3.5"></i></div>`;
+        }
+
+        chip.className = `group relative flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${badgeColorClass} shadow-2xs hover:shadow-xs transition-all max-w-[260px] sm:max-w-[300px] flex-shrink-0`;
+
+        const canPreview = ['image', 'pdf', 'html'].includes(att.category);
+
+        chip.innerHTML = `
+          ${iconHtml}
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-bold text-slate-800 truncate" title="${escapeHtml(att.name)}">${escapeHtml(att.name)}</p>
+            <div class="flex items-center gap-1.5 text-[10px] text-slate-400">
+              <span class="font-mono">${formatFileSize(att.size)}</span>
+              <span>·</span>
+              <span class="truncate max-w-[60px]">${escapeHtml(att.uploadedBy || '組員')}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-0.5 flex-shrink-0">
+            ${canPreview ? `
+              <button onclick="previewAttachment('${att.id}')" class="p-1 rounded-lg hover:bg-white/80 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" title="線上預覽">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+              </button>
+            ` : ''}
+            <button onclick="downloadAttachment('${att.id}')" class="p-1 rounded-lg hover:bg-white/80 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" title="下載此檔案">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            </button>
+            ${isMyTeam ? `
+              <button onclick="deleteAttachment('${att.id}')" class="p-1 rounded-lg hover:bg-rose-100 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer" title="刪除此附件">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            ` : ''}
+          </div>
+        `;
+
+        container.appendChild(chip);
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // 附件預覽分流
+    function previewAttachment(attachmentId) {
+      const list = currentTeamData.attachments || [];
+      const item = list.find(a => a.id === attachmentId);
+      if (!item) return;
+
+      if (item.category === 'image') {
+        openAttachmentImagePreview(item);
+      } else if (item.category === 'pdf') {
+        openAttachmentPdfPreview(item);
+      } else if (item.category === 'html') {
+        openAttachmentHtmlPreview(item);
+      } else {
+        downloadAttachment(attachmentId);
+      }
+    }
+
+    // 下載附件
+    function downloadAttachment(attachmentId) {
+      const list = currentTeamData.attachments || [];
+      const item = list.find(a => a.id === attachmentId);
+      if (!item || !item.url) return;
+
+      const a = document.createElement('a');
+      a.href = item.url;
+      a.download = item.name;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // --- 圖片預覽燈箱控制 ---
+    function openAttachmentImagePreview(item) {
+      currentPreviewAttachment = item;
+      const modal = document.getElementById('attachment-image-modal');
+      const img = document.getElementById('attachment-image-preview');
+      const title = document.getElementById('attachment-image-title');
+      const size = document.getElementById('attachment-image-size');
+      const downloadBtn = document.getElementById('btn-download-image-modal');
+
+      if (!modal || !img) return;
+      img.src = item.url;
+      if (title) title.innerText = item.name;
+      if (size) size.innerText = `${formatFileSize(item.size)} (由 ${item.uploadedBy || '組員'} 上傳)`;
+      if (downloadBtn) {
+        downloadBtn.onclick = () => downloadAttachment(item.id);
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeAttachmentImageModal() {
+      const modal = document.getElementById('attachment-image-modal');
+      if (modal) modal.classList.add('hidden');
+      const img = document.getElementById('attachment-image-preview');
+      if (img) img.src = '';
+      currentPreviewAttachment = null;
+    }
+
+    function handleImageModalBackdropClick(e) {
+      if (e.target.id === 'attachment-image-preview') return;
+      closeAttachmentImageModal();
+    }
+
+    // --- HTML 原型沙盒預覽控制 ---
+    function openAttachmentHtmlPreview(item) {
+      currentPreviewAttachment = item;
+      const modal = document.getElementById('attachment-html-modal');
+      const frame = document.getElementById('attachment-html-frame');
+      const title = document.getElementById('attachment-html-title');
+      const openTabBtn = document.getElementById('btn-open-html-tab');
+      const downloadBtn = document.getElementById('btn-download-html-modal');
+
+      if (!modal || !frame) return;
+      if (title) title.innerText = item.name;
+      frame.src = item.url;
+
+      if (openTabBtn) {
+        openTabBtn.onclick = () => {
+          window.open(item.url, '_blank');
+        };
+      }
+      if (downloadBtn) {
+        downloadBtn.onclick = () => downloadAttachment(item.id);
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeAttachmentHtmlModal() {
+      const modal = document.getElementById('attachment-html-modal');
+      if (modal) modal.classList.add('hidden');
+      const frame = document.getElementById('attachment-html-frame');
+      if (frame) frame.src = 'about:blank';
+      currentPreviewAttachment = null;
+    }
+
+    // --- PDF 文件預覽控制 ---
+    function openAttachmentPdfPreview(item) {
+      currentPreviewAttachment = item;
+      const modal = document.getElementById('attachment-pdf-modal');
+      const frame = document.getElementById('attachment-pdf-frame');
+      const title = document.getElementById('attachment-pdf-title');
+      const openTabBtn = document.getElementById('btn-open-pdf-tab');
+      const downloadBtn = document.getElementById('btn-download-pdf-modal');
+
+      if (!modal || !frame) return;
+      if (title) title.innerText = item.name;
+      frame.src = item.url;
+
+      if (openTabBtn) {
+        openTabBtn.onclick = () => {
+          window.open(item.url, '_blank');
+        };
+      }
+      if (downloadBtn) {
+        downloadBtn.onclick = () => downloadAttachment(item.id);
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeAttachmentPdfModal() {
+      const modal = document.getElementById('attachment-pdf-modal');
+      if (modal) modal.classList.add('hidden');
+      const frame = document.getElementById('attachment-pdf-frame');
+      if (frame) frame.src = 'about:blank';
+      currentPreviewAttachment = null;
+    }
+
+    // --- 拖曳上傳與剪貼簿貼上截圖事件 ---
+    function setupAttachmentDragAndPaste() {
+      const frontFace = document.querySelector('.note-front-face');
+      const memoInput = document.getElementById('team-memo-input');
+      const attachSection = document.getElementById('team-attachments-section');
+
+      // 拖曳處理
+      [frontFace, memoInput, attachSection].forEach(el => {
+        if (!el) return;
+        el.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (attachSection) attachSection.classList.add('ring-2', 'ring-amber-500', 'bg-amber-50/60');
+        });
+
+        el.addEventListener('dragleave', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (attachSection) attachSection.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50/60');
+        });
+
+        el.addEventListener('drop', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (attachSection) attachSection.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50/60');
+          const files = Array.from(e.dataTransfer.files || []);
+          if (files.length > 0) {
+            processAndUploadFiles(files);
+          }
+        });
+      });
+
+      // 剪貼簿截圖直接 Ctrl+V 貼上
+      if (memoInput) {
+        memoInput.addEventListener('paste', (e) => {
+          const items = Array.from((e.clipboardData || window.clipboardData).items || []);
+          const imageItems = items.filter(item => item.type.indexOf('image') !== -1);
+          if (imageItems.length > 0) {
+            const files = [];
+            imageItems.forEach((item, idx) => {
+              const blob = item.getAsFile();
+              if (blob) {
+                const timestamp = new Date().toLocaleTimeString('zh-TW', { hour12: false }).replace(/:/g, '');
+                const file = new File([blob], `白板截圖_${timestamp}_${idx + 1}.png`, { type: blob.type });
+                files.push(file);
+              }
+            });
+            if (files.length > 0) {
+              e.preventDefault();
+              showToast('偵測到截圖，正在為您上傳為小組附件...', 'amber');
+              processAndUploadFiles(files);
+            }
+          }
+        });
+      }
+    }
+
     // --- 鍵盤事件與視窗控制 ---
     function setupKeyboardShortcuts() {
       window.addEventListener('keydown', (e) => {
@@ -2223,6 +2876,9 @@
           closeAgreementModal();
           closeExampleLightbox();
           closePromptModal();
+          closeAttachmentImageModal();
+          closeAttachmentHtmlModal();
+          closeAttachmentPdfModal();
         } else if (isExampleLightboxOpen()) {
           if (e.key === 'ArrowLeft') {
             e.preventDefault();
@@ -2497,19 +3153,25 @@
       const promises = SLIDES_DATA.map(async (slide) => {
         const docKey = `ai_align_note_${slide.id}_${teamId}`;
         let memo = '';
+        let attachments = [];
         const cached = localStorage.getItem(`cache_${docKey}`);
         if (cached) {
-          try { memo = JSON.parse(cached).memo || ''; } catch(e) {}
+          try {
+            const parsed = JSON.parse(cached);
+            memo = parsed.memo || '';
+            attachments = Array.isArray(parsed.attachments) ? parsed.attachments : [];
+          } catch(e) {}
         }
         if (db) {
           try {
             const doc = await db.collection(NOTES_COLLECTION).doc(docKey).get();
-            if (doc.exists && doc.data() && doc.data().memo) {
-              memo = doc.data().memo;
+            if (doc.exists && doc.data()) {
+              if (doc.data().memo) memo = doc.data().memo;
+              if (Array.isArray(doc.data().attachments)) attachments = doc.data().attachments;
             }
           } catch(e) {}
         }
-        return { slide, memo };
+        return { slide, memo, attachments };
       });
 
       printNotesData = await Promise.all(promises);
@@ -2522,13 +3184,12 @@
       const area = document.getElementById('printable-notes-area');
       if (!area) return;
 
-      const filterEmpty = document.getElementById('print-filter-empty')?.checked ?? true;
-      const teamNum = printSelectedTeam.replace('team-', '');
-      const teamName = `第 ${teamNum} 組`;
+      const teamName = getTeamDisplayName(printSelectedTeam);
+      const filterEmpty = document.getElementById('print-filter-empty').checked;
       const exportTime = new Date().toLocaleString('zh-TW', { hour12: false });
       const activeUser = (currentUser && currentUser.name) ? currentUser.name : '學員';
 
-      const totalWithNotes = printNotesData.filter(d => d.memo && d.memo.trim().length > 0).length;
+      const totalWithNotes = printNotesData.filter(d => (d.memo && d.memo.trim().length > 0) || (d.attachments && d.attachments.length > 0)).length;
 
       let html = `
         <!-- 報表首頁與抬頭 -->
@@ -2575,16 +3236,18 @@
       } else {
         CHAPTERS.forEach(chap => {
           const chapItems = printNotesData.filter(d => d.slide.chapterId === chap.id);
-          const filteredItems = filterEmpty ? chapItems.filter(d => d.memo && d.memo.trim().length > 0) : chapItems;
+          const filteredItems = filterEmpty 
+            ? chapItems.filter(d => (d.memo && d.memo.trim().length > 0) || (d.attachments && d.attachments.length > 0)) 
+            : chapItems;
 
           if (filteredItems.length === 0) return;
 
           html += `
-            <div class="print-chapter-section pt-3 mb-6">
-              <!-- 章節標題 Banner -->
-              <div class="bg-slate-900 text-white px-4 py-2.5 rounded-xl flex items-center justify-between mb-3.5">
+            <div class="print-chapter-section space-y-4">
+              <!-- 章節標頭 -->
+              <div class="flex items-center justify-between border-b border-slate-300 pb-1.5 pt-2">
                 <div class="flex items-center gap-2">
-                  <span class="bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded text-xs font-mono">${chap.code}</span>
+                  <span class="px-2 py-0.5 rounded bg-slate-900 text-white font-mono text-xs font-black">${chap.code}</span>
                   <span class="font-bold text-sm">${chap.name}</span>
                 </div>
                 <span class="text-xs text-slate-400 font-mono">P${String(chap.start).padStart(2,'0')} ~ P${String(chap.end).padStart(2,'0')}</span>
@@ -2622,6 +3285,16 @@
                     <span>📝 ${teamName} 實戰討論筆記 / 萃取結果：</span>
                   </div>
                   ${memoText ? `<div class="whitespace-pre-wrap font-sans text-slate-900 font-medium">${escapeHtml(memoText)}</div>` : `<span class="text-slate-400 italic">（本頁尚未填寫紀錄）</span>`}
+
+                  ${item.attachments && item.attachments.length > 0 ? `
+                    <div class="mt-2.5 pt-2 border-t border-slate-200/80 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
+                      <span class="font-bold text-slate-700 flex items-center gap-1">
+                        <i data-lucide="paperclip" class="w-3 h-3"></i>
+                        附帶實作檔案 (${item.attachments.length})：
+                      </span>
+                      ${item.attachments.map(a => `<span class="px-2 py-0.5 rounded bg-white border border-slate-300 text-[10px] font-medium font-mono">${escapeHtml(a.name)} (${formatFileSize(a.size)})</span>`).join('')}
+                    </div>
+                  ` : ''}
                 </div>
 
                 ${s.example ? `
@@ -2658,6 +3331,7 @@
       initFirebase();
       renderSlide(1);
       setupMemoListeners();
+      setupAttachmentDragAndPaste();
       setupKeyboardShortcuts();
       checkExistingAuth();
       lucide.createIcons();
