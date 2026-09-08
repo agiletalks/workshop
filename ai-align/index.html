@@ -1714,7 +1714,7 @@
         openLoginModal(true);
         return;
       }
-      const myTeam = currentUser.team;
+      const myTeam = (typeof activeTeamId !== 'undefined' && activeTeamId) ? activeTeamId : (currentUser.team || 'team-1');
       const userName = currentUser.name || '學員';
       const boardUrl = `board.html?room=ai-align-${myTeam}&team=${myTeam}&user=${encodeURIComponent(userName)}`;
       window.open(boardUrl, '_blank');

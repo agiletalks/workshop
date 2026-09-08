@@ -182,10 +182,18 @@
     <!-- 中間工具按鈕群 -->
     <div class="flex items-center space-x-1.5 sm:space-x-2">
 
-      <!-- 小組專屬白板身分徽章 (純資訊展示，無須切換房間) -->
-      <div class="bg-indigo-50 border border-indigo-200/80 text-indigo-700 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-2xs" title="您正在所屬小組專屬線上白板中進行即時協作">
-        <i data-lucide="users" class="w-4 h-4 text-indigo-600"></i>
-        <span id="current-room-badge">第 1 組白板</span>
+      <!-- 小組專屬白板切換器 (支援老師/學員快速切換 1~6 組白板) -->
+      <div class="bg-indigo-50 hover:bg-indigo-100/80 transition-colors border border-indigo-200/80 text-indigo-700 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-2xs" title="點擊切換查看不同小組的線上白板">
+        <i data-lucide="users" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+        <select id="team-board-select" onchange="switchTeamBoard(this.value)" class="bg-transparent border-none text-indigo-900 font-bold focus:ring-0 focus:outline-hidden cursor-pointer text-xs sm:text-sm py-0.5 pr-1">
+          <option value="team-1">第 1 組白板</option>
+          <option value="team-2">第 2 組白板</option>
+          <option value="team-3">第 3 組白板</option>
+          <option value="team-4">第 4 組白板</option>
+          <option value="team-5">第 5 組白板</option>
+          <option value="team-6">第 6 組白板</option>
+        </select>
+        <span id="current-room-badge" class="hidden"></span>
       </div>
 
       <div class="h-6 w-[1px] bg-slate-300/60 mx-0.5 sm:mx-1"></div>
@@ -983,6 +991,7 @@
         roomDocRef = db.collection('aigile_boards').doc(CURRENT_ROOM_ID);
         isFirestoreInitialized = true;
         setSyncStatus('saving', '連線中...');
+        fetchTeamNotesCounts();
 
         roomDocRef.onSnapshot((doc) => {
           if (!doc.exists) {
@@ -1105,8 +1114,54 @@
       return false;
     }
 
+    // --- 切換查看不同小組白板 ---
+    function switchTeamBoard(newTeam) {
+      if (!newTeam || newTeam === TEAM_INFO.teamId) return;
+      const url = new URL(window.location.href);
+      url.searchParams.set('team', newTeam);
+      url.searchParams.set('room', `ai-align-${newTeam}`);
+      if (TEAM_INFO.userName) {
+        url.searchParams.set('user', TEAM_INFO.userName);
+      }
+      try {
+        const saved = localStorage.getItem('ai_align_auth_user');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          parsed.team = newTeam;
+          localStorage.setItem('ai_align_auth_user', JSON.stringify(parsed));
+        }
+      } catch(e) {}
+      window.location.href = url.toString();
+    }
+
+    // 動態載入各組便利貼數量至選單
+    function fetchTeamNotesCounts() {
+      if (!db) return;
+      const teams = ['team-1', 'team-2', 'team-3', 'team-4', 'team-5', 'team-6'];
+      teams.forEach(tId => {
+        db.collection('aigile_boards').doc(`ai-align-${tId}`).get().then(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            const notes = Array.isArray(data.notes) ? data.notes : [];
+            const selectEl = document.getElementById('team-board-select');
+            if (selectEl) {
+              const opt = selectEl.querySelector(`option[value="${tId}"]`);
+              if (opt) {
+                const teamNum = tId.replace('team-', '');
+                opt.textContent = `第 ${teamNum} 組白板 (${notes.length} 張)`;
+              }
+            }
+          }
+        }).catch(() => {});
+      });
+    }
+
     // --- 小組專屬白板 UI 與身分綁定 ---
     function updateRoomUI() {
+      const selectEl = document.getElementById('team-board-select');
+      if (selectEl) {
+        selectEl.value = TEAM_INFO.teamId;
+      }
       const roomBadge = document.getElementById('current-room-badge');
       if (roomBadge) {
         roomBadge.innerText = `${TEAM_INFO.teamDisplayName} 專屬白板`;
@@ -2799,7 +2854,12 @@
     }
 
     function updateStickyNotesCount() {
-      document.getElementById('sticky-count').innerText = boardState.notes.length;
+      const countEl = document.getElementById('sticky-count');
+      if (countEl) countEl.innerText = boardState.notes.length;
+      const currentOpt = document.querySelector(`#team-board-select option[value="${TEAM_INFO.teamId}"]`);
+      if (currentOpt) {
+        currentOpt.textContent = `${TEAM_INFO.teamDisplayName}白板 (${boardState.notes.length} 張)`;
+      }
     }
 
     // --- 批量 CSV / 文字匯入邏輯 ---
