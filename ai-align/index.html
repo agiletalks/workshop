@@ -143,96 +143,97 @@
     }
   </style>
 </head>
-<body class="h-full bg-slate-100 text-slate-800 flex flex-col font-sans overflow-hidden select-none">
+<body class="h-full bg-slate-100 text-slate-800 flex flex-col font-sans overflow-hidden">
 
-  <!-- ==================== 頂部主導覽列 ==================== -->
-  <header class="h-14 bg-white border-b border-slate-200 px-3 sm:px-4 flex items-center justify-between shadow-2xs z-30 flex-shrink-0 gap-2">
-    <!-- 左側：漢堡包目錄按鈕 ＋ 標題與章節主題 (整合收納，取代原浮動條) -->
-    <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
+  <!-- ==================== 頂部主導覽列 (自適應投影機與筆電，確保所有按鈕與身分完整呈現) ==================== -->
+  <header class="h-14 bg-white border-b border-slate-200 px-2 sm:px-4 flex items-center justify-between shadow-2xs z-30 flex-shrink-0 gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
+    <!-- 左側：漢堡包目錄按鈕 ＋ 標題與章節主題 -->
+    <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
       <!-- 漢堡包目錄按鈕 (唯一全域課程大綱目錄) -->
-      <button id="btn-toggle-toc" onclick="toggleTocDrawer()" class="px-2.5 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 active:scale-95 transition-all flex items-center gap-1.5 border border-slate-200 shadow-2xs cursor-pointer" title="開啟完整課程大綱目錄 (快捷鍵：M 或點擊頁碼)">
+      <button id="btn-toggle-toc" onclick="toggleTocDrawer()" class="px-2 sm:px-2.5 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 active:scale-95 transition-all flex items-center gap-1 border border-slate-200 shadow-2xs cursor-pointer select-none" title="開啟完整課程大綱目錄 (快捷鍵：M 或點擊頁碼)">
         <i data-lucide="menu" class="w-4 h-4 text-slate-600"></i>
         <span class="text-xs font-bold hidden sm:inline text-slate-700">目錄</span>
       </button>
 
-      <div class="flex items-center gap-2 flex-shrink-0">
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 select-none">
         <span class="w-8 h-8 rounded-lg bg-amber-500 text-white font-black text-sm flex items-center justify-center shadow-2xs flex-shrink-0">AI</span>
         <div class="hidden sm:block">
-          <h1 class="text-sm font-bold text-slate-900 leading-tight">AI 賦能敏捷</h1>
-          <p class="text-[10px] text-slate-500 font-medium">跨部門溝通萃取需求</p>
+          <h1 class="text-xs sm:text-sm font-bold text-slate-900 leading-tight">AI 賦能敏捷</h1>
+          <p class="text-[10px] text-slate-500 font-medium hidden 2xl:block">跨部門溝通萃取需求</p>
         </div>
       </div>
 
-      <div class="h-5 w-[1px] bg-slate-200 hidden md:block"></div>
+      <div class="h-4 w-[1px] bg-slate-200 hidden lg:block"></div>
 
-      <!-- 章節 Badge 與投影片標題 -->
-      <div class="hidden md:flex items-center gap-2 truncate max-w-xs lg:max-w-md xl:max-w-lg">
-        <div id="header-chapter-badge" class="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/80 flex-shrink-0">
+      <!-- 章節 Badge 與投影片標題 (在筆電/投影寬度彈性收納，絕不向右推擠按鈕) -->
+      <div class="hidden lg:flex items-center gap-1.5 min-w-0 max-w-[130px] xl:max-w-[220px] 2xl:max-w-sm">
+        <div id="header-chapter-badge" class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 flex-shrink-0">
           <span id="header-chapter-code">WHY</span>
-          <span class="text-amber-400">·</span>
-          <span id="header-chapter-name">目標</span>
+          <span class="text-amber-400 hidden xl:inline">·</span>
+          <span id="header-chapter-name" class="hidden xl:inline">目標</span>
         </div>
         <div class="truncate text-xs font-semibold text-slate-700">
-          <span id="header-slide-title" class="font-bold text-slate-800"></span>
-          <span id="header-slide-subtitle" class="text-slate-400 text-[11px] ml-1.5 hidden lg:inline"></span>
+          <span id="header-slide-title" class="font-bold text-slate-800 truncate"></span>
+          <span id="header-slide-subtitle" class="text-slate-400 text-[11px] ml-1.5 hidden 2xl:inline"></span>
         </div>
       </div>
     </div>
 
     <!-- 中間：極簡換頁控制器與目前頁碼 (點擊頁碼可直接展開左側課程目錄) -->
-    <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-      <button id="btn-prev-slide" onclick="navigateSlide(-1)" class="p-1.5 sm:px-2.5 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer" title="上一頁 (← / PageUp)">
+    <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 select-none">
+      <button id="btn-prev-slide" onclick="navigateSlide(-1)" class="p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer" title="上一頁 (← / PageUp)">
         <i data-lucide="chevron-left" class="w-4 h-4"></i>
-        <span class="hidden sm:inline">上一頁</span>
+        <span class="hidden xl:inline">上一頁</span>
       </button>
 
-      <button id="btn-slide-indicator" onclick="openTocDrawer()" class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200/60 shadow-2xs" title="目前進度，點擊展開完整課程大綱目錄">
+      <button id="btn-slide-indicator" onclick="openTocDrawer()" class="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer border border-slate-200/60 shadow-2xs" title="目前進度，點擊展開完整課程大綱目錄">
         <span id="current-slide-label" class="font-mono text-slate-900">P01 / 46</span>
         <i data-lucide="list" class="w-3.5 h-3.5 text-slate-400"></i>
       </button>
 
-      <button id="btn-next-slide" onclick="navigateSlide(1)" class="p-1.5 sm:px-2.5 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer" title="下一頁 (→ / PageDown / Space)">
-        <span class="hidden sm:inline">下一頁</span>
+      <button id="btn-next-slide" onclick="navigateSlide(1)" class="p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer" title="下一頁 (→ / PageDown / Space)">
+        <span class="hidden xl:inline">下一頁</span>
         <i data-lucide="chevron-right" class="w-4 h-4"></i>
       </button>
     </div>
 
-    <!-- 右側：全域白板、學員身分、全螢幕 -->
-    <div class="flex items-center gap-2 flex-shrink-0">
+    <!-- 右側：全域白板、學員身分、全螢幕 (自適應排版，投影/筆電無遮蔽) -->
+    <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0 select-none">
       <!-- 全域課堂學習公約按鈕 (常駐頂部，隨時呼叫 8 大敏捷協作守則) -->
-      <button id="btn-learning-agreement" onclick="openAgreementModal()" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer flex-shrink-0" title="開啟課堂學習公約 (8 項敏捷協作心法)">
+      <button id="btn-learning-agreement" onclick="openAgreementModal()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="開啟課堂學習公約 (8 項敏捷協作心法)">
         <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-        <span>學習公約</span>
+        <span class="hidden sm:inline">學習公約</span>
       </button>
 
       <!-- 全域小組線上白板按鈕 (常駐頂部，點擊新分頁開啟該組專屬大白板) -->
-      <button id="btn-global-board" onclick="openTeamWhiteboard()" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all flex-shrink-0 cursor-pointer" title="在新分頁開啟小組專屬共享線上白板 (整門課專屬 8000px 大畫布)">
+      <button id="btn-global-board" onclick="openTeamWhiteboard()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all flex-shrink-0 cursor-pointer" title="在新分頁開啟小組專屬共享線上白板 (整門課專屬 8000px 大畫布)">
         <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
-        <span>小組線上白板</span>
-        <i data-lucide="external-link" class="w-3 h-3 opacity-80 hidden sm:inline"></i>
+        <span class="hidden md:inline">小組白板</span>
+        <span class="md:hidden hidden sm:inline">白板</span>
+        <i data-lucide="external-link" class="w-3 h-3 opacity-80 hidden 2xl:inline"></i>
       </button>
 
       <!-- 全域列印筆記按鈕 (依主題章節完整彙整輸出 PDF) -->
-      <button id="btn-print-notes" onclick="openPrintNotesModal()" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer flex-shrink-0" title="列印全課程小組筆記為 PDF (依主題章節彙整)">
+      <button id="btn-print-notes" onclick="openPrintNotesModal()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="列印全課程小組筆記為 PDF (依主題章節彙整)">
         <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-600"></i>
-        <span class="hidden xl:inline">列印筆記</span>
+        <span class="hidden 2xl:inline">列印筆記</span>
       </button>
 
       <!-- 學員身分徽章 -->
-      <div id="user-badge" class="flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl text-xs">
+      <div id="user-badge" class="flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 sm:px-2.5 py-1 rounded-xl text-xs flex-shrink-0">
         <i data-lucide="users" class="w-3.5 h-3.5 text-indigo-600"></i>
         <span id="user-team-name" class="font-bold text-indigo-700">第 1 組</span>
         <span class="text-slate-300">|</span>
-        <span id="user-display-name" class="font-medium text-slate-700">學員</span>
+        <span id="user-display-name" class="font-medium text-slate-700 max-w-[60px] sm:max-w-[80px] truncate">學員</span>
       </div>
 
       <!-- 切換身分 / 登出 -->
-      <button onclick="openLoginModal(true)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors" title="更換組別或姓名">
+      <button onclick="openLoginModal(true)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors flex-shrink-0" title="更換組別或姓名">
         <i data-lucide="log-out" class="w-4 h-4"></i>
       </button>
 
       <!-- 全螢幕切換 -->
-      <button onclick="toggleFullScreen()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors hidden md:block" title="切換全螢幕">
+      <button onclick="toggleFullScreen()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors hidden sm:block flex-shrink-0" title="切換全螢幕">
         <i data-lucide="maximize" class="w-4 h-4" id="fullscreen-icon"></i>
       </button>
     </div>
@@ -275,11 +276,11 @@
     </div>
   </aside>
 
-  <!-- ==================== 主工作區 (永遠維持左右雙欄 md:flex-row) ==================== -->
-  <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+  <!-- ==================== 主工作區 (電腦版左右雙欄，行動端直向自適應平滑滾動) ==================== -->
+  <main class="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden relative">
 
-    <!-- 左側：投影片瀏覽器 (高清晰、滿版、無遮蔽、沉浸式) -->
-    <section class="w-full md:w-1/2 h-1/2 md:h-full bg-slate-100/60 flex flex-col items-center justify-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 flex-shrink-0">
+    <!-- 左側：投影片瀏覽器 (高清晰、滿版、無遮蔽、沉浸式，行動端自適應比例) -->
+    <section class="w-full md:w-1/2 min-h-[220px] max-h-[42vh] md:max-h-none md:h-full bg-slate-100/60 flex flex-col items-center justify-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 flex-shrink-0">
       
       <!-- 投影片圖檔展示容器 -->
       <div id="slide-container" class="w-full h-full flex items-center justify-center p-3 sm:p-5 lg:p-6 overflow-hidden relative">
@@ -292,7 +293,7 @@
 
         <!-- 左下角浮動實戰案例按鈕 (當該頁有範例圖時顯示) -->
         <div id="slide-example-badge-container" class="hidden absolute bottom-3 left-3 z-10">
-          <button onclick="openExampleLightbox(0)" class="px-3 py-1.5 rounded-xl bg-slate-900/85 hover:bg-slate-900 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-2 transition-all active:scale-95 group cursor-pointer" title="查看本單元真實標竿案例解析">
+          <button onclick="openExampleLightbox(0)" class="px-3 py-1.5 rounded-xl bg-slate-900/85 hover:bg-slate-900 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-2 transition-all active:scale-95 group cursor-pointer select-none" title="查看本單元真實標竿案例解析">
             <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
             <i data-lucide="images" class="w-4 h-4 text-amber-400"></i>
             <span id="slide-example-badge-text">實戰案例圖庫</span>
@@ -302,15 +303,15 @@
       </div>
 
       <!-- 右上角極簡縮放工具 (浮動微按鈕，不佔版面) -->
-      <div class="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
+      <div class="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity select-none">
         <button onclick="toggleSlideZoom()" class="p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 shadow-xs border border-slate-200 transition-all" title="適應視窗 / 100% 原始比例">
           <i data-lucide="zoom-in" class="w-4 h-4"></i>
         </button>
       </div>
     </section>
 
-    <!-- 右側：沉浸式小組隨堂筆記區 (50% 寬度，每頁獨立) -->
-    <aside class="w-full md:w-1/2 h-1/2 md:h-full bg-white flex flex-col overflow-hidden">
+    <!-- 右側：沉浸式小組隨堂筆記區 (行動端彈性延展至少 380px，電腦版 50% 滿版) -->
+    <aside class="w-full md:w-1/2 flex-1 md:h-full bg-white flex flex-col overflow-hidden min-h-[380px]">
 
       <!-- 整合式工作台頂部工具列 (單一精簡 44px 列：組別下拉選單 + 組員即時在線 + 翻面 + 同步狀態) -->
       <div class="bg-slate-50/90 border-b border-slate-200 px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
@@ -388,8 +389,8 @@
       <div id="note-flipper-container" class="note-flipper flex-1 min-h-0 overflow-hidden relative bg-white">
         <div class="note-flipper-inner h-full">
 
-          <!-- ================= 正面 (Front Face)：100% 滿版沉浸式小組筆記 ================= -->
-          <div class="note-front-face h-full flex flex-col p-3 sm:p-4">
+          <!-- ================= 正面 (Front Face)：100% 滿版沉浸式小組筆記 (支援內容過長自適應滾動) ================= -->
+          <div class="note-front-face h-full flex flex-col p-3 sm:p-4 overflow-y-auto">
             <!-- 團隊任務專屬：Prompt 快速複製與導讀行動列 (含 prompts 時動態顯示) -->
             <div id="team-task-prompt-bar" class="hidden flex-shrink-0 mb-3 p-3 bg-gradient-to-r from-amber-50/95 via-orange-50/90 to-amber-50/95 border border-amber-200/90 rounded-2xl shadow-2xs">
               <div class="flex items-center justify-between gap-2 mb-2">
@@ -408,8 +409,10 @@
               <div id="prompt-buttons-container" class="flex flex-wrap items-center gap-2"></div>
             </div>
 
-            <!-- 盡量大面積的輸入框 (無遮蔽、充滿全高) -->
-            <textarea id="team-memo-input" placeholder="點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）..." class="w-full flex-1 p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed min-h-[120px]"></textarea>
+            <!-- 盡量大面積的輸入框 (無遮蔽、充滿全高，附帶點擊提示) -->
+            <div id="memo-input-wrapper" class="w-full flex-1 flex flex-col relative min-h-[120px]" onclick="handleMemoWrapperClick(event)">
+              <textarea id="team-memo-input" placeholder="點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）..." class="w-full flex-1 p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed select-text"></textarea>
+            </div>
 
             <!-- 小組附件管理區 (Attachments Panel) -->
             <div id="team-attachments-section" class="flex-shrink-0 mt-2.5 pt-2.5 border-t border-slate-200/90 flex flex-col gap-2">
@@ -2022,6 +2025,17 @@
       // 輸入權限
       const canEdit = isMyTeam && !isLockedByOther;
       memoInput.disabled = !canEdit;
+      const memoWrapper = document.getElementById('memo-input-wrapper');
+      if (memoWrapper) {
+        if (!isMyTeam) {
+          memoWrapper.classList.add('cursor-not-allowed');
+        } else if (isLockedByOther) {
+          memoWrapper.classList.add('cursor-not-allowed');
+        } else {
+          memoWrapper.classList.remove('cursor-not-allowed');
+        }
+      }
+
       if (!isMyTeam) {
         memoInput.placeholder = "唯讀觀摩模式：此為該組同學的討論紀錄。";
       } else if (isLockedByOther) {
@@ -2040,6 +2054,17 @@
         }
       }
       renderAttachmentsUI();
+    }
+
+    function handleMemoWrapperClick(event) {
+      const isMyTeam = currentUser && (activeTeamId === currentUser.team);
+      const isLockedByOther = currentTeamData.lock && currentTeamData.lock.isLocked && currentTeamData.lock.lockedBy !== (currentUser ? currentUser.name : '');
+      
+      if (!isMyTeam) {
+        showToast(`👀 目前為唯讀觀摩「${getTeamDisplayName(activeTeamId)}」筆記模式`, 'sky');
+      } else if (isLockedByOther) {
+        showToast(`🔒 組員「${currentTeamData.lock.lockedBy || '其他組員'}」正在編輯中（鎖定保護），請稍候...`, 'amber');
+      }
     }
 
     // --- 組員即時在線狀態追蹤 (Team Presence System) ---
@@ -2228,7 +2253,7 @@
         if (doc.exists) {
           const data = doc.data();
           let lock = data.lock || { isLocked: false, lockedBy: '', lockedAt: 0 };
-          if (lock.isLocked && (Date.now() - (lock.lockedAt || 0) > 60000)) {
+          if (lock.isLocked && (Date.now() - (lock.lockedAt || 0) > 35000)) {
             lock = { isLocked: false, lockedBy: '', lockedAt: 0 };
           }
 
@@ -2288,7 +2313,7 @@
             }
           }, { merge: true });
         }
-      }, 25000);
+      }, 15000);
     }
 
     function releaseLock() {
@@ -2314,7 +2339,7 @@
       }
     }
 
-    function saveTeamDataToCloud() {
+    function saveMemoToCloud() {
       const docKey = getDocKey();
       try {
         localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
@@ -2324,25 +2349,12 @@
 
       if (!db) return;
       updateSyncStatus('syncing', '儲存中...');
-      
-      // 確保傳入 Firestore 的 attachments 陣列乾淨，不塞入巨大 Base64
-      const safeAttachments = (currentTeamData.attachments || []).map(a => ({
-        id: a.id,
-        name: a.name,
-        size: a.size,
-        category: a.category,
-        mime: a.mime || '',
-        url: (a.url && a.url.startsWith('data:')) ? '' : (a.url || ''),
-        storagePath: a.storagePath || '',
-        uploadedBy: a.uploadedBy || '組員',
-        uploadedAt: a.uploadedAt || Date.now()
-      }));
 
+      // 關鍵修復：僅更新 memo 欄位，絕不再碰 attachments 陣列，徹底根絕打字覆蓋隊友附件的致命 Bug！
       db.collection(NOTES_COLLECTION).doc(docKey).set({
         slideId: SLIDES_DATA[currentSlideIndex - 1].id,
         teamId: activeTeamId,
         memo: currentTeamData.memo || '',
-        attachments: safeAttachments,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true }).then(() => {
         updateSyncStatus('online', '已即時儲存');
@@ -2351,6 +2363,10 @@
         console.error("寫入 Firestore 失敗:", err);
         updateSyncStatus('offline', '寫入失敗');
       });
+    }
+
+    function saveTeamDataToCloud() {
+      saveMemoToCloud();
     }
 
     // --- 筆記區 UI 渲染 ---
@@ -2376,12 +2392,25 @@
 
         if (memoDebounceTimer) clearTimeout(memoDebounceTimer);
         memoDebounceTimer = setTimeout(() => {
-          saveTeamDataToCloud();
+          saveMemoToCloud();
         }, 800);
       });
 
       memoInput.addEventListener('blur', () => {
-        saveTeamDataToCloud();
+        saveMemoToCloud();
+        releaseLock();
+      });
+
+      // 行動端專用防呆：切換 App、關閉螢幕、切換分頁時立即釋放鎖定，避免隊友卡死
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          saveMemoToCloud();
+          releaseLock();
+        }
+      });
+
+      window.addEventListener('pagehide', () => {
+        saveMemoToCloud();
         releaseLock();
       });
     }
@@ -2565,6 +2594,7 @@
 
       const MAX_SIZE = 10 * 1024 * 1024; // 10MB
       let uploadedCount = 0;
+      const newlyUploadedItems = [];
 
       if (!Array.isArray(currentTeamData.attachments)) {
         currentTeamData.attachments = [];
@@ -2602,36 +2632,51 @@
 
           const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-          // 在線上環境且 storage 存在時嘗試雲端上傳（附帶 5 秒逾時保護，絕不卡死）
+          // 在線上環境且 storage 存在時嘗試雲端上傳（附帶 60 秒進度監控與逾時保護）
           if (storage && !isLocalHost) {
             try {
-              if (progressText) progressText.innerText = `正在上傳雲端：${file.name}`;
+              if (progressText) progressText.innerText = `正在上傳雲端 (${i + 1}/${files.length})：${file.name}`;
               const ref = storage.ref(storagePath);
               const uploadTask = ref.put(file, {
                 contentType: file.type || 'application/octet-stream'
               });
-              const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('上傳連線逾時')), 5000));
+
+              uploadTask.on('state_changed', (snapshot) => {
+                if (snapshot.totalBytes > 0) {
+                  const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                  if (progressPercent) progressPercent.innerText = `${percent}%`;
+                }
+              });
+
+              const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('上傳逾時 (60秒)')), 60000));
               const snapshot = await Promise.race([uploadTask, timeoutPromise]);
               finalUrl = await snapshot.ref.getDownloadURL();
               uploadedToCloud = true;
             } catch (storageErr) {
-              console.warn("雲端 Storage 上傳未就緒或逾時，自動切換至安全暫存模式:", storageErr);
+              console.error("雲端 Storage 上傳失敗:", storageErr);
+              showToast(`檔案「${file.name}」上傳失敗：${storageErr.message}`, 'rose');
+              continue; // 線上若失敗則中斷，絕不假裝成功存成本地 blob 導致同組其他人看不到
             }
           }
 
-          // 本機測試或雲端備援：採用 URL.createObjectURL(file) 模式（秒級瞬間完成、零記憶體/資料庫負擔）
-          if (!finalUrl) {
+          // 本機測試模式：採用 URL.createObjectURL(file) 模式（秒級瞬間完成）
+          if (!finalUrl && isLocalHost) {
             try {
               finalUrl = URL.createObjectURL(file);
               localBlobCache.set(uniqueId, file);
               storeLocalFileInDB(uniqueId, file);
             } catch (readErr) {
-              console.error("檔案生成 URL 失敗:", readErr);
+              console.error("本機檔案生成 URL 失敗:", readErr);
               continue;
             }
           }
 
-          currentTeamData.attachments.push({
+          if (!finalUrl) {
+            showToast(`無法為「${file.name}」取得雲端存取網址，請重試`, 'amber');
+            continue;
+          }
+
+          const newAttachmentItem = {
             id: uniqueId,
             name: file.name,
             size: file.size,
@@ -2641,8 +2686,10 @@
             storagePath: uploadedToCloud ? storagePath : '',
             uploadedBy: currentUser ? currentUser.name : '組員',
             uploadedAt: Date.now()
-          });
+          };
 
+          currentTeamData.attachments.push(newAttachmentItem);
+          newlyUploadedItems.push(newAttachmentItem);
           uploadedCount++;
         }
       } catch (err) {
@@ -2652,8 +2699,37 @@
         if (progressEl) progressEl.classList.add('hidden');
       }
 
-      if (uploadedCount > 0) {
-        saveTeamDataToCloud();
+      if (newlyUploadedItems.length > 0) {
+        if (db) {
+          const docKey = getDocKey();
+          const cleanItems = newlyUploadedItems.map(a => ({
+            id: a.id,
+            name: a.name,
+            size: a.size,
+            category: a.category,
+            mime: a.mime || '',
+            url: (a.url && a.url.startsWith('data:')) ? '' : (a.url || ''),
+            storagePath: a.storagePath || '',
+            uploadedBy: a.uploadedBy || '組員',
+            uploadedAt: a.uploadedAt || Date.now()
+          }));
+
+          // 核心修復：使用 Firestore 原生 arrayUnion 進行原子追加！絕不會覆寫其他組員同時上傳的檔案！
+          db.collection(NOTES_COLLECTION).doc(docKey).set({
+            slideId: SLIDES_DATA[currentSlideIndex - 1].id,
+            teamId: activeTeamId,
+            attachments: firebase.firestore.FieldValue.arrayUnion(...cleanItems),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true }).catch(err => {
+            console.error("Firestore 原子新增附件失敗:", err);
+          });
+        }
+
+        try {
+          const docKey = getDocKey();
+          localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
+        } catch (e) {}
+
         renderAttachmentsUI();
         showToast(`已成功上傳 ${uploadedCount} 個附件！`, 'emerald');
       }
@@ -2683,7 +2759,32 @@
       }
 
       currentTeamData.attachments = list.filter(a => a.id !== attachmentId);
-      saveTeamDataToCloud();
+
+      if (db) {
+        const docKey = getDocKey();
+        const safeRemaining = (currentTeamData.attachments || []).map(a => ({
+          id: a.id,
+          name: a.name,
+          size: a.size,
+          category: a.category,
+          mime: a.mime || '',
+          url: (a.url && a.url.startsWith('data:')) ? '' : (a.url || ''),
+          storagePath: a.storagePath || '',
+          uploadedBy: a.uploadedBy || '組員',
+          uploadedAt: a.uploadedAt || Date.now()
+        }));
+
+        db.collection(NOTES_COLLECTION).doc(docKey).set({
+          attachments: safeRemaining,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(err => console.error("Firestore 刪除附件失敗:", err));
+      }
+
+      try {
+        const docKey = getDocKey();
+        localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
+      } catch (e) {}
+
       renderAttachmentsUI();
       showToast('附件已刪除', 'slate');
     }
@@ -3469,6 +3570,41 @@
       window.print();
     }
 
+    // --- 行動端手勢滑動換頁 (Touch Swipe for Mobile) ---
+    function setupTouchGestures() {
+      const slideContainer = document.getElementById('slide-container');
+      if (!slideContainer) return;
+
+      let startX = 0;
+      let startY = 0;
+      let startTime = 0;
+
+      slideContainer.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          startTime = Date.now();
+        }
+      }, { passive: true });
+
+      slideContainer.addEventListener('touchend', (e) => {
+        if (e.changedTouches.length === 1) {
+          const deltaX = e.changedTouches[0].clientX - startX;
+          const deltaY = e.changedTouches[0].clientY - startY;
+          const elapsedTime = Date.now() - startTime;
+
+          // 輕掃滑動：水平位移 > 45px，角度水平判定，耗時在 600ms 內
+          if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && elapsedTime < 600) {
+            if (deltaX < 0) {
+              navigateSlide(1); // 向左滑 -> 下一頁
+            } else {
+              navigateSlide(-1); // 向右滑 -> 上一頁
+            }
+          }
+        }
+      }, { passive: true });
+    }
+
     window.addEventListener('beforeunload', () => {
       releaseLock();
     });
@@ -3479,6 +3615,7 @@
       setupMemoListeners();
       setupAttachmentDragAndPaste();
       setupKeyboardShortcuts();
+      setupTouchGestures();
       checkExistingAuth();
       lucide.createIcons();
     });

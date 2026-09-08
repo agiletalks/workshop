@@ -718,10 +718,20 @@
     // 右鍵菜單狀態
     let contextMenuPos = { x: 0, y: 0 };
 
-    // 便利貼編輯狀態
+    // 便利貼編輯與併發鎖定狀態
     let activeModalMode = 'create';
     let activeEditingNoteId = null;
     let modalSelectedColor = '#FEF08A';
+    let noteLockHeartbeatTimer = null;
+
+    function isNoteLockedByOther(note) {
+      if (!note || !note.lock || !note.lock.isLocked) return false;
+      const lockAge = Date.now() - (note.lock.lockedAt || 0);
+      // 45 秒自動逾時過期保護，防止使用者離線時造成卡片死鎖
+      if (lockAge > 45000) return false;
+      const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '';
+      return Boolean(note.lock.lockedBy && note.lock.lockedBy !== myName);
+    }
 
     // 匯入檔案暫存
     let selectedImportFileContent = null;
@@ -1585,16 +1595,20 @@
             e.touches[0].pageX - e.touches[1].pageX,
             e.touches[0].pageY - e.touches[1].pageY
           );
-        } else if (e.touches.length === 1 && (e.target === backgroundLayer || currentMode === 'hand')) {
-          isPanning = true;
-          touchPanStartX = e.touches[0].clientX - panX;
-          touchPanStartY = e.touches[0].clientY - panY;
+        } else if (e.touches.length === 1) {
+          // 觸控位置不在卡片、工具列或對話框時，允許單指滑動畫布
+          const isCardOrUi = e.target.closest('.paper-texture') || e.target.closest('#main-toolbar') || e.target.closest('#minimap-container') || e.target.closest('#note-modal');
+          if (!isCardOrUi || currentMode === 'hand') {
+            isPanning = true;
+            touchPanStartX = e.touches[0].clientX - panX;
+            touchPanStartY = e.touches[0].clientY - panY;
+          }
         }
-      });
+      }, { passive: true });
 
       container.addEventListener('touchmove', function(e) {
         if (isDoubleTouch && e.touches.length === 2) {
-          e.preventDefault();
+          if (e.cancelable) e.preventDefault();
           const dist = Math.hypot(
             e.touches[0].pageX - e.touches[1].pageX,
             e.touches[0].pageY - e.touches[1].pageY
@@ -1619,12 +1633,17 @@
           panY = e.touches[0].clientY - touchPanStartY;
           updateCanvasTransform();
         }
-      });
+      }, { passive: false });
 
       container.addEventListener('touchend', function() {
         isDoubleTouch = false;
         isPanning = false;
         saveLocalViewportOnly();
+      });
+
+      container.addEventListener('touchcancel', function() {
+        isDoubleTouch = false;
+        isPanning = false;
       });
     }
 
@@ -2048,30 +2067,51 @@
     function createNoteElement(note) {
       const textColor = getContrastColor(note.color);
       const isDarkCard = (textColor === '#FFFFFF');
+      const isLockedByOther = isNoteLockedByOther(note);
 
       const card = document.createElement('div');
       card.id = `note-${note.id}`;
       
       const isSelected = selectedNoteIds.has(note.id);
-      card.className = `absolute pointer-events-auto rounded-2xl shadow-md hover:shadow-xl select-none paper-texture flex flex-col p-4 w-[220px] h-[220px] transition-shadow duration-200 cursor-grab active:cursor-grabbing ${isSelected ? 'ring-4 ring-emerald-500/80 scale-[1.02] z-30 shadow-lg' : 'z-10'}`;
+      let borderStyle = isDarkCard ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)';
+      let statusClasses = isSelected ? 'ring-4 ring-emerald-500/80 scale-[1.02] z-30 shadow-lg' : 'z-10';
+
+      if (isLockedByOther) {
+        statusClasses = 'ring-4 ring-amber-400 border-2 border-amber-500 z-20 opacity-95';
+        borderStyle = '2px solid #F59E0B';
+      }
+
+      card.className = `absolute pointer-events-auto rounded-2xl shadow-md hover:shadow-xl select-none paper-texture flex flex-col p-4 w-[220px] h-[220px] transition-all duration-200 ${isLockedByOther ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'} ${statusClasses}`;
       card.style.left = `${note.x}px`;
       card.style.top = `${note.y}px`;
       card.style.backgroundColor = note.color;
       card.style.color = textColor;
-      card.style.border = isDarkCard ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)';
+      card.style.border = borderStyle;
+
+      const lockBadgeHtml = isLockedByOther ? `
+        <div class="absolute -top-3 left-3 bg-amber-500 text-white font-bold text-[11px] px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1 z-30 animate-pulse pointer-events-none">
+          <i data-lucide="lock" class="w-3 h-3"></i>
+          <span>${escapeHtml(note.lock.lockedBy || '組員')} 編輯中</span>
+        </div>
+      ` : '';
 
       const contentHtml = `
+        ${lockBadgeHtml}
         <div class="flex items-start justify-between gap-1 mb-2">
           <div class="note-text-el font-bold text-sm tracking-tight leading-snug line-clamp-4 pr-3 select-none pointer-events-none w-full" style="word-break: break-all;">
             ${escapeHtml(note.text)}
           </div>
           <div class="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity note-tool-btn">
+            ${!isLockedByOther ? `
             <button onclick="event.stopPropagation(); toggleNoteFontFit('${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center" title="字體自適應最大化 (快捷鍵: F)">
               <i data-lucide="${note.isBigText ? 'minimize-2' : 'type'}" class="w-3.5 h-3.5"></i>
             </button>
-            <button onclick="event.stopPropagation(); openNoteModal('edit', '${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center">
+            <button onclick="event.stopPropagation(); openNoteModal('edit', '${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center" title="編輯卡片">
               <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
             </button>
+            ` : `
+            <div class="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold flex items-center gap-0.5 shadow-2xs" title="鎖定中"><i data-lucide="lock" class="w-3 h-3"></i> 鎖定</div>
+            `}
           </div>
         </div>
         
@@ -2082,6 +2122,7 @@
         </div>
         ` : ''}
 
+        ${!isLockedByOther ? `
         <div class="quick-palette absolute bottom-2 left-2 right-2 h-7 bg-white/90 backdrop-blur border border-slate-300/30 rounded-xl px-1.5 flex items-center justify-between shadow-md opacity-0 translate-y-2 pointer-events-none transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
           ${presetColors.slice(0, 5).map(c => `
             <button onclick="event.stopPropagation(); updateNoteColorDirectly('${note.id}', '${c.hex}')" class="w-3.5 h-3.5 rounded-full border border-slate-300 hover:scale-125 transition-all" style="background-color: ${c.hex}"></button>
@@ -2089,6 +2130,7 @@
           <div class="w-[1px] h-3 bg-slate-300"></div>
           <button onclick="event.stopPropagation(); openNoteModal('edit', '${note.id}')" class="text-[10px] text-slate-600 font-bold hover:text-emerald-600 transition-all">更多</button>
         </div>
+        ` : ''}
       `;
 
       card.innerHTML = contentHtml;
@@ -2098,6 +2140,10 @@
       card.addEventListener('dblclick', function(e) {
         if (currentMode === 'hand') return; 
         e.stopPropagation();
+        if (isLockedByOther) {
+          showToast(`🔒「${note.lock.lockedBy || '其他成員'}」正在編輯此便利貼，已被鎖定！`, "warning");
+          return;
+        }
         openNoteModal('edit', note.id);
       });
 
@@ -2109,6 +2155,12 @@
       card.addEventListener('pointerdown', function(e) {
         if (currentMode === 'hand') return; 
         if (e.target.closest('.note-tool-btn') || e.target.closest('.quick-palette')) return;
+
+        if (isLockedByOther) {
+          showToast(`🔒「${note.lock.lockedBy || '其他成員'}」正在編輯此便利貼，已被鎖定！`, "warning");
+          e.stopPropagation();
+          return;
+        }
 
         // 開始拖曳/選取時，立刻清除與隱藏 tooltip
         clearTimeout(tooltipTimeout);
@@ -2214,6 +2266,25 @@
         updateMinimap();
       });
 
+      card.addEventListener('pointercancel', function(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        isUserDraggingNote = false;
+        selectedNoteIds.forEach(id => {
+          const cardEl = document.getElementById(`note-${id}`);
+          if (cardEl) {
+            cardEl.style.zIndex = selectedNoteIds.has(id) ? '30' : '10';
+            cardEl.style.transform = selectedNoteIds.has(id) ? 'scale(1.02)' : 'scale(1)';
+            cardEl.style.transition = 'none';
+          }
+        });
+        try {
+          card.releasePointerCapture(e.pointerId);
+        } catch (err) {}
+        pendingNotesStateBeforeDrag = null;
+        updateMinimap();
+      });
+
       // AC 懸浮卡顯示 (滑鼠懸停 800ms 延遲)
       let lastMouseEvent = null;
       card.addEventListener('mouseenter', function(e) {
@@ -2295,9 +2366,13 @@
     }
 
     function toggleNoteFontFit(noteId) {
-      pushHistory();
       const note = boardState.notes.find(n => n.id === noteId);
       if (note) {
+        if (isNoteLockedByOther(note)) {
+          showToast(`🔒「${note.lock?.lockedBy || '其他成員'}」正在編輯此便利貼，已被鎖定！`, "warning");
+          return;
+        }
+        pushHistory();
         note.isBigText = !note.isBigText;
         localStorage.setItem('aigile_board_font_fit', note.isBigText ? 'true' : 'false');
         note.updatedAt = new Date().toISOString();
@@ -2413,27 +2488,32 @@
 
     function alignSelectedNotes(direction) {
       if (selectedNoteIds.size < 2) return;
-      pushHistory();
       
-      const notesToAlign = boardState.notes.filter(n => selectedNoteIds.has(n.id));
+      const notesToAlign = boardState.notes.filter(n => selectedNoteIds.has(n.id) && !isNoteLockedByOther(n));
+      if (notesToAlign.length === 0) {
+        showToast("所選卡片正被編輯鎖定或未選取任何卡片！", "warning");
+        return;
+      }
+      
+      pushHistory();
       
       if (direction === 'horizontal') {
         notesToAlign.sort((a, b) => a.x - b.x);
-        const avgY = notesToAlign.reduce((sum, n) => sum + n.y, 0) / notesToAlign.length;
+        const startX = notesToAlign[0].x;
+        const currentY = notesToAlign[0].y;
         
-        let currentX = notesToAlign[0].x;
         notesToAlign.forEach((n, idx) => {
-          n.y = avgY;
-          n.x = currentX + idx * 240;
+          n.x = startX + idx * 240;
+          n.y = currentY;
         });
         
       } else if (direction === 'vertical') {
         notesToAlign.sort((a, b) => a.y - b.y);
-        const avgX = notesToAlign.reduce((sum, n) => sum + n.x, 0) / notesToAlign.length;
+        const currentX = notesToAlign[0].x;
+        const currentY = notesToAlign[0].y;
         
-        let currentY = notesToAlign[0].y;
         notesToAlign.forEach((n, idx) => {
-          n.x = avgX;
+          n.x = currentX;
           n.y = currentY + idx * 240;
         });
         
@@ -2467,6 +2547,11 @@
 
     function deleteSelectedNotes() {
       if (selectedNoteIds.size === 0) return;
+      const lockedByOthers = boardState.notes.filter(n => selectedNoteIds.has(n.id) && isNoteLockedByOther(n));
+      if (lockedByOthers.length > 0) {
+        showToast(`無法刪除：所選卡片中有 ${lockedByOthers.length} 張正被其他組員編輯鎖定！`, "warning");
+        return;
+      }
       const count = selectedNoteIds.size;
       showCustomConfirm("批次刪除確認", `確定要永久刪除已選取的 ${count} 張敏捷卡片嗎？`, function() {
         pushHistory();
@@ -2484,6 +2569,10 @@
     function updateNoteColorDirectly(noteId, newHex) {
       const note = boardState.notes.find(n => n.id === noteId);
       if (note) {
+        if (isNoteLockedByOther(note)) {
+          showToast(`🔒「${note.lock.lockedBy || '其他成員'}」正在編輯此便利貼，已被鎖定！`, "warning");
+          return;
+        }
         pushHistory();
         note.color = newHex;
         note.updatedAt = new Date().toISOString();
@@ -2541,6 +2630,26 @@
       tooltip.style.opacity = '0';
     }
 
+    // --- 便利貼編輯鎖定心跳排程器 (預防編輯中斷導致死鎖) ---
+    function startLockHeartbeat(noteId) {
+      stopLockHeartbeat();
+      noteLockHeartbeatTimer = setInterval(() => {
+        const note = boardState.notes.find(n => n.id === noteId);
+        const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '組員';
+        if (note && note.lock && note.lock.isLocked && note.lock.lockedBy === myName) {
+          note.lock.lockedAt = Date.now();
+          saveState(true);
+        }
+      }, 15000);
+    }
+
+    function stopLockHeartbeat() {
+      if (noteLockHeartbeatTimer) {
+        clearInterval(noteLockHeartbeatTimer);
+        noteLockHeartbeatTimer = null;
+      }
+    }
+
     // --- Modal 對話框控制與資料儲存 ---
     function openNoteModal(mode, spawnCoordinates = null) {
       activeModalMode = mode;
@@ -2551,9 +2660,6 @@
       const title = document.getElementById('modal-title');
       const deleteBtn = document.getElementById('modal-delete-btn');
 
-      modal.classList.remove('hidden');
-      setTimeout(() => modal.classList.add('opacity-100'), 10);
-      
       if (mode === 'create') {
         title.innerHTML = `<i data-lucide="plus-circle" class="text-emerald-600 w-5 h-5"></i> 新增敏捷卡片`;
         textInput.value = '';
@@ -2579,6 +2685,21 @@
         const note = boardState.notes.find(n => n.id === noteId);
         if (!note) return;
 
+        if (isNoteLockedByOther(note)) {
+          showToast(`🔒「${note.lock?.lockedBy || '其他成員'}」正在編輯此便利貼，已被鎖定！`, "warning");
+          return;
+        }
+
+        // 鎖定此便利貼並啟動心跳
+        const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '組員';
+        note.lock = {
+          isLocked: true,
+          lockedBy: myName,
+          lockedAt: Date.now()
+        };
+        saveState(true);
+        startLockHeartbeat(note.id);
+
         title.innerHTML = `<i data-lucide="file-edit" class="text-emerald-600 w-5 h-5"></i> 編輯卡片與 AC`;
         textInput.value = note.text;
         acInput.value = note.ac || '';
@@ -2588,11 +2709,22 @@
         selectModalColor(note.color);
       }
       
+      modal.classList.remove('hidden');
+      setTimeout(() => modal.classList.add('opacity-100'), 10);
       lucide.createIcons({ scope: modal });
       textInput.focus();
     }
 
     function closeNoteModal() {
+      if (activeModalMode === 'edit' && activeEditingNoteId && typeof activeEditingNoteId === 'string') {
+        const note = boardState.notes.find(n => n.id === activeEditingNoteId);
+        const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '組員';
+        if (note && note.lock && note.lock.lockedBy === myName) {
+          note.lock = { isLocked: false, lockedBy: '', lockedAt: 0 };
+          saveState(true);
+        }
+      }
+      stopLockHeartbeat();
       const modal = document.getElementById('note-modal');
       modal.classList.remove('opacity-100');
       setTimeout(() => modal.classList.add('hidden'), 300);
@@ -2632,25 +2764,35 @@
           note.ac = ac;
           note.color = modalSelectedColor;
           note.updatedAt = new Date().toISOString();
+          note.lock = { isLocked: false, lockedBy: '', lockedAt: 0 };
           showToast("卡片已成功儲存！");
         }
       }
 
+      stopLockHeartbeat();
       saveState(true);
       renderNotes();
       updateStickyNotesCount();
-      closeNoteModal();
+
+      const modal = document.getElementById('note-modal');
+      modal.classList.remove('opacity-100');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+      activeEditingNoteId = null;
     }
 
     function deleteNoteFromModal() {
       if (activeModalMode === 'edit' && activeEditingNoteId) {
         showCustomConfirm("刪除確認", "確定要永久刪除此敏捷卡片嗎？", function() {
           pushHistory();
+          stopLockHeartbeat();
           boardState.notes = boardState.notes.filter(n => n.id !== activeEditingNoteId);
           saveState(true);
           renderNotes();
           updateStickyNotesCount();
-          closeNoteModal();
+          const modal = document.getElementById('note-modal');
+          modal.classList.remove('opacity-100');
+          setTimeout(() => modal.classList.add('hidden'), 300);
+          activeEditingNoteId = null;
           showToast("卡片已刪除。");
         });
       }
@@ -3204,6 +3346,25 @@
       const expW = document.getElementById('export-selector-container');
       if (expW && !expW.contains(e.target)) {
         closeExportMenu();
+      }
+    });
+
+    // 視窗生命週期與行動端 App 切換：自動釋放便利貼編輯鎖定
+    window.addEventListener('beforeunload', () => {
+      if (activeModalMode === 'edit' && activeEditingNoteId) {
+        closeNoteModal();
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && activeModalMode === 'edit' && activeEditingNoteId) {
+        closeNoteModal();
+      }
+    });
+
+    window.addEventListener('pagehide', () => {
+      if (activeModalMode === 'edit' && activeEditingNoteId) {
+        closeNoteModal();
       }
     });
   </script>
