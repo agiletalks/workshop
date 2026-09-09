@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 輔助需求建模與敏捷 Refinement 課程大綱</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --primary: #1e3a8a; /* Deep Navy representing structure, logic and modeling */
+      --primary-2: #059669; /* Emerald Green representing ready increments and delivery */
+      --line: #cbd5e1;
+      --accent: #f0fdf4; /* Soft green */
+      --accent-blue: #eff6ff; /* Soft blue */
+      --soft: #f1f5f9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.75;
+    }
+
+    .page {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1e3a8a 0%, #0f766e 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 52px 48px;
+      box-shadow: 0 20px 48px rgba(15, 118, 110, 0.22);
+    }
+
+    .eyebrow {
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-size: 13px;
+      opacity: 0.86;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 38px;
+      line-height: 1.25;
+      margin: 0 0 12px;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      margin: 0;
+      opacity: 0.95;
+      font-weight: 500;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .pill {
+      border: 1px solid rgba(255,255,255,0.38);
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 14px;
+    }
+
+    section {
+      background: var(--card);
+      margin-top: 24px;
+      padding: 32px 36px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 28px rgba(31, 41, 55, 0.05);
+    }
+
+    h2 {
+      color: var(--primary);
+      font-size: 24px;
+      margin: 0 0 18px;
+      line-height: 1.3;
+      border-left: 5px solid var(--primary-2);
+      padding-left: 12px;
+    }
+
+    h3 {
+      color: var(--primary);
+      font-size: 20px;
+      margin: 0 0 12px;
+      line-height: 1.4;
+    }
+
+    p { margin: 0 0 14px; }
+
+    .lead {
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .list-card {
+      background: var(--soft);
+      border-radius: 16px;
+      padding: 20px 22px;
+      border: 1px solid var(--line);
+    }
+
+    .list-card-accent {
+      background: var(--accent);
+      border-radius: 16px;
+      padding: 20px 22px;
+      border: 1px solid #a7f3d0;
+    }
+
+    .list-card-blue {
+      background: var(--accent-blue);
+      border-radius: 16px;
+      padding: 20px 22px;
+      border: 1px solid #bfdbfe;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    li { margin: 6px 0; }
+
+    table.standard-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+
+    table.standard-table th {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    table.standard-table td {
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    table.standard-table tr:nth-child(even) td { background: #f8fafc; }
+
+    /* Flow diagram block styling */
+    .flow-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--soft);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      margin-top: 15px;
+    }
+
+    .flow-title {
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 16px;
+      font-size: 15px;
+    }
+
+    .flow-steps {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .flow-node {
+      background: var(--card);
+      border: 1.5px solid var(--primary);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      color: var(--primary);
+    }
+
+    .flow-node.highlight {
+      border-color: var(--primary-2);
+      color: var(--primary-2);
+      background: var(--accent);
+    }
+
+    .flow-arrow {
+      align-self: center;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .quote-box {
+      background: #f0fdf4;
+      border-left: 4px solid var(--primary-2);
+      padding: 16px 20px;
+      border-radius: 0 12px 12px 0;
+      margin-top: 15px;
+      font-style: italic;
+      color: #065f46;
+      font-size: 15px;
+    }
+
+    .teacher {
+      display: grid;
+      grid-template-columns: 1fr 2.5fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .teacher-card {
+      background: linear-gradient(180deg, #f8fbfe 0%, #eef5fb 100%);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+    }
+
+    .teacher-name {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .teacher-role {
+      color: var(--muted);
+      font-size: 15px;
+      margin-bottom: 14px;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .tag {
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--primary);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 28px;
+    }
+
+    @media (max-width: 760px) {
+      .page { padding: 24px 14px 44px; }
+      .hero { padding: 36px 26px; border-radius: 18px; }
+      h1 { font-size: 30px; }
+      .subtitle { font-size: 18px; }
+      section { padding: 26px 22px; }
+      .grid-2, .teacher { grid-template-columns: 1fr; }
+      table.standard-table { font-size: 13px; }
+      table.standard-table th, table.standard-table td { padding: 10px 8px; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page { max-width: none; padding: 0; }
+      section, .hero { box-shadow: none; break-inside: avoid; }
+      .hero { border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="eyebrow">Course Outline</div>
+      <h1>AI 輔助需求建模與敏捷 Refinement</h1>
+      <p class="subtitle">從結構化訪談、Clickable Prototype 到 Ready Increment</p>
+      <div class="meta">
+        <span class="pill">一日招生大綱</span>
+        <span class="pill">BA / SA / PM / PO / IT 跨職能團隊</span>
+        <span class="pill">Model-Driven・Clickable First・SPLIT 拆解</span>
+      </div>
+    </header>
+
+    <!-- 一、課程基本資訊 -->
+    <section>
+      <h2>一、 課程基本資訊</h2>
+      <table class="standard-table">
+        <tbody>
+          <tr>
+            <td style="width: 20%; font-weight: 700;">課程定位</td>
+            <td>AI 輔助需求分析、建模、原型與敏捷需求精煉工作坊</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700;">適合對象</td>
+            <td>Business Analyst、Project Manager、Product Manager、Product Owner、System Analyst、UX、IT 與業務團隊</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700;">建議人數</td>
+            <td>12–30 人</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700;">教學形式</td>
+            <td>講授、案例拆解、AI 示範、小組訪談、模型實作、Vibe Coding、Refinement 演練</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700;">貫穿案例</td>
+            <td>員工教育訓練補助申請</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700;">最終成果</td>
+            <td>從訪談與模型，產出結構化文件、Clickable Prototype、Ready Increment 與團隊 Task</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 二、課程定位與設計重點 -->
+    <section>
+      <h2>二、 課程定位</h2>
+      <p class="lead">本課程聚焦於 AI 輔助下的需求理解、建模與交付。課程要建立的是一條從模糊描述到 Ready 任務的完整需求交付鏈：</p>
+      
+      <div class="flow-container">
+        <div class="flow-steps">
+          <span class="flow-node">結構化訪談</span>
+          <span class="flow-arrow">➔</span>
+          <span class="flow-node">需求建模</span>
+          <span class="flow-arrow">➔</span>
+          <span class="flow-node">結構化需求文件</span>
+          <span class="flow-arrow">➔</span>
+          <span class="flow-node highlight">Clickable Prototype</span>
+          <span class="flow-arrow">➔</span>
+          <span class="flow-node">Agile Refinement</span>
+          <span class="flow-arrow">➔</span>
+          <span class="flow-node highlight">Ready Increment</span>
+          <span class="flow-arrow">➔</span>
+          <span class="flow-node">Team Tasks</span>
+        </div>
+      </div>
+      
+      <p style="margin-top: 20px;">本課程從模糊的業務描述出發，逐步形成可閱讀、可追溯的模型、文件與 Prototype；接著將已釐清的需求細化為一個 Sprint 內可完成、具垂直價值、可估算且可測試的 Ready Increment，最後由團隊拆成可協作執行的 Task。</p>
+
+      <h3 style="margin-top: 30px;">三、 課程設計重點</h3>
+      <div class="grid-2">
+        <div class="list-card">
+          <h4>1. Modeling 建立共同理解</h4>
+          <p>模型可用來建立共同理解、找出資訊缺口、區分事實/推論與假設、支援文件與 Prototype 生成，並為後續需求分解提供可靠輸入。</p>
+        </div>
+        <div class="list-card">
+          <h4>2. Prototype 輔助需求確認</h4>
+          <p>Clickable Prototype 用以直觀確認流程與畫面是否一致、規則與狀態是否正確表現，避免把錯的方向寫得很完整、做得很認真。Prototype 通常涵蓋多個能力，仍需透過 Refinement 切成一個 Sprint 內可完成的 Ready 需求。</p>
+        </div>
+      </div>
+      
+      <div style="margin-top: 18px;">
+        <div class="list-card-accent">
+          <h4>3. Refinement 讓需求具備可交付條件</h4>
+          <p>Refinement 的目的是讓需求逐步達到 <strong>INVEST</strong> 標準（獨立、可協商、有價值、可估算、足夠小、可測試），並能在一個 Sprint 內形成 Potentially Releasable Increment。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 四、學習目標 -->
+    <section>
+      <h2>四、 學習目標</h2>
+      <p class="lead">完成課程後，學員能夠：</p>
+      <div class="grid-2">
+        <div class="list-card-blue">
+          <ul>
+            <li>說明 AI 輔助需求建模的完整交付鏈。</li>
+            <li>使用結構化訪談問出流程、規則、資料、狀態與例外。</li>
+            <li>建立需求建模交付物的簡化版本。</li>
+            <li>將模型轉換為可追溯的結構化需求文件。</li>
+            <li>將模型轉譯為 Screen Flow 與 Interaction Specification。</li>
+            <li>使用 AI Vibe Coding 產出可操作的 Clickable Prototype。</li>
+          </ul>
+        </div>
+        <div class="list-card-blue">
+          <ul>
+            <li>使用 Increment 分解手法，切出具有垂直價值的 Ready Item。</li>
+            <li>使用 Ready 檢核條件（INVEST）檢查需求是否適合進入 Sprint。</li>
+            <li>將 Ready Increment 拆成團隊內部可協作執行的 Task。</li>
+            <li>維持模型、Prototype、Backlog Item 與 Task 之間的追溯性。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 五、課程架構 -->
+    <section>
+      <h2>五、 課程架構與建模交付物融合對照</h2>
+      <p>課程依照需求從理解、建模、確認到交付的順序展開，並將 Modeling 建模交付物無縫融合至各學習階段中：</p>
+
+      <table class="standard-table">
+        <thead>
+          <tr>
+            <th style="width: 20%;">階段</th>
+            <th style="width: 35%;">核心目的</th>
+            <th style="width: 45%;">主要成果與建模交付物 (講義核心技術)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Frame</strong></td>
+            <td>建立範圍、角色與共同語言</td>
+            <td>
+              <ul>
+                <li><strong>Context Model</strong>：範圍與系統邊界</li>
+                <li><strong>Stakeholder Model</strong>：角色、權限與訪談對象</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Understand</strong></td>
+            <td>釐清流程、規則、資料與狀態</td>
+            <td>
+              <ul>
+                <li><strong>Process Model</strong>：工作流主幹與使用者任務</li>
+                <li><strong>Decision Model</strong>：商業規則與條件分支</li>
+                <li><strong>Data Model</strong>：表單欄位與資料字典</li>
+                <li><strong>State Model</strong>：案件狀態遷移與生命週期</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Translate</strong></td>
+            <td>將模型轉為介面與互動規格</td>
+            <td>
+              <ul>
+                <li><strong>Screen Flow</strong>：畫面流動與 Prototype 導航</li>
+                <li><strong>Interaction Specification</strong>：UI 操作互動規格</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Prototype</strong></td>
+            <td>生成並操作 Clickable Prototype</td>
+            <td>
+              <ul>
+                <li>Prototype Brief：設定原型目標與範圍</li>
+                <li><strong>Clickable Prototype</strong>：AI 輔助（Vibe Coding）可操作交互原型</li>
+              </ul>
+            </td>
+          <tr>
+            <td><strong>Refine</strong></td>
+            <td>將需求切成可交付增量 (Agile Refinement)</td>
+            <td>
+              <ul>
+                <li>四種 Increment 垂直切片拆分 (A&B、Decision、Discount、Dependency)</li>
+                <li>符合 INVEST 的 **Ready User Story**</li>
+                <li>驗收準則 (Acceptance Criteria, AC)</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Task</strong></td>
+            <td>拆成團隊可協作執行的工作</td>
+            <td>
+              <ul>
+                <li>Task List：UI、Logic、Data、Test 開發任務</li>
+                <li>簡易 Task Board：團隊分工看板與開發時序</li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 授課講師與核心結語 (對外宣傳版) -->
+    <section>
+      <h2>授課講師資訊</h2>
+      <div class="teacher">
+        <div class="teacher-card">
+          <div class="teacher-name">徐柏峰 (Percy Hsu)</div>
+          <div class="teacher-role">企業敏捷教練｜引導師｜顧問｜專業講師</div>
+          <p>長期協助各大金控與企業數位團隊導入敏捷工作方式、產品思維、需求建模與跨部門協作機制。</p>
+        </div>
+        <div>
+          <p>徐老師深耕於敏捷開發、用戶體驗（UX）及跨部門溝通引導領域超過 25 年，為台灣首位專職企業敏捷教練。長期擔任<strong>國泰金控、凱基金控、中信金控、玉山金控、臺灣銀行、華南銀行</strong>等各大金融機構之指定轉型教練，指導超過 200 個敏捷與數位產品專案。</p>
+          <p>擅長將複雜的需求分析、敏捷需求精煉與專案管理概念，轉化為直觀、好上手的實戰工具（如 SPLIT 需求分解技術、Event Storming 等），透過實戰工作坊引導，協助 BA、SA 與 PM 在合規與商業價值的平衡下，建立高效交付的共識與即戰力。</p>
+          <div class="tag-row">
+            <span class="tag">SPLIT 需求分解技術</span>
+            <span class="tag">AI 輔助需求建模 (Modeling)</span>
+            <span class="tag">Vibe Coding 與原型驗證</span>
+            <span class="tag">商業分析 (IIBA AAC) & 系統分析</span>
+            <span class="tag">用戶體驗大師 (NNG UX Master)</span>
+            <span class="tag">跨功能團隊 Refinement</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="quote-box" style="margin-top: 30px;">
+        <strong>一句話課程介紹：</strong><br>
+        本課程帶領學員透過結構化訪談與 AI 建立需求模型、文件與 Clickable Prototype，再以敏捷 Refinement 將已驗證需求切成一個 Sprint 內可完成的 Ready Increment，並由團隊拆成可執行的 Task。
+      </div>
+
+      <div class="quote-box" style="margin-top: 12px; background-color: #eff6ff; border-left-color: var(--primary);">
+        <strong>課程核心結語：</strong><br>
+        「Modeling 讓團隊把需求看清楚；Prototype 讓團隊把理解試出來；Refinement 讓團隊把需求切到能交付；Tasking 讓團隊把承諾轉成協作行動。」
+      </div>
+    </section>
+  </main>
+</body>
+</html>
