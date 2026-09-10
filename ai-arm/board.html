@@ -1137,6 +1137,7 @@
       const params = new URLSearchParams(window.location.search);
       let team = params.get('team');
       let user = params.get('user');
+      let room = params.get('room');
 
       if (!team || !user) {
         try {
@@ -1159,7 +1160,7 @@
         teamNum: teamNum,
         teamDisplayName: teamDisplayName,
         userName: user,
-        roomId: `ai-align-${team}`
+        roomId: room || `ai-arm-${team}`
       };
     }
 
@@ -1448,7 +1449,7 @@
       if (!newTeam || newTeam === TEAM_INFO.teamId) return;
       const url = new URL(window.location.href);
       url.searchParams.set('team', newTeam);
-      url.searchParams.set('room', `ai-align-${newTeam}`);
+      url.searchParams.set('room', `ai-arm-${newTeam}`);
       if (TEAM_INFO.userName) {
         url.searchParams.set('user', TEAM_INFO.userName);
       }
@@ -1468,7 +1469,7 @@
       if (!db) return;
       const teams = ['team-1', 'team-2', 'team-3', 'team-4', 'team-5', 'team-6'];
       teams.forEach(tId => {
-        db.collection('aigile_boards').doc(`ai-align-${tId}`).get().then(doc => {
+        db.collection('aigile_boards').doc(`ai-arm-${tId}`).get().then(doc => {
           if (doc.exists) {
             const data = doc.data();
             const notes = Array.isArray(data.notes) ? data.notes : [];
