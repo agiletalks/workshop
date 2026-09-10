@@ -1597,7 +1597,8 @@
       localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
       // 同步獨立 HTML 工具 (decision-table 與 status-transition-matrix) 所需之 session key
       const teamNum = team.replace('team-', '');
-      localStorage.setItem('ai_arm_team', `Team `);
+      localStorage.setItem('ai_arm_team', `Team ${teamNum}`);
+      localStorage.setItem('ai_arm_team_id', team);
       localStorage.setItem('ai_arm_nickname', name);
       activeTeamId = team;
 
@@ -1611,7 +1612,8 @@
       // 同步獨立 HTML 工具 session key (以防重新整理或切換身分時遺漏)
       if (currentUser.team && currentUser.name) {
         const teamNum = currentUser.team.replace('team-', '');
-        localStorage.setItem('ai_arm_team', `Team `);
+        localStorage.setItem('ai_arm_team', `Team ${teamNum}`);
+        localStorage.setItem('ai_arm_team_id', currentUser.team);
         localStorage.setItem('ai_arm_nickname', currentUser.name);
       }
       document.getElementById('user-team-name').innerText = getTeamDisplayName(currentUser.team);
@@ -1779,21 +1781,17 @@
 
     function getSavedPromptDraft(promptId) {
       const teamKey = getPromptStorageKey(promptId);
-      const teamVal = localStorage.getItem(teamKey);
-      if (teamVal !== null) return teamVal;
-      return localStorage.getItem("ai_arm_custom_prompt_" + promptId);
+      return localStorage.getItem(teamKey);
     }
 
     function savePromptDraft(promptId, content) {
       const teamKey = getPromptStorageKey(promptId);
       localStorage.setItem(teamKey, content);
-      localStorage.setItem("ai_arm_custom_prompt_" + promptId, content);
     }
 
     function removePromptDraft(promptId) {
       const teamKey = getPromptStorageKey(promptId);
       localStorage.removeItem(teamKey);
-      localStorage.removeItem("ai_arm_custom_prompt_" + promptId);
     }
 
     function renderTeamTaskPrompts(slide) {
@@ -1985,14 +1983,16 @@
     }
 
     function initP24SandboxControls(content) {
-      let role = 'BA';
-      if (/主要視角：【SA/i.test(content)) role = 'SA';
-      else if (/主要視角：【SD/i.test(content)) role = 'SD';
-      else if (/主要視角：【UR/i.test(content)) role = 'UR';
-      else if (/主要視角：【BA/i.test(content)) role = 'BA';
+      // QA-04: 精確偵測第一行或開頭之主要視角宣告，不符合時不武斷預設為 BA
+      const m = content.match(/^.*主要視角[：:]\s*【?([A-Z]{2})】?/m);
+      const role = (m && ['BA', 'SA', 'SD', 'UR'].includes(m[1].toUpperCase())) ? m[1].toUpperCase() : null;
       p24CurrentRole = role;
       updateP24RoleButtonsUI(role);
-      setP24InputMode('direct');
+
+      // QA-05: 恢復該小組先前選擇的輸入模式
+      const currentTeam = (currentUser && currentUser.team) ? currentUser.team : (activeTeamId || 'team-1');
+      const savedMode = localStorage.getItem('ai_arm_p24_mode_' + currentTeam) || 'direct';
+      setP24InputMode(savedMode, false);
     }
 
     function updateP24RoleButtonsUI(role) {
@@ -2017,11 +2017,20 @@
       if (!editor) return;
       let text = editor.value;
 
-      const pattern = /主要視角：【[^】]*】/g;
-      if (pattern.test(text)) {
-        text = text.replace(pattern, "主要視角：【" + role + "】");
-      } else if (/主要視角：.*/.test(text)) {
-        text = text.replace(/主要視角：.*/, "主要視角：【" + role + "】");
+      // QA-04: 僅精確替換首個「主要視角：」宣告行，嚴格避免誤傷逐字稿或內文
+      const lines = text.split('\n');
+      let replaced = false;
+      for (let i = 0; i < lines.length; i++) {
+        if (/主要視角[：:]/.test(lines[i])) {
+          lines[i] = lines[i].replace(/主要視角[：:].*/, "主要視角：【" + role + "】");
+          replaced = true;
+          break;
+        }
+      }
+      if (!replaced) {
+        text = "主要視角：【" + role + "】\n\n" + text;
+      } else {
+        text = lines.join('\n');
       }
 
       editor.value = text;
@@ -2029,8 +2038,12 @@
       showToast("已切換主要視角為【" + role + "】", 'indigo');
     }
 
-    function setP24InputMode(mode) {
+    function setP24InputMode(mode, save = true) {
       p24CurrentMode = mode;
+      if (save) {
+        const currentTeam = (currentUser && currentUser.team) ? currentUser.team : (activeTeamId || 'team-1');
+        localStorage.setItem('ai_arm_p24_mode_' + currentTeam, mode);
+      }
       const btnDirect = document.getElementById('btn-p24-mode-direct');
       const btnTranscript = document.getElementById('btn-p24-mode-transcript');
       const guideBox = document.getElementById('p24-transcript-guide-box');
@@ -2067,28 +2080,44 @@
       const editor = document.getElementById('prompt-modal-editor');
       if (!editor) return;
       const val = editor.value;
-      let target = '# 輸入資料';
-      let idx = val.indexOf(target);
-      if (idx === -1) {
-        target = '## A. 結構化輸入';
-        idx = val.indexOf(target);
+      // QA-11: 支援所有 Prompt 的結構化輸入錨點
+      const candidateTargets = [
+        '# 輸入資料',
+        '## 輸入資料',
+        '## 五、開始處理',
+        '## 三、 開始處理',
+        '## 三、開始處理',
+        '## 開始處理',
+        '## A. 結構化輸入',
+        '## 1. 專案願景',
+        '## 1. P24 訪綱初稿',
+        '【請在此貼上',
+        '【請貼上原始逐字稿】',
+        '【請貼上',
+        '【專案願景說明書內容】'
+      ];
+      let foundIdx = -1;
+      let matchedTarget = '';
+      for (const t of candidateTargets) {
+        const idx = val.indexOf(t);
+        if (idx !== -1) {
+          foundIdx = idx;
+          matchedTarget = t;
+          break;
+        }
       }
-      if (idx === -1) {
-        target = '## 1. 專案願景';
-        idx = val.indexOf(target);
-      }
-      if (idx === -1) {
-        target = '## 1. P24 訪綱初稿';
-        idx = val.indexOf(target);
-      }
-      if (idx !== -1) {
+
+      if (foundIdx !== -1) {
         editor.focus();
-        editor.setSelectionRange(idx, idx + target.length);
-        const ratio = idx / val.length;
+        editor.setSelectionRange(foundIdx, foundIdx + matchedTarget.length);
+        const ratio = foundIdx / val.length;
         editor.scrollTop = editor.scrollHeight * ratio;
         showToast('已前往輸入資料區塊', 'amber');
       } else {
-        showToast('本 Prompt 已在編輯範圍內', 'slate');
+        editor.focus();
+        editor.setSelectionRange(val.length, val.length);
+        editor.scrollTop = editor.scrollHeight;
+        showToast('已移動至 Prompt 編輯末端', 'slate');
       }
     }
 
@@ -4973,8 +5002,7 @@
     // --- 鍵盤事件與視窗控制 ---
     function setupKeyboardShortcuts() {
       window.addEventListener('keydown', (e) => {
-        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-
+        // QA-10: 優先響應 Escape 關閉所有開啟中彈窗，即使焦點在編輯框內也能生效
         if (e.key === 'Escape') {
           closeTocDrawer();
           closeLoginModal();
@@ -4988,7 +5016,13 @@
           closeAttachmentImageModal();
           closeAttachmentHtmlModal();
           closeAttachmentPdfModal();
-        } else if (isExampleLightboxOpen()) {
+          return;
+        }
+
+        // 一般翻頁與快捷鍵才過濾輸入中的 input/textarea
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+        if (isExampleLightboxOpen()) {
           if (e.key === 'ArrowLeft') {
             e.preventDefault();
             navigateLightbox(-1);
@@ -5005,6 +5039,7 @@
             e.preventDefault();
             resetLightboxZoom();
           }
+        
         } else if (isAgreementModalOpen()) {
           if (e.key === 'ArrowLeft') {
             e.preventDefault();
@@ -5189,17 +5224,17 @@
         color: "amber",
         items: [
           {
-            id: "prompt-1-vision",
+            id: "prompt-1-transcript",
             code: "P1.1A",
-            name: "主管初步訪談與痛點萃取 Prompt",
+            name: "錄音逐字稿整理與校正 Prompt",
             status: "ready",
             slideIndex: 11,
-            desc: "以敏捷需求訪談框架，提煉核心使用者、痛點、假說與驗收目標。"
+            desc: "將手機錄音轉出的雜亂原始逐字稿，自動區分角色並做最低限度校正，忠於原貌。"
           },
           {
-            id: "prompt-2-six-dimension",
+            id: "prompt-2-envisioning",
             code: "P1.1B",
-            name: "產品六大維度願景說明書 Prompt",
+            name: "專案六大維度願景制定 Prompt",
             status: "ready",
             slideIndex: 11,
             desc: "以敏捷產品經理六大核心維度（Users, Needs, Scope, Features, Discriminator, Measurements）深度萃取願景說明書。"
@@ -5303,7 +5338,52 @@
         url: "decision-table/decision-table.html",
         target: "_blank",
         desc: "把條件組合與可能動作攤開，討論『這種情況應該怎麼處理？』表格是討論中的紀錄，不自動代表已核准需求。可保留分歧與待確認事項，只有明確確認的結論才帶入後續故事與 AC。",
-        actionText: "開啟工具 ↗"
+        actionText: "開啟工具 ↗",
+        prompt: {
+          id: "prompt-tool-decision-table",
+          title: "Prompt｜決策表討論準備 Prompt",
+          desc: "將業務情境或複雜判斷規則，轉化為決策表自變數 (Inputs)、應變數 (Outputs) 與規則矩陣候選，供團隊上機討論。",
+          content: `# 決策表討論準備 Prompt (Decision Table Discussion Prompt)
+
+你是一位資深的「商業分析師（BA）」與「敏捷邏輯建模顧問」。
+你的任務是根據輸入的專案業務規則、使用者故事或訪談內容，梳理出可以用於小組討論的「決策表（Decision Table）結構」。
+
+---
+
+## 一、 分析原則
+1. 聚焦關鍵分支：先抓出 3~5 個最具影響力的核心自變數（Inputs）。
+2. 釐清應變動作：明確定義 2~4 個核心應變數（Outputs / 系統或人工動作）。
+3. 標記未知與衝突：若輸入資料中未明確交代某條件組合的處置方式，標記為「待確認」，不擅自臆測規格。
+4. 工具是紀錄：決策表是用於引導跨角色對齊，表格中填寫的規則在被業務確認前均為候選。
+
+---
+
+## 二、 輸出結構
+
+### 1. 自變數清單 (Conditions / Inputs)
+- [條件代號 C1] 條件名稱（取值：Y=是, N=否, —=不影響）
+- [條件代號 C2] ...
+
+### 2. 應變數清單 (Actions / Outputs)
+- [動作代號 A1] 動作名稱（取值：Y=執行, N=不執行, —=不適用）
+- [動作代號 A2] ...
+
+### 3. 初始規則矩陣 (Initial Rules)
+請以表格列出初步推導的規則（R1, R2, R3...）：
+| 規則編號 | 自變數條件組合 | 應變數預期處置 | 依據／待確認事項 |
+|---|---|---|---|
+| R1 | ... | ... | ... |
+
+### 4. 團隊討論引導問題
+- 列出 2~3 個最需要團隊與利害關係人釐清的邊界問題或未定情境。
+
+---
+
+## 三、 開始處理
+
+以下是專案業務規則或訪談內容：
+【請在此貼上業務規則、訪談紀錄或使用者情境】`
+        },
       },
       {
         id: "tool-stm",
@@ -5314,7 +5394,49 @@
         url: "status-transition-matrix/status-transition-matrix.html",
         target: "_blank",
         desc: "把狀態關係攤開，討論『這樣能不能轉？什麼情況可以？』表格是討論中的紀錄，不自動代表已核准需求。可保留分歧與待確認事項，只有明確確認的結論才帶入後續故事與 AC。",
-        actionText: "開啟工具 ↗"
+        actionText: "開啟工具 ↗",
+        prompt: {
+          id: "prompt-tool-status-matrix",
+          title: "Prompt｜狀態表討論準備 Prompt",
+          desc: "梳理系統核心實體之生命週期狀態（From ➔ To）與轉換觸發事件，產出狀態矩陣清單以供團隊逐格驗證。",
+          content: `# 狀態轉換矩陣討論準備 Prompt (Status Transition Matrix Prompt)
+
+你是一位資深的「系統分析師（SA）」與「狀態建模顧問」。
+你的任務是根據專案情境、業務生命週期或需求描述，提煉出核心物件的「狀態清單」與「轉換規則候選」，供團隊在狀態表工具中共同檢視。
+
+---
+
+## 一、 分析原則
+1. 物件單一性：明確鎖定單一核心業務實體（如：報支案件、請假單、訂單）。
+2. 狀態正交與互斥：狀態必須代表物件在特定時間點的生命週期點，不可把動作或角色混充為狀態。
+3. 檢驗逆向與例外：特別關注退回、取消、逾期、異常中止等非快樂路徑（Unhappy Path）。
+4. 保留待確認：對於「能不能從狀態 A 直接跳轉狀態 B」若規格未載明，標記為待確認。
+
+---
+
+## 二、 輸出結構
+
+### 1. 核心業務實體與狀態定義 (Statuses)
+- [狀態 1] 名稱與簡述（例如：草稿 Draft）
+- [狀態 2] 名稱與簡述（例如：簽核中 Pending Approval）
+- [狀態 3] ...
+
+### 2. 狀態轉換矩陣候選 (Transitions Matrix)
+請以清單或表格列出預期允許的轉換：
+- 【允許轉移】[來源狀態] ➔ [目標狀態]：觸發條件 / 執行角色 / 前提限制
+- 【例外／逆向】[來源狀態] ➔ [目標狀態]：退回或取消機制
+- 【嚴格禁止】明確指出哪些看似可能但業務上應禁止的跳躍轉移
+
+### 3. 團隊上機討論檢核清單
+- 列出 2~3 個團隊在狀態工具中需共同決策的關鍵轉換點。
+
+---
+
+## 三、 開始處理
+
+以下是案件生命週期與業務情境說明：
+【請在此貼上業務流程說明或需求描述】`
+        },
       },
       {
         id: "tool-whiteboard",
@@ -5481,6 +5603,18 @@
               <span>${tool.actionText}</span>
             </button>
           `;
+        } else if (tool.prompt) {
+          actionBtn = `
+            <div class="flex items-center gap-2">
+              <button onclick="openToolPromptModal('${tool.id}')" class="flex-1 py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer" title="開啟討論 Prompt 編輯沙盒">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i>
+                <span>準備討論 Prompt</span>
+              </button>
+              <a href="${tool.url}" target="${tool.target || '_blank'}" class="flex-1 py-2 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                <span>${tool.actionText}</span>
+              </a>
+            </div>
+          `;
         } else {
           actionBtn = `
             <a href="${tool.url}" target="${tool.target || '_blank'}" class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
@@ -5515,12 +5649,67 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    function copyCatalogPromptById(promptId, slideIndex) {
+        function openToolPromptModal(toolId) {
+      const tool = AI_ARM_TOOLS_CATALOG.find(t => t.id === toolId);
+      if (!tool || !tool.prompt) {
+        showToast("找不到對應的工具討論 Prompt", "rose");
+        return;
+      }
+
+      const p = tool.prompt;
+      currentViewingPrompt = p;
+      currentViewingPromptSlideIndex = null;
+
+      const editor = document.getElementById('prompt-modal-editor');
+      const badgeEl = document.getElementById('prompt-modal-badge');
+      const titleEl = document.getElementById('prompt-modal-title');
+      const descEl = document.getElementById('prompt-modal-desc');
+      const statusText = document.getElementById('prompt-custom-status-text');
+      const copyBtnText = document.getElementById('btn-modal-copy-prompt-text');
+
+      if (titleEl) titleEl.innerText = p.title;
+      if (descEl) descEl.innerText = p.desc || '可原地自由編輯條件或填入專案資料，改完一鍵複製走';
+
+      const savedContent = getSavedPromptDraft(p.id);
+      const hasCustom = (savedContent !== null && savedContent !== p.content);
+      const contentToDisplay = (savedContent !== null) ? savedContent : p.content;
+
+      if (editor) editor.value = contentToDisplay;
+
+      const p24Controls = document.getElementById('prompt-p24-controls-container');
+      const p27HintBar = document.getElementById('prompt-p27-hint-bar');
+      if (p24Controls) p24Controls.classList.add('hidden');
+      if (p27HintBar) p27HintBar.classList.add('hidden');
+
+      if (badgeEl) {
+        let badgeBg = hasCustom ? 'bg-indigo-600' : 'bg-emerald-600';
+        badgeEl.innerText = hasCustom ? '已自訂修改' : '討論工具 Prompt';
+        badgeEl.className = "px-2.5 py-1 rounded-md text-xs font-bold text-white " + badgeBg + " flex-shrink-0";
+      }
+
+      if (statusText) {
+        statusText.innerText = hasCustom ? ("已自訂 (" + contentToDisplay.length + " 字)") : '未修改 (原版)';
+      }
+
+      if (copyBtnText) copyBtnText.innerText = '複製完整 Prompt';
+
+      const modal = document.getElementById('prompt-preview-modal');
+      if (modal) modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons({ scope: modal });
+    }
+
+function copyCatalogPromptById(promptId, slideIndex) {
       const sIdx = parseInt(slideIndex, 10);
       const slide = SLIDES_DATA[sIdx - 1];
-      if (!slide || !slide.prompts) return;
+      if (!slide || !slide.prompts) {
+        showToast("找不到對應的投影片 Prompt 內容", "rose");
+        return;
+      }
       const p = slide.prompts.find(x => x.id === promptId);
-      if (!p) return;
+      if (!p) {
+        showToast("找不到對應的 Prompt 內容 (" + promptId + ")", "rose");
+        return;
+      }
 
       const savedContent = getSavedPromptDraft(p.id);
       const isCustom = (savedContent !== null && savedContent !== p.content);
@@ -5542,9 +5731,15 @@
     function viewCatalogPromptById(promptId, slideIndex) {
       const sIdx = parseInt(slideIndex, 10);
       const slide = SLIDES_DATA[sIdx - 1];
-      if (!slide || !slide.prompts) return;
+      if (!slide || !slide.prompts) {
+        showToast("找不到對應的投影片 Prompt 內容", "rose");
+        return;
+      }
       const pIndex = slide.prompts.findIndex(x => x.id === promptId);
-      if (pIndex === -1) return;
+      if (pIndex === -1) {
+        showToast("找不到對應的 Prompt 內容 (" + promptId + ")", "rose");
+        return;
+      }
       
       openPromptModal(pIndex, sIdx);
     }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agile Board - 高效敏捷協作白板</title>
+  <title>AI-ARM 小組線上白板 - 高效敏捷協作白板</title>
   
   <!-- Tailwind CSS (CDN first, Local fallback) -->
   <script src="https://cdn.tailwindcss.com" onerror="this.onerror=null; this.src='lib/tailwindcss.js';"></script>
@@ -24,6 +24,7 @@
   <!-- Firebase App & Firestore (v10 compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
   
   <style>
     /* 點狀與方格背景效果 */
@@ -90,6 +91,55 @@
       border-radius: 6px;
       display: none;
     }
+
+    /* 連線手柄樣式 (Miro 級 4 邊錨點) */
+    .note-port {
+      transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease, background-color 0.15s ease;
+      touch-action: none;
+    }
+    .note-port-top { top: 0; left: 50%; transform: translate(-50%, -50%); }
+    .note-port-top:hover { transform: translate(-50%, -50%) scale(1.35) !important; background-color: #4f46e5 !important; }
+
+    .note-port-bottom { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
+    .note-port-bottom:hover { transform: translate(-50%, 50%) scale(1.35) !important; background-color: #4f46e5 !important; }
+
+    .note-port-left { top: 50%; left: 0; transform: translate(-50%, -50%); }
+    .note-port-left:hover { transform: translate(-50%, -50%) scale(1.35) !important; background-color: #4f46e5 !important; }
+
+    .note-port-right { top: 50%; right: 0; transform: translate(50%, -50%); }
+    .note-port-right:hover { transform: translate(50%, -50%) scale(1.35) !important; background-color: #4f46e5 !important; }
+
+    /* 連線路徑互動與動畫效果 */
+    .connection-group {
+      pointer-events: auto;
+    }
+    .connection-hitbox {
+      cursor: pointer;
+      stroke: transparent;
+      stroke-width: 24px;
+      fill: none;
+      pointer-events: stroke;
+    }
+    .connection-path {
+      cursor: pointer;
+      pointer-events: stroke;
+      transition: stroke-width 0.15s ease, filter 0.15s ease;
+    }
+    .connection-label-group {
+      pointer-events: auto;
+    }
+    .connection-group:hover .connection-path {
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+    }
+    .connection-group.selected .connection-path {
+      stroke-dasharray: 6 3;
+      animation: connectionDash 1.2s linear infinite;
+    }
+    @keyframes connectionDash {
+      to {
+        stroke-dashoffset: -18;
+      }
+    }
   </style>
   <script>
     tailwind.config = {
@@ -126,7 +176,7 @@
   <script>
       (function() {
           const correctHash = "agile-2026";
-          if (sessionStorage.getItem('read_courseware_authorized') === 'true' || localStorage.getItem('ai_arm_auth_user') || localStorage.getItem('ai_align_auth_user')) {
+          if (sessionStorage.getItem('read_courseware_authorized') === 'true' || localStorage.getItem('ai_arm_auth_user')) {
               document.write('<style>#password-lock-screen { display: none !important; }</style>');
               return;
           }
@@ -211,9 +261,15 @@
       <div class="h-6 w-[1px] bg-slate-300/60 mx-0.5 sm:mx-1"></div>
 
       <!-- 新增便利貼 -->
-      <button onclick="openNoteModal('create')" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm" title="新增便利貼">
+      <button onclick="openNoteModal('create')" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="新增便利貼 (快捷鍵: N)">
         <i data-lucide="plus-circle" class="w-4 h-4"></i> <span class="hidden lg:inline">新增便利貼</span>
       </button>
+
+      <!-- 上傳圖片 (自動轉為 220x220 標準卡片) -->
+      <button onclick="triggerImageUpload()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="上傳圖片 (亦支援直接 Ctrl+V 貼上截圖或拖入白板)">
+        <i data-lucide="image" class="w-4 h-4"></i> <span class="hidden lg:inline">上傳圖片</span>
+      </button>
+      <input type="file" id="board-image-file-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple class="hidden" onchange="handleImageFileInputChange(event)">
 
       <!-- 背景選擇器 -->
       <div class="relative group" id="bg-selector-container">
@@ -357,8 +413,17 @@
     <!-- 實際渲染縮放與位移的畫布層 (絕對定位，強制 origin-top-left 確保縮放中心與 JS 幾何坐標系完全對齊) -->
     <div id="canvas-board" class="absolute w-[8000px] h-[8000px] top-0 left-0 origin-top-left pointer-events-none" style="transform-origin: top left;">
       
+      <!-- SVG 連線圖層 (z-index: 5)：繪製有向曲線箭頭、防重疊琴弦排開、選項 B 膠囊標籤 -->
+      <svg id="connections-svg-layer" class="absolute inset-0 w-[8000px] h-[8000px] pointer-events-none overflow-visible" style="z-index: 5;">
+        <defs id="connections-defs"></defs>
+        <!-- 即時拉線拖曳預覽虛線 -->
+        <path id="connection-draft-path" d="" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-dasharray="6,4" class="hidden pointer-events-none"></path>
+        <g id="connections-paths-group"></g>
+        <g id="connections-labels-group"></g>
+      </svg>
+
       <!-- 便利貼容器：當處於 Hand Mode 或按住 Space 時，動態加上 pointer-events-none 達到 Miro 整體大範圍拖動效果 -->
-      <div id="notes-container" class="absolute inset-0 pointer-events-none"></div>
+      <div id="notes-container" class="absolute inset-0 pointer-events-none" style="z-index: 10;"></div>
 
     </div>
   </div>
@@ -406,14 +471,14 @@
     </div>
   </div>
 
-  <!-- 彈出視窗 1：便利貼編輯/新增 Modal -->
-  <div id="note-modal" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+  <!-- 彈出視窗 1：建立與編輯便利貼 Modal -->
+  <div id="note-modal" onclick="if (event.target === this) closeNoteModal()" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-300">
       <div class="flex items-center justify-between pb-4 border-b border-slate-100">
         <h3 id="modal-title" class="font-bold text-slate-800 text-lg flex items-center gap-2">
           <i data-lucide="file-edit" class="text-emerald-600"></i> 新增便利貼
         </h3>
-        <button onclick="closeNoteModal()" class="text-slate-400 hover:text-slate-600 rounded-full p-1.5 hover:bg-slate-100 transition-colors">
+        <button type="button" onclick="closeNoteModal()" class="text-slate-400 hover:text-slate-600 rounded-full p-1.5 hover:bg-slate-100 transition-colors cursor-pointer">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
@@ -441,19 +506,30 @@
               <span id="note-custom-hex" class="text-xs font-mono text-slate-500 uppercase">#FEF08A</span>
             </div>
           </div>
+          <!-- 文字色彩選擇 -->
+          <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+            <span class="text-xs font-medium text-slate-500 flex items-center gap-1">
+              <i data-lucide="type" class="w-3.5 h-3.5 text-indigo-500"></i> 文字深淺色彩：
+            </span>
+            <div class="flex items-center gap-1.5" id="modal-text-color-group">
+              <button type="button" onclick="selectModalTextColor('auto')" id="modal-text-color-auto" class="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-slate-100 text-slate-700 transition-all cursor-pointer" title="依卡片底色自動計算最高對比度">自動對比</button>
+              <button type="button" onclick="selectModalTextColor('#0F172A')" id="modal-text-color-black" class="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-900 transition-all flex items-center gap-1 cursor-pointer"><span class="w-2.5 h-2.5 rounded-full bg-slate-900"></span>深黑</button>
+              <button type="button" onclick="selectModalTextColor('#FFFFFF')" id="modal-text-color-white" class="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-slate-800 text-white transition-all flex items-center gap-1 cursor-pointer"><span class="w-2.5 h-2.5 rounded-full bg-white border border-slate-400"></span>純白</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="mt-6 flex justify-between space-x-3 border-t border-slate-100 pt-4">
         <div>
-          <button id="modal-delete-btn" onclick="deleteNoteFromModal()" class="bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-1.5">
+          <button type="button" id="modal-delete-btn" onclick="deleteNoteFromModal()" class="bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-1.5 cursor-pointer">
             <i data-lucide="trash-2" class="w-4 h-4"></i> 刪除便利貼
           </button>
         </div>
         <div class="flex space-x-2">
-          <button onclick="closeNoteModal()" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition-all">
+          <button type="button" onclick="closeNoteModal()" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition-all cursor-pointer">
             取消
           </button>
-          <button id="modal-submit-btn" onclick="saveNoteModal()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-5 py-2 rounded-xl font-semibold text-sm transition-all shadow-md">
+          <button type="button" id="modal-submit-btn" onclick="saveNoteModal()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-5 py-2 rounded-xl font-semibold text-sm transition-all shadow-md cursor-pointer">
             儲存便利貼
           </button>
         </div>
@@ -637,9 +713,60 @@
       <button onclick="toggleSelectedNotesFontFit()" class="hover:bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors" title="單鍵切換所選便利貼字體最大化">
         <i data-lucide="type" class="w-3.5 h-3.5 text-emerald-500"></i> 字體縮放
       </button>
+      <!-- 批次切換文字深淺色 -->
+      <button onclick="toggleSelectedNotesTextColor()" class="hover:bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors" title="批次切換所選便利貼文字深淺色 (黑/白)">
+        <i data-lucide="sun-moon" class="w-3.5 h-3.5 text-indigo-500"></i> 文字黑白
+      </button>
       <button onclick="deleteSelectedNotes()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors">
         <i data-lucide="trash-2" class="w-4 h-4"></i> 刪除
       </button>
+    </div>
+  </div>
+
+  <!-- 單一連線操作浮動工具列 -->
+  <div id="line-toolbar" class="fixed bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-2xl rounded-2xl px-3 py-1.5 z-40 flex items-center space-x-2 transition-all duration-200 transform scale-95 opacity-0 pointer-events-none -translate-x-1/2 -translate-y-full">
+    <button onclick="editCurrentLineText()" class="hover:bg-indigo-50 text-indigo-700 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer" title="修改連線標籤說明">
+      <i data-lucide="edit-3" class="w-3.5 h-3.5 text-indigo-600"></i> 改字
+    </button>
+    <div class="h-4 w-[1px] bg-slate-200"></div>
+    <button onclick="reverseCurrentLineDirection()" class="hover:bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer" title="反轉箭頭方向">
+      <i data-lucide="arrow-left-right" class="w-3.5 h-3.5 text-emerald-600"></i> 反轉
+    </button>
+    <div class="h-4 w-[1px] bg-slate-200"></div>
+    <button onclick="cycleCurrentLineFromPort()" class="hover:bg-slate-100 text-slate-700 px-2 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer" title="切換起點端點位置 (上/右/下/左)">
+      <span class="text-[10px] text-slate-400 font-normal">起:</span>
+      <span id="line-fromport-indicator" class="text-[11px] font-bold text-indigo-600">右</span>
+    </button>
+    <button onclick="cycleCurrentLineToPort()" class="hover:bg-slate-100 text-slate-700 px-2 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer" title="切換終點端點位置 (上/右/下/左)">
+      <span class="text-[10px] text-slate-400 font-normal">終:</span>
+      <span id="line-toport-indicator" class="text-[11px] font-bold text-indigo-600">左</span>
+    </button>
+    <div class="h-4 w-[1px] bg-slate-200"></div>
+    <button onclick="cycleCurrentLineStrokeWidth()" class="hover:bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer" title="切換線條粗細 (1.5px / 2.5px / 4px)">
+      <i data-lucide="sliders" class="w-3.5 h-3.5 text-amber-600"></i> <span id="line-width-indicator" class="text-[11px] font-mono font-bold">2.5px</span>
+    </button>
+    <div class="h-4 w-[1px] bg-slate-200"></div>
+    <button onclick="deleteCurrentSelectedLine()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer" title="刪除連線">
+      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+    </button>
+  </div>
+
+  <!-- 連線文字編輯對話框 -->
+  <div id="line-text-modal" class="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-[70] flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 p-5 w-96 max-w-[90vw] transform transition-transform duration-200 scale-95" id="line-text-modal-card">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+          <i data-lucide="edit-3" class="w-4 h-4 text-indigo-600"></i> 編輯連線說明標籤
+        </h3>
+        <button onclick="closeLineTextModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <input type="text" id="line-text-input" placeholder="例如：① 報送申請資料、② 建案 (T)..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 mb-4 font-medium" maxlength="50" onkeydown="if(event.key==='Enter') saveLineTextFromModal()">
+      <div class="flex items-center justify-end gap-2">
+        <button onclick="closeLineTextModal()" class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">取消</button>
+        <button onclick="saveLineTextFromModal()" class="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-colors cursor-pointer">儲存標籤</button>
+      </div>
     </div>
   </div>
 
@@ -661,6 +788,58 @@
     </div>
   </div>
 
+  <!-- 圖片全螢幕燈箱預覽視窗 (Image Lightbox Modal) -->
+  <div id="image-lightbox-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[80] flex flex-col hidden opacity-0 transition-opacity duration-200 select-none">
+    <!-- 燈箱頂部工具列 -->
+    <div class="h-14 px-4 sm:px-6 flex items-center justify-between bg-slate-900/70 border-b border-white/10 text-white z-20 flex-shrink-0">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="p-1.5 bg-white/10 rounded-lg flex-shrink-0">
+          <i data-lucide="image" class="w-4 h-4 text-emerald-400"></i>
+        </div>
+        <div class="min-w-0">
+          <div id="lightbox-filename" class="text-sm font-bold truncate max-w-[180px] sm:max-w-xs md:max-w-md">圖片預覽</div>
+          <div id="lightbox-meta" class="text-[11px] text-slate-400 font-mono">0 × 0</div>
+        </div>
+      </div>
+
+      <!-- 控制按鈕群 -->
+      <div class="flex items-center gap-1 sm:gap-2">
+        <button onclick="lightboxZoomOut()" class="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer" title="縮小 (滾輪向下)">
+          <i data-lucide="zoom-out" class="w-4 h-4"></i>
+        </button>
+        <span id="lightbox-zoom-level" class="text-xs font-mono font-bold text-slate-300 min-w-[48px] text-center">100%</span>
+        <button onclick="lightboxZoomIn()" class="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer" title="放大 (滾輪向上)">
+          <i data-lucide="zoom-in" class="w-4 h-4"></i>
+        </button>
+        <button onclick="lightboxResetZoom()" class="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer" title="適配視窗大小 / 重設比例">
+          <i data-lucide="maximize" class="w-4 h-4"></i>
+        </button>
+        <div class="h-5 w-[1px] bg-white/20 mx-1"></div>
+        <button onclick="downloadCurrentLightboxImage()" class="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer" title="下載原始圖檔">
+          <i data-lucide="download" class="w-4 h-4"></i>
+        </button>
+        <button onclick="closeImageLightbox()" class="p-2 rounded-xl hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 transition-colors ml-1 cursor-pointer" title="關閉預覽 (ESC)">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 燈箱內容與影像展示區 (支援滾輪縮放與拖曳平移) -->
+    <div id="lightbox-viewport" class="flex-1 relative overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing">
+      <!-- 左右換圖按鈕 -->
+      <button id="lightbox-prev-btn" onclick="lightboxNav(-1)" class="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-slate-900/70 hover:bg-slate-800 text-white border border-white/20 flex items-center justify-center shadow-2xl z-30 transition-transform active:scale-95 cursor-pointer">
+        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+      </button>
+      <button id="lightbox-next-btn" onclick="lightboxNav(1)" class="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-slate-900/70 hover:bg-slate-800 text-white border border-white/20 flex items-center justify-center shadow-2xl z-30 transition-transform active:scale-95 cursor-pointer">
+        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+      </button>
+
+      <div id="lightbox-img-wrapper" class="transition-transform duration-75 origin-center will-change-transform flex items-center justify-center p-4">
+        <img id="lightbox-image" src="" alt="預覽圖" class="max-w-none shadow-2xl rounded-lg pointer-events-none select-none max-h-[85vh] object-contain">
+      </div>
+    </div>
+  </div>
+
 
 
   <script>
@@ -674,7 +853,14 @@
       { name: '藍色', hex: '#BFDBFE' },
       { name: '黑色', hex: '#1E293B' },
       { name: '白色', hex: '#FFFFFF' },
-      { name: '紅色', hex: '#FECACA' }
+      { name: '紅色', hex: '#FECACA' },
+      // 3M Super Sticky 鮮豔便條紙色系
+      { name: '3M 鮮紅', hex: '#EF4444' },
+      { name: '3M 亮橘', hex: '#F97316' },
+      { name: '3M 亮黃', hex: '#FACC15' },
+      { name: '3M 翠綠', hex: '#22C55E' },
+      { name: '3M 湖水藍', hex: '#0EA5E9' },
+      { name: '3M 桃粉', hex: '#EC4899' }
     ];
 
     // --- 全域變數與系統狀態定義 ---
@@ -684,9 +870,21 @@
     const urlTeamName = urlTeamParam.replace('team-', '第 ') + ' 組';
     const initialBoardTitle = `【${urlTeamName}】專屬協作白板`;
 
-    document.title = `${initialBoardTitle} ｜ AI 需求建模 (ai-arm)`;
+    document.title = `${initialBoardTitle} ｜ AI 賦能敏捷`;
 
     const APP_ID = 'ai-arm-team-board-v1';
+
+    // 唯一用戶端 ID (Client UUID) 解決同名或無名時鎖定失效問題
+    function getOrCreateClientId() {
+      let cid = sessionStorage.getItem('aigile_client_id');
+      if (!cid) {
+        cid = 'cli_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        sessionStorage.setItem('aigile_client_id', cid);
+      }
+      return cid;
+    }
+    const CLIENT_ID = getOrCreateClientId();
+
     let boardState = {
       boardName: initialBoardTitle,
       background: {
@@ -694,6 +892,7 @@
         color: "#FFFFFF"
       },
       notes: [],
+      lines: [], // 多對多有向箭頭連線集合
       viewport: {
         scale: 1.0,
         x: 0,
@@ -728,10 +927,23 @@
     // 右鍵菜單狀態
     let contextMenuPos = { x: 0, y: 0 };
 
+    // 連線系統互動狀態 (Graph Connector State)
+    let selectedLineId = null;
+    let isConnecting = false;
+    let connectFromNoteId = null;
+    let connectFromPort = 'right';
+    let currentHoveredTargetNoteId = null;
+    let editingLineId = null;
+
+    // 協同暫存佇列 (避免拖曳期間 Snapshot 丟棄他人異動)
+    let pendingRemoteNotes = null;
+    let pendingRemoteLines = null;
+
     // 便利貼編輯與併發鎖定狀態
     let activeModalMode = 'create';
     let activeEditingNoteId = null;
     let modalSelectedColor = '#FEF08A';
+    let modalSelectedTextColor = 'auto';
     let noteLockHeartbeatTimer = null;
 
     function isNoteLockedByOther(note) {
@@ -739,6 +951,9 @@
       const lockAge = Date.now() - (note.lock.lockedAt || 0);
       // 45 秒自動逾時過期保護，防止使用者離線時造成卡片死鎖
       if (lockAge > 45000) return false;
+      if (note.lock.lockedByClientId) {
+        return note.lock.lockedByClientId !== CLIENT_ID;
+      }
       const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '';
       return Boolean(note.lock.lockedBy && note.lock.lockedBy !== myName);
     }
@@ -908,6 +1123,9 @@
     };
 
     let db = null;
+    let storage = null;
+    const localImageFullCache = new Map();
+    let lastCardDragEndTimestamp = 0;
     let roomDocRef = null;
     let isFirestoreInitialized = false;
     let isUserDraggingNote = false;
@@ -922,7 +1140,7 @@
 
       if (!team || !user) {
         try {
-          const saved = localStorage.getItem('ai_arm_auth_user') || localStorage.getItem('ai_align_auth_user');
+          const saved = localStorage.getItem('ai_arm_auth_user');
           if (saved) {
             const parsed = JSON.parse(saved);
             if (!team && parsed.team) team = parsed.team;
@@ -941,7 +1159,7 @@
         teamNum: teamNum,
         teamDisplayName: teamDisplayName,
         userName: user,
-        roomId: `ai-arm-${team}`
+        roomId: `ai-align-${team}`
       };
     }
 
@@ -983,6 +1201,97 @@
       ];
     }
 
+    // --- 單卡智慧增量調和演算法 (Per-Note Smart Merge) ---
+    function mergeRemoteNotes(remoteNotes) {
+      if (!Array.isArray(remoteNotes)) return;
+      const localMap = new Map((boardState.notes || []).map(n => [n.id, n]));
+      const remoteMap = new Map(remoteNotes.map(n => [n.id, n]));
+      const merged = [];
+
+      for (const [id, remoteNote] of remoteMap.entries()) {
+        const localNote = localMap.get(id);
+
+        // 本機正在編輯視窗中，保護本地未儲存輸入免遭遠端刷新覆蓋
+        if (activeModalMode === 'edit' && activeEditingNoteId === id) {
+          merged.push(localNote);
+          continue;
+        }
+
+        // 本機正在拖曳中，保留本地座標，其餘屬性可更新
+        if (selectedNoteIds.has(id) && isUserDraggingNote && localNote) {
+          merged.push({
+            ...remoteNote,
+            x: localNote.x,
+            y: localNote.y
+          });
+          continue;
+        }
+
+        if (!localNote) {
+          merged.push(remoteNote);
+          continue;
+        }
+
+        const remoteTime = new Date(remoteNote.updatedAt || 0).getTime();
+        const localTime = new Date(localNote.updatedAt || 0).getTime();
+
+        if (remoteTime >= localTime) {
+          merged.push(remoteNote);
+        } else {
+          merged.push(localNote);
+        }
+      }
+
+      // 本機剛建立且未滿 15 秒的新卡片，防止被尚未同步的舊 Snapshot 衝掉
+      for (const [id, localNote] of localMap.entries()) {
+        if (!remoteMap.has(id)) {
+          const age = Date.now() - new Date(localNote.createdAt || 0).getTime();
+          if (age < 15000) {
+            merged.push(localNote);
+          }
+        }
+      }
+
+      boardState.notes = merged;
+    }
+
+    // --- 連線增量調和演算法 (Per-Line Smart Merge) ---
+    function mergeRemoteLines(remoteLines) {
+      if (!Array.isArray(remoteLines)) {
+        boardState.lines = boardState.lines || [];
+        return;
+      }
+      const localMap = new Map((boardState.lines || []).map(l => [l.id, l]));
+      const remoteMap = new Map(remoteLines.map(l => [l.id, l]));
+      const merged = [];
+
+      for (const [id, remoteLine] of remoteMap.entries()) {
+        const localLine = localMap.get(id);
+        if (!localLine) {
+          merged.push(remoteLine);
+          continue;
+        }
+        const remoteTime = new Date(remoteLine.updatedAt || 0).getTime();
+        const localTime = new Date(localLine.updatedAt || 0).getTime();
+        if (remoteTime >= localTime) {
+          merged.push(remoteLine);
+        } else {
+          merged.push(localLine);
+        }
+      }
+
+      for (const [id, localLine] of localMap.entries()) {
+        if (!remoteMap.has(id)) {
+          const age = Date.now() - new Date(localLine.createdAt || 0).getTime();
+          if (age < 5000) {
+            merged.push(localLine);
+          }
+        }
+      }
+
+      boardState.lines = merged;
+    }
+
     // 初始化 Firestore 訂閱
     function initFirestoreAndSubscribe() {
       try {
@@ -990,6 +1299,13 @@
           firebase.initializeApp(firebaseConfig);
         }
         db = firebase.firestore();
+        try {
+          if (firebase.storage) {
+            storage = firebase.storage();
+          }
+        } catch (storageErr) {
+          console.warn("[Firebase] Storage init warning:", storageErr);
+        }
         roomDocRef = db.collection('aigile_boards').doc(CURRENT_ROOM_ID);
         isFirestoreInitialized = true;
         setSyncStatus('saving', '連線中...');
@@ -999,7 +1315,9 @@
           if (!doc.exists) {
             console.log(`[Firestore] 房間 ${CURRENT_ROOM_ID} 初次建立，寫入預設畫布。`);
             boardState.notes = getDefaultTemplateNotes();
+            boardState.lines = [];
             renderNotes();
+            renderConnections();
             updateStickyNotesCount();
             saveState(true);
             return;
@@ -1008,13 +1326,13 @@
           const remoteData = doc.data();
           if (!remoteData || typeof remoteData !== 'object') return;
 
-          const remoteTime = new Date(remoteData.updatedAt || 0).getTime();
-          if (remoteTime <= lastLocalWriteTimestamp && Date.now() - lastLocalWriteTimestamp < 1500) {
-            setSyncStatus('synced', '已即時同步');
-            return;
-          }
+          let remoteNotes = Array.isArray(remoteData.notes) ? remoteData.notes : [];
+          let remoteLines = Array.isArray(remoteData.lines) ? remoteData.lines : [];
 
+          // 拖曳卡片期間，暫存遠端快照至佇列，絕不直接拋棄他人新增
           if (isUserDraggingNote) {
+            pendingRemoteNotes = remoteNotes;
+            pendingRemoteLines = remoteLines;
             return;
           }
 
@@ -1027,12 +1345,13 @@
             boardState.background = remoteData.background;
             updateBackgroundUI();
           }
-          if (Array.isArray(remoteData.notes)) {
-            boardState.notes = remoteData.notes;
-            renderNotes();
-            updateStickyNotesCount();
-            updateMinimap();
-          }
+
+          mergeRemoteNotes(remoteNotes);
+          mergeRemoteLines(remoteLines);
+          renderNotes();
+          renderConnections();
+          updateStickyNotesCount();
+          updateMinimap();
 
           setSyncStatus('synced', '已即時同步');
         }, (error) => {
@@ -1073,22 +1392,30 @@
 
     function doFirestoreWrite() {
       if (!roomDocRef) return;
-      const dataToSave = {
-        boardName: boardState.boardName,
-        background: boardState.background,
-        notes: boardState.notes,
-        updatedAt: boardState.updatedAt
-      };
+      try {
+        const cleanNotes = JSON.parse(JSON.stringify(boardState.notes || []));
+        const cleanLines = JSON.parse(JSON.stringify(boardState.lines || []));
+        const dataToSave = {
+          boardName: boardState.boardName || '線上協作白板',
+          background: boardState.background || '#FFFFFF',
+          notes: cleanNotes,
+          lines: cleanLines,
+          updatedAt: boardState.updatedAt || new Date().toISOString()
+        };
 
-      roomDocRef.set(dataToSave, { merge: true })
-        .then(() => {
-          setSyncStatus('synced', '已即時同步');
-          localStorage.setItem(APP_ID + '_' + CURRENT_ROOM_ID, JSON.stringify(boardState));
-        })
-        .catch((err) => {
-          console.error("[Firestore] Write Error:", err);
-          setSyncStatus('error', '同步失敗');
-        });
+        roomDocRef.set(dataToSave, { merge: true })
+          .then(() => {
+            setSyncStatus('synced', '已即時同步');
+            localStorage.setItem(APP_ID + '_' + CURRENT_ROOM_ID, JSON.stringify(boardState));
+          })
+          .catch((err) => {
+            console.error("[Firestore] Write Error:", err);
+            setSyncStatus('error', '同步失敗');
+          });
+      } catch (err) {
+        console.error("[Firestore] Write Exception:", err);
+        setSyncStatus('error', '同步發生例外');
+      }
     }
 
     function saveLocalViewportOnly() {
@@ -1121,12 +1448,12 @@
       if (!newTeam || newTeam === TEAM_INFO.teamId) return;
       const url = new URL(window.location.href);
       url.searchParams.set('team', newTeam);
-      url.searchParams.set('room', `ai-arm-${newTeam}`);
+      url.searchParams.set('room', `ai-align-${newTeam}`);
       if (TEAM_INFO.userName) {
         url.searchParams.set('user', TEAM_INFO.userName);
       }
       try {
-        const saved = localStorage.getItem('ai_arm_auth_user') || localStorage.getItem('ai_align_auth_user');
+        const saved = localStorage.getItem('ai_arm_auth_user');
         if (saved) {
           const parsed = JSON.parse(saved);
           parsed.team = newTeam;
@@ -1141,7 +1468,7 @@
       if (!db) return;
       const teams = ['team-1', 'team-2', 'team-3', 'team-4', 'team-5', 'team-6'];
       teams.forEach(tId => {
-        db.collection('aigile_boards').doc(`ai-arm-${tId}`).get().then(doc => {
+        db.collection('aigile_boards').doc(`ai-align-${tId}`).get().then(doc => {
           if (doc.exists) {
             const data = doc.data();
             const notes = Array.isArray(data.notes) ? data.notes : [];
@@ -1197,6 +1524,8 @@
         boardState.notes = getDefaultTemplateNotes();
       }
 
+      boardState.lines = Array.isArray(boardState.lines) ? boardState.lines : [];
+
       boardState.boardName = `${TEAM_INFO.teamDisplayName} 專屬線上白板`;
       document.getElementById('board-name-display').innerText = boardState.boardName;
 
@@ -1210,6 +1539,8 @@
       setupMinimapEvents();
       setupKeyboardListeners();
       setupContextMenu();
+      setupLightboxInteraction();
+      setupImageUploadListeners();
       renderNotes();
       updateCanvasTransform();
       updateBackgroundUI();
@@ -1236,17 +1567,30 @@
       const g = parseInt(hex.substring(2, 4), 16);
       const b = parseInt(hex.substring(4, 6), 16);
       const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-      return (yiq >= 128) ? '#0F172A' : '#FFFFFF';
+      return (yiq >= 140) ? '#0F172A' : '#FFFFFF';
     }
 
-    // --- Undo / Redo 歷史記錄與資料備份 ---
+    // --- 畫布操作歷史堆疊 (Undo / Redo，同步支援便利貼與連線) ---
     let undoStack = [];
     let redoStack = [];
     const MAX_HISTORY_STEPS = 50;
     let pendingNotesStateBeforeDrag = null;
 
     function pushHistory(customState = null) {
-      const stateToPush = customState ? JSON.parse(JSON.stringify(customState)) : JSON.parse(JSON.stringify(boardState.notes));
+      let stateToPush;
+      if (customState && Array.isArray(customState)) {
+        stateToPush = {
+          notes: JSON.parse(JSON.stringify(customState)),
+          lines: JSON.parse(JSON.stringify(boardState.lines || []))
+        };
+      } else if (customState && typeof customState === 'object') {
+        stateToPush = JSON.parse(JSON.stringify(customState));
+      } else {
+        stateToPush = {
+          notes: JSON.parse(JSON.stringify(boardState.notes || [])),
+          lines: JSON.parse(JSON.stringify(boardState.lines || []))
+        };
+      }
       undoStack.push(stateToPush);
       if (undoStack.length > MAX_HISTORY_STEPS) {
         undoStack.shift();
@@ -1259,16 +1603,25 @@
         showToast("沒有上一步可以復原！", "warning");
         return;
       }
-      const currentNotes = JSON.parse(JSON.stringify(boardState.notes));
-      redoStack.push(currentNotes);
+      const currentState = {
+        notes: JSON.parse(JSON.stringify(boardState.notes || [])),
+        lines: JSON.parse(JSON.stringify(boardState.lines || []))
+      };
+      redoStack.push(currentState);
       
-      const previousNotes = undoStack.pop();
-      boardState.notes = previousNotes;
+      const previousState = undoStack.pop();
+      if (Array.isArray(previousState)) {
+        boardState.notes = previousState;
+      } else if (previousState) {
+        boardState.notes = previousState.notes || [];
+        boardState.lines = previousState.lines || [];
+      }
       
       if (typeof selectedNoteIds !== 'undefined') {
         selectedNoteIds.clear();
         updateMultiSelectUI();
       }
+      hideLineToolbar();
       
       saveState(true);
       renderNotes();
@@ -1281,16 +1634,25 @@
         showToast("沒有下一步可以取消復原！", "warning");
         return;
       }
-      const currentNotes = JSON.parse(JSON.stringify(boardState.notes));
-      undoStack.push(currentNotes);
+      const currentState = {
+        notes: JSON.parse(JSON.stringify(boardState.notes || [])),
+        lines: JSON.parse(JSON.stringify(boardState.lines || []))
+      };
+      undoStack.push(currentState);
       
-      const nextNotes = redoStack.pop();
-      boardState.notes = nextNotes;
+      const nextState = redoStack.pop();
+      if (Array.isArray(nextState)) {
+        boardState.notes = nextState;
+      } else if (nextState) {
+        boardState.notes = nextState.notes || [];
+        boardState.lines = nextState.lines || [];
+      }
       
       if (typeof selectedNoteIds !== 'undefined') {
         selectedNoteIds.clear();
         updateMultiSelectUI();
       }
+      hideLineToolbar();
       
       saveState(true);
       renderNotes();
@@ -1544,7 +1906,11 @@
         const isMiddleClick = (e.button === 1);
         const isSpaceDown = isHoldingSpace;
         const isHandMode = (currentMode === 'hand');
-        const isBgClick = (e.target === container || e.target === backgroundLayer || e.target === board);
+        const isBgClick = (e.target === container || e.target === backgroundLayer || e.target === board || e.target.id === 'connections-svg-layer');
+
+        if (isBgClick && selectedLineId) {
+          hideLineToolbar();
+        }
 
         if (isMiddleClick || isSpaceDown || (isHandMode && isBgClick)) {
           isPanning = true;
@@ -1629,7 +1995,7 @@
         const isHandMode = (currentMode === 'hand');
         if (isHandMode) return; 
  
-        const isBgClick = (e.target === container || e.target === backgroundLayer || e.target === board);
+        const isBgClick = (e.target === container || e.target === backgroundLayer || e.target === board || e.target.id === 'connections-svg-layer');
         if (isBgClick) {
           const rect = container.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
@@ -1801,8 +2167,13 @@
         const nw = 220 * minimapScale;
         const nh = 220 * minimapScale;
 
-        ctx.fillStyle = note.color;
+        ctx.fillStyle = note.color || '#FFFFFF';
         ctx.fillRect(nx, ny, nw, nh);
+
+        if (note.type === 'image' || note.thumbUrl) {
+          ctx.fillStyle = isDarkBg ? 'rgba(255, 255, 255, 0.35)' : 'rgba(79, 70, 229, 0.45)';
+          ctx.fillRect(nx + nw * 0.2, ny + nh * 0.2, nw * 0.6, nh * 0.6);
+        }
 
         ctx.strokeStyle = isDarkBg ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.08)';
         ctx.lineWidth = 0.5;
@@ -1858,6 +2229,10 @@
       
       document.getElementById('zoom-level').innerText = `${Math.round(scale * 100)}%`;
 
+      if (selectedLineId && typeof selectedLineWorldPos !== 'undefined' && selectedLineWorldPos) {
+        updateLineToolbarPosition();
+      }
+
       updateMinimap();
     }
 
@@ -1887,11 +2262,25 @@
             }
           }
           
-          // Delete / Backspace: 刪除所選便利貼
+          // Delete / Backspace: 刪除所選便利貼或連線
           if (e.key === 'Delete' || e.key === 'Backspace') {
             if (selectedNoteIds.size > 0) {
               deleteSelectedNotes();
               e.preventDefault();
+            } else if (selectedLineId) {
+              deleteCurrentSelectedLine();
+              e.preventDefault();
+            }
+          }
+
+          // Escape: 取消選取連線或便利貼
+          if (e.key === 'Escape') {
+            if (selectedLineId) {
+              hideLineToolbar();
+            }
+            if (selectedNoteIds.size > 0) {
+              selectedNoteIds.clear();
+              updateNotesSelectionVisuals();
             }
           }
           
@@ -2053,6 +2442,7 @@
       presetColors.forEach(color => {
         const btn = document.createElement('button');
         btn.type = 'button';
+        btn.setAttribute('data-hex', color.hex.toLowerCase());
         btn.className = 'h-10 rounded-xl relative border border-slate-300/40 focus:outline-none transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center';
         btn.style.backgroundColor = color.hex;
         btn.title = color.name;
@@ -2065,22 +2455,38 @@
     }
 
     function selectModalColor(hex, element = null) {
+      if (!hex) return;
       modalSelectedColor = hex;
-      document.getElementById('note-custom-color').value = hex;
-      document.getElementById('note-custom-hex').innerText = hex;
+      const customInput = document.getElementById('note-custom-color');
+      const hexLabel = document.getElementById('note-custom-hex');
+      if (customInput) customInput.value = hex;
+      if (hexLabel) hexLabel.innerText = hex;
 
       const buttons = document.querySelectorAll('#modal-color-palette button');
       buttons.forEach(btn => {
         const check = btn.querySelector('.checkmark');
         if (check) check.classList.add('hidden');
-        btn.classList.remove('ring-4', 'ring-emerald-500/30');
+        btn.classList.remove('ring-4', 'ring-emerald-500/40');
       });
 
-      if (element) {
-        element.querySelector('.checkmark').classList.remove('hidden');
-        element.classList.add('ring-4', 'ring-emerald-500/30');
-        const contrast = getContrastColor(hex);
-        element.querySelector('.checkmark').style.color = contrast;
+      let targetBtn = element;
+      if (!targetBtn && hex) {
+        const normHex = hex.toLowerCase();
+        buttons.forEach(btn => {
+          if (btn.getAttribute('data-hex') === normHex || btn.style.backgroundColor === normHex) {
+            targetBtn = btn;
+          }
+        });
+      }
+
+      if (targetBtn) {
+        const check = targetBtn.querySelector('.checkmark');
+        if (check) {
+          check.classList.remove('hidden');
+          const contrast = getContrastColor(hex);
+          check.style.color = contrast;
+        }
+        targetBtn.classList.add('ring-4', 'ring-emerald-500/40');
       }
     }
 
@@ -2107,30 +2513,1119 @@
       }
     }
 
+    function selectModalTextColor(choice) {
+      modalSelectedTextColor = choice;
+      updateModalTextColorUI();
+    }
+
+    function updateModalTextColorUI() {
+      const btnAuto = document.getElementById('modal-text-color-auto');
+      const btnBlack = document.getElementById('modal-text-color-black');
+      const btnWhite = document.getElementById('modal-text-color-white');
+      if (!btnAuto || !btnBlack || !btnWhite) return;
+
+      [btnAuto, btnBlack, btnWhite].forEach(b => {
+        b.classList.remove('ring-2', 'ring-indigo-500', 'border-indigo-500', 'font-black');
+      });
+
+      if (modalSelectedTextColor === '#0F172A') {
+        btnBlack.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500', 'font-black');
+      } else if (modalSelectedTextColor === '#FFFFFF') {
+        btnWhite.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500', 'font-black');
+      } else {
+        btnAuto.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500', 'font-black');
+      }
+    }
+
+    // =========================================================================
+    // --- 多對多有向箭頭連線引擎 (Directed Graph Connector Engine) ---
+    // =========================================================================
+
+    // 高對比深色轉換：便利貼顏色 (如淡黃、淡藍) -> 鮮明深色線條 (保證在白底與灰網格上清晰醒目)
+    function getContrastedStrokeColor(noteColor) {
+      if (!noteColor) return '#475569';
+      const c = noteColor.toUpperCase();
+      const colorMap = {
+        '#FEF08A': '#CA8A04', // 黃色便利貼 -> 金琥珀深黃
+        '#BFDBFE': '#2563EB', // 藍色便利貼 -> 皇家深藍
+        '#BBF7D0': '#059669', // 綠色便利貼 -> 翠綠色
+        '#FBCFE8': '#DB2777', // 粉色便利貼 -> 桃粉色
+        '#FED7AA': '#EA580C', // 橘色便利貼 -> 暖橘色
+        '#E9D5FF': '#9333EA', // 紫色便利貼 -> 典雅深紫
+        '#1E293B': '#334155', // 深色便利貼 -> 墨石板灰
+        '#FFFFFF': '#475569', // 白色便利貼 -> 板岩深灰
+        '#FECACA': '#DC2626', // 紅色便利貼 -> 烈火紅
+        // 3M Super Sticky 鮮豔顏色映射
+        '#EF4444': '#B91C1C', // 3M 鮮紅 -> 赭石深紅
+        '#F97316': '#C2410C', // 3M 亮橘 -> 焦褐深橘
+        '#FACC15': '#A16207', // 3M 亮黃 -> 金琥珀黃
+        '#22C55E': '#15803D', // 3M 翠綠 -> 深草翠綠
+        '#0EA5E9': '#0369A1', // 3M 湖水藍 -> 深寶石藍
+        '#EC4899': '#BE185D'  // 3M 桃粉 -> 茜素深紅
+      };
+      return colorMap[c] || noteColor;
+    }
+
+    // --- 連線錨點方位定義與多線分流計算 ---
+    const PORT_NAMES = {
+      top: '上',
+      right: '右',
+      bottom: '下',
+      left: '左'
+    };
+
+    // 取得便利貼特定端點的畫布世界座標 (支援同邊多線槽位偏移 edgeOffset)
+    function getNotePortCoordinate(note, port, edgeOffset = 0) {
+      const hw = 110;
+      const hh = 110;
+      switch (port) {
+        case 'top':
+          return { x: note.x + hw + edgeOffset, y: note.y };
+        case 'bottom':
+          return { x: note.x + hw + edgeOffset, y: note.y + 220 };
+        case 'left':
+          return { x: note.x, y: note.y + hh + edgeOffset };
+        case 'right':
+        default:
+          return { x: note.x + 220, y: note.y + hh + edgeOffset };
+      }
+    }
+
+    // 計算游標離目標便利貼 4 邊手柄最近的方位 (磁吸手柄判定)
+    function getClosestNotePort(note, bx, by) {
+      const ports = ['top', 'right', 'bottom', 'left'];
+      let closest = 'left';
+      let minD = Infinity;
+      ports.forEach(p => {
+        const pos = getNotePortCoordinate(note, p, 0);
+        const d = Math.hypot(bx - pos.x, by - pos.y);
+        if (d < minD) {
+          minD = d;
+          closest = p;
+        }
+      });
+      return closest;
+    }
+
+    // 解析連線的有效接點方位 (相容舊資料與自動方位計算)
+    function resolveLinePorts(line, fromNote, toNote) {
+      let fromPort = line.fromPort;
+      let toPort = line.toPort;
+
+      if (!fromPort || fromPort === 'auto' || !toPort || toPort === 'auto') {
+        const dx = (toNote.x + 110) - (fromNote.x + 110);
+        const dy = (toNote.y + 110) - (fromNote.y + 110);
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          if (!fromPort || fromPort === 'auto') fromPort = dx >= 0 ? 'right' : 'left';
+          if (!toPort || toPort === 'auto') toPort = dx >= 0 ? 'left' : 'right';
+        } else {
+          if (!fromPort || fromPort === 'auto') fromPort = dy >= 0 ? 'bottom' : 'top';
+          if (!toPort || toPort === 'auto') toPort = dy >= 0 ? 'top' : 'bottom';
+        }
+      }
+      return { fromPort, toPort };
+    }
+
+    // 計算依據接點朝向的三次貝茲曲線控制點 (使箭頭銳利垂直插入邊界，弧線流暢優雅)
+    function computePortBezierControls(p1, fromPort, p2, toPort) {
+      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
+      const H = Math.max(50, Math.min(dist * 0.45, 180));
+
+      const dirs = {
+        top: { x: 0, y: -1 },
+        bottom: { x: 0, y: 1 },
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 }
+      };
+
+      const d1 = dirs[fromPort] || { x: 1, y: 0 };
+      const d2 = dirs[toPort] || { x: -1, y: 0 };
+
+      // 起點朝外延伸
+      let cx1 = p1.x + d1.x * H;
+      let cy1 = p1.y + d1.y * H;
+
+      // 終點從端點朝外延伸 (切線自然垂直指向終點端點)
+      let cx2 = p2.x + d2.x * H;
+      let cy2 = p2.y + d2.y * H;
+
+      return { cx1, cy1, cx2, cy2 };
+    }
+
+    // 繪製與更新全畫布所有有向曲線連線 (60 FPS 高效渲染，支援多點分流與四邊錨點)
+    function renderConnections() {
+      const pathsGroup = document.getElementById('connections-paths-group');
+      const labelsGroup = document.getElementById('connections-labels-group');
+      if (!pathsGroup || !labelsGroup) return;
+
+      pathsGroup.innerHTML = '';
+      labelsGroup.innerHTML = '';
+
+      if (!Array.isArray(boardState.lines) || boardState.lines.length === 0) {
+        return;
+      }
+
+      // 建立便利貼查找快照
+      const noteMap = new Map((boardState.notes || []).map(n => [n.id, n]));
+
+      // 1. 整理各端點連線，進行同邊分流 (Edge Slot Spread)
+      const portUsageMap = new Map(); // key: `${noteId}:::${port}`
+      boardState.lines.forEach(line => {
+        if (!noteMap.has(line.fromId) || !noteMap.has(line.toId)) return;
+        const fromNote = noteMap.get(line.fromId);
+        const toNote = noteMap.get(line.toId);
+        const ports = resolveLinePorts(line, fromNote, toNote);
+        line._resolvedFromPort = ports.fromPort;
+        line._resolvedToPort = ports.toPort;
+
+        const kFrom = `${line.fromId}:::${ports.fromPort}`;
+        const kTo = `${line.toId}:::${ports.toPort}`;
+
+        if (!portUsageMap.has(kFrom)) portUsageMap.set(kFrom, []);
+        portUsageMap.get(kFrom).push({ line, isOrigin: true, otherNote: toNote });
+
+        if (!portUsageMap.has(kTo)) portUsageMap.set(kTo, []);
+        portUsageMap.get(kTo).push({ line, isOrigin: false, otherNote: fromNote });
+      });
+
+      // 2. 計算每條線在各端點的間距槽位偏移 (分流 50px~64px，絕不疊在中心)
+      const lineSlotOffsets = new Map();
+      portUsageMap.forEach((entries, portKey) => {
+        const [noteId, port] = portKey.split(':::');
+        const count = entries.length;
+        if (count === 1) {
+          const e = entries[0];
+          lineSlotOffsets.set(`${e.line.id}:::${e.isOrigin ? 'from' : 'to'}`, 0);
+          return;
+        }
+
+        // 依據對端卡片的座標排序，確保連線平行不交叉
+        entries.sort((a, b) => {
+          if (port === 'left' || port === 'right') {
+            return (a.otherNote.y + 110) - (b.otherNote.y + 110) || a.line.id.localeCompare(b.line.id);
+          } else {
+            return (a.otherNote.x + 110) - (b.otherNote.x + 110) || a.line.id.localeCompare(b.line.id);
+          }
+        });
+
+        entries.forEach((e, idx) => {
+          let offset = 0;
+          if (count === 2) {
+            offset = (idx - 0.5) * 64; // -32px, +32px
+          } else if (count === 3) {
+            offset = (idx - 1) * 52; // -52px, 0, +52px
+          } else {
+            const maxSpan = 150;
+            offset = -maxSpan / 2 + (idx / (count - 1)) * maxSpan;
+          }
+          lineSlotOffsets.set(`${e.line.id}:::${e.isOrigin ? 'from' : 'to'}`, offset);
+        });
+      });
+
+      // 3. 繪製所有連線
+      boardState.lines.forEach((line) => {
+        const fromNote = noteMap.get(line.fromId);
+        const toNote = noteMap.get(line.toId);
+        if (!fromNote || !toNote) return;
+
+        const fromPort = line._resolvedFromPort || 'right';
+        const toPort = line._resolvedToPort || 'left';
+        const fromOffset = lineSlotOffsets.get(`${line.id}:::from`) || 0;
+        const toOffset = lineSlotOffsets.get(`${line.id}:::to`) || 0;
+
+        const p1 = getNotePortCoordinate(fromNote, fromPort, fromOffset);
+        const p2 = getNotePortCoordinate(toNote, toPort, toOffset);
+
+        const { cx1, cy1, cx2, cy2 } = computePortBezierControls(p1, fromPort, p2, toPort);
+
+        // 終點切線向量與角度 (精準控制單向箭頭朝向)
+        const tx = p2.x - cx2;
+        const ty = p2.y - cy2;
+        const arrowAngle = Math.atan2(ty, tx);
+
+        const strokeWidth = Number(line.strokeWidth) || 2.5;
+        const strokeColor = getContrastedStrokeColor(fromNote.color);
+        const isSelected = (selectedLineId === line.id);
+
+        const arrowLen = Math.max(14, strokeWidth * 5);
+        const arrowHalfW = Math.max(9, strokeWidth * 3.5);
+
+        // 縮減曲線終點，防止線身戳出箭頭尖端
+        const curveEndX = p2.x - Math.cos(arrowAngle) * (arrowLen * 0.6);
+        const curveEndY = p2.y - Math.sin(arrowAngle) * (arrowLen * 0.6);
+
+        const pathD = `M ${p1.x} ${p1.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${curveEndX} ${curveEndY}`;
+
+        // 箭頭多邊形頂點
+        const wing1X = p2.x - arrowLen * Math.cos(arrowAngle - 0.46);
+        const wing1Y = p2.y - arrowLen * Math.sin(arrowAngle - 0.46);
+        const wing2X = p2.x - arrowLen * Math.cos(arrowAngle + 0.46);
+        const wing2Y = p2.y - arrowLen * Math.sin(arrowAngle + 0.46);
+        const arrowPoints = `${p2.x},${p2.y} ${wing1X},${wing1Y} ${p2.x - arrowLen * 0.7 * Math.cos(arrowAngle)},${p2.y - arrowLen * 0.7 * Math.sin(arrowAngle)} ${wing2X},${wing2Y}`;
+
+        // 曲線中點 (Cubic Bezier t = 0.5 幾何公式，供選項 B 膠囊標籤定位)
+        const xm = 0.125 * p1.x + 0.375 * cx1 + 0.375 * cx2 + 0.125 * p2.x;
+        const ym = 0.125 * p1.y + 0.375 * cy1 + 0.375 * cy2 + 0.125 * p2.y;
+
+        // 1. 繪製線條群組
+        const gPath = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        gPath.setAttribute('class', `connection-group ${isSelected ? 'selected' : ''}`);
+        gPath.setAttribute('data-line-id', line.id);
+
+        gPath.innerHTML = `
+          <!-- 隱形加寬點擊感應層 (24px Hitbox) -->
+          <path d="${pathD}" class="connection-hitbox" />
+          <!-- 實體有向彩色曲線 -->
+          <path d="${pathD}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" class="connection-path" />
+          <!-- 單向箭頭多邊形 (顏色完全繼承發出便利貼) -->
+          <polygon points="${arrowPoints}" fill="${strokeColor}" />
+        `;
+
+        // 點擊選中連線
+        gPath.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+        });
+        gPath.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectLine(line.id, xm, ym);
+        });
+        pathsGroup.appendChild(gPath);
+
+        // 2. 繪製選項 B 膠囊文字標籤 (永遠水平、白底半透明圓角，極易辨讀)
+        const hasText = Boolean(line.text && line.text.trim());
+        const labelText = hasText ? line.text.trim() : (isSelected ? '點此輸入文字' : '');
+
+        if (labelText) {
+          const gLabel = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          gLabel.setAttribute('class', 'connection-label-group cursor-pointer');
+          gLabel.setAttribute('data-line-id', line.id);
+
+          // 計算膠囊寬度 (依文字字數動態調整)
+          const textCharLen = labelText.length;
+          const pillW = Math.max(56, textCharLen * 13 + 24);
+          const pillH = 26;
+
+          gLabel.innerHTML = `
+            <!-- 半透明膠囊背景框 (防白板雜訊干擾) -->
+            <rect x="${xm - pillW / 2}" y="${ym - pillH / 2}" width="${pillW}" height="${pillH}" rx="13" ry="13" fill="rgba(255, 255, 255, 0.96)" stroke="${strokeColor}" stroke-width="${isSelected ? 2 : 1.5}" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))" />
+            <!-- 水平文字標籤 -->
+            <text x="${xm}" y="${ym}" font-size="12" font-weight="700" fill="#0f172a" text-anchor="middle" dominant-baseline="central" style="pointer-events: none; user-select: none;">${escapeHtml(labelText)}</text>
+          `;
+
+          gLabel.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+          });
+          gLabel.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectLine(line.id, xm, ym);
+          });
+          gLabel.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            openLineTextModal(line.id);
+          });
+          labelsGroup.appendChild(gLabel);
+        }
+      });
+    }
+
+    // 拖曳便利貼時以 60 FPS 快速更新連線
+    function updateConnectedLines() {
+      renderConnections();
+    }
+
+    // --- 連線拖曳手柄互動 (Miro 級拉線與手柄磁吸邏輯) ---
+    function startConnecting(fromNoteId, port, event) {
+      if (currentMode === 'hand') return;
+      isConnecting = true;
+      connectFromNoteId = fromNoteId;
+      connectFromPort = port || 'right';
+      currentHoveredTargetNoteId = null;
+      let currentHoveredTargetPort = null;
+
+      const draftPath = document.getElementById('connection-draft-path');
+      if (draftPath) {
+        draftPath.classList.remove('hidden');
+        draftPath.setAttribute('d', '');
+      }
+
+      const fromNote = boardState.notes.find(n => n.id === fromNoteId);
+      if (!fromNote) return;
+
+      const strokeColor = getContrastedStrokeColor(fromNote.color);
+      if (draftPath) draftPath.setAttribute('stroke', strokeColor);
+
+      const p1 = getNotePortCoordinate(fromNote, connectFromPort, 0);
+
+      function clearTargetPortHighlights() {
+        document.querySelectorAll('.note-port.target-snap-highlight').forEach(el => {
+          el.classList.remove('target-snap-highlight', 'scale-150', 'bg-emerald-500', 'ring-4', 'ring-emerald-300');
+        });
+      }
+
+      function onConnectingPointerMove(e) {
+        if (!isConnecting) return;
+        const rect = container.getBoundingClientRect();
+        const cursorBoard = containerToBoard(e.clientX - rect.left, e.clientY - rect.top);
+
+        const elemUnder = document.elementFromPoint(e.clientX, e.clientY);
+        const targetCard = elemUnder ? elemUnder.closest('.paper-texture') : null;
+        let newTargetId = null;
+        let newTargetPort = null;
+
+        if (targetCard && targetCard.id && targetCard.id.startsWith('note-')) {
+          const tId = targetCard.id.replace('note-', '');
+          if (tId !== connectFromNoteId) {
+            newTargetId = tId;
+            const targetNote = boardState.notes.find(n => n.id === tId);
+            if (targetNote) {
+              newTargetPort = getClosestNotePort(targetNote, cursorBoard.x, cursorBoard.y);
+            }
+          }
+        }
+
+        if (newTargetId !== currentHoveredTargetNoteId || newTargetPort !== currentHoveredTargetPort) {
+          clearTargetPortHighlights();
+          if (currentHoveredTargetNoteId) {
+            const prevCard = document.getElementById(`note-${currentHoveredTargetNoteId}`);
+            if (prevCard) prevCard.classList.remove('ring-4', 'ring-indigo-500', 'scale-[1.03]');
+          }
+          currentHoveredTargetNoteId = newTargetId;
+          currentHoveredTargetPort = newTargetPort;
+          if (currentHoveredTargetNoteId) {
+            const nextCard = document.getElementById(`note-${currentHoveredTargetNoteId}`);
+            if (nextCard) {
+              nextCard.classList.add('ring-4', 'ring-indigo-500', 'scale-[1.03]');
+              if (currentHoveredTargetPort) {
+                const portEl = nextCard.querySelector(`.note-port-${currentHoveredTargetPort}`);
+                if (portEl) {
+                  portEl.classList.add('target-snap-highlight', 'scale-150', 'bg-emerald-500', 'ring-4', 'ring-emerald-300');
+                }
+              }
+            }
+          }
+        }
+
+        let p2;
+        let d;
+        if (currentHoveredTargetNoteId && currentHoveredTargetPort) {
+          const targetNote = boardState.notes.find(n => n.id === currentHoveredTargetNoteId);
+          p2 = getNotePortCoordinate(targetNote, currentHoveredTargetPort, 0);
+          const { cx1, cy1, cx2, cy2 } = computePortBezierControls(p1, connectFromPort, p2, currentHoveredTargetPort);
+          d = `M ${p1.x} ${p1.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${p2.x} ${p2.y}`;
+        } else {
+          p2 = { x: cursorBoard.x, y: cursorBoard.y };
+          const midX = (p1.x + p2.x) / 2;
+          const midY = (p1.y + p2.y) / 2 - 20;
+          d = `M ${p1.x} ${p1.y} Q ${midX} ${midY}, ${p2.x} ${p2.y}`;
+        }
+
+        if (draftPath) draftPath.setAttribute('d', d);
+      }
+
+      function onConnectingPointerUp(e) {
+        window.removeEventListener('pointermove', onConnectingPointerMove);
+        window.removeEventListener('pointerup', onConnectingPointerUp);
+
+        if (!isConnecting) return;
+        isConnecting = false;
+
+        if (draftPath) {
+          draftPath.classList.add('hidden');
+          draftPath.setAttribute('d', '');
+        }
+
+        clearTargetPortHighlights();
+        if (currentHoveredTargetNoteId) {
+          const targetCard = document.getElementById(`note-${currentHoveredTargetNoteId}`);
+          if (targetCard) targetCard.classList.remove('ring-4', 'ring-indigo-500', 'scale-[1.03]');
+          
+          if (currentHoveredTargetPort) {
+            addConnection(connectFromNoteId, currentHoveredTargetNoteId, connectFromPort, currentHoveredTargetPort);
+          }
+          currentHoveredTargetNoteId = null;
+          currentHoveredTargetPort = null;
+        }
+
+        connectFromNoteId = null;
+      }
+
+      window.addEventListener('pointermove', onConnectingPointerMove);
+      window.addEventListener('pointerup', onConnectingPointerUp);
+    }
+
+    // 建立新連線 (加入 lines 陣列並儲存接點方位)
+    function addConnection(fromId, toId, fromPort = 'auto', toPort = 'auto') {
+      if (!fromId || !toId || fromId === toId) return;
+
+      boardState.lines = boardState.lines || [];
+      const newLine = {
+        id: 'line_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        fromId: fromId,
+        toId: toId,
+        fromPort: fromPort,
+        toPort: toPort,
+        text: '',
+        strokeWidth: 2.5,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      pushHistory();
+      boardState.lines.push(newLine);
+      renderConnections();
+      saveState(true);
+      showToast("已建立箭頭連線！點選線條可修改文字、方向或端點。");
+
+      // 自動選取新連線並定位浮動工具列
+      setTimeout(() => {
+        const fromNote = boardState.notes.find(n => n.id === fromId);
+        const toNote = boardState.notes.find(n => n.id === toId);
+        if (fromNote && toNote) {
+          const xm = (fromNote.x + toNote.x) / 2 + 110;
+          const ym = (fromNote.y + toNote.y) / 2 + 110;
+          selectLine(newLine.id, xm, ym);
+        }
+      }, 50);
+    }
+
+    let selectedLineWorldPos = null;
+
+    // 選取連線並展示浮動工具列
+    function selectLine(lineId, worldX, worldY) {
+      selectedLineId = lineId;
+      selectedLineWorldPos = { x: worldX, y: worldY };
+      selectedNoteIds.clear();
+      updateNotesSelectionVisuals();
+      renderConnections();
+      updateLineToolbarPosition();
+    }
+
+    function updateLineToolbarPosition() {
+      const toolbar = document.getElementById('line-toolbar');
+      if (!toolbar || !selectedLineId || !selectedLineWorldPos) return;
+
+      const line = (boardState.lines || []).find(l => l.id === selectedLineId);
+      if (!line) {
+        hideLineToolbar();
+        return;
+      }
+
+      // 更新粗細指示文字
+      const widthInd = document.getElementById('line-width-indicator');
+      if (widthInd) widthInd.innerText = `${line.strokeWidth || 2.5}px`;
+
+      // 更新端點指示文字
+      const fromNote = (boardState.notes || []).find(n => n.id === line.fromId);
+      const toNote = (boardState.notes || []).find(n => n.id === line.toId);
+      if (fromNote && toNote) {
+        const ports = resolveLinePorts(line, fromNote, toNote);
+        const fromInd = document.getElementById('line-fromport-indicator');
+        if (fromInd) fromInd.innerText = PORT_NAMES[ports.fromPort] || '右';
+        const toInd = document.getElementById('line-toport-indicator');
+        if (toInd) toInd.innerText = PORT_NAMES[ports.toPort] || '左';
+      }
+
+      // 將世界坐標 (worldX, worldY) 轉換為螢幕像素
+      const rect = container.getBoundingClientRect();
+      const screen = boardToContainer(selectedLineWorldPos.x, selectedLineWorldPos.y);
+      const sx = screen.cx + rect.left;
+      const sy = screen.cy + rect.top - 18;
+
+      toolbar.style.left = `${sx}px`;
+      toolbar.style.top = `${sy}px`;
+      toolbar.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+      toolbar.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
+      lucide.createIcons({ scope: toolbar });
+    }
+
+    function hideLineToolbar() {
+      const toolbar = document.getElementById('line-toolbar');
+      if (toolbar) {
+        toolbar.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+        toolbar.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+      }
+      selectedLineId = null;
+      selectedLineWorldPos = null;
+      renderConnections();
+    }
+
+    // --- 連線工具列動作 ---
+    function editCurrentLineText() {
+      if (!selectedLineId) return;
+      openLineTextModal(selectedLineId);
+    }
+
+    function reverseCurrentLineDirection() {
+      if (!selectedLineId) return;
+      const line = (boardState.lines || []).find(l => l.id === selectedLineId);
+      if (!line) return;
+
+      const fromNote = (boardState.notes || []).find(n => n.id === line.fromId);
+      const toNote = (boardState.notes || []).find(n => n.id === line.toId);
+      const ports = (fromNote && toNote) ? resolveLinePorts(line, fromNote, toNote) : { fromPort: 'right', toPort: 'left' };
+
+      pushHistory();
+      const tempId = line.fromId;
+      line.fromId = line.toId;
+      line.toId = tempId;
+
+      line.fromPort = ports.toPort;
+      line.toPort = ports.fromPort;
+      line.updatedAt = new Date().toISOString();
+
+      saveState(true);
+      renderConnections();
+      updateLineToolbarPosition();
+      showToast("箭頭方向已反轉。");
+    }
+
+    function cycleCurrentLineFromPort() {
+      if (!selectedLineId) return;
+      const line = (boardState.lines || []).find(l => l.id === selectedLineId);
+      if (!line) return;
+
+      const fromNote = (boardState.notes || []).find(n => n.id === line.fromId);
+      const toNote = (boardState.notes || []).find(n => n.id === line.toId);
+      const ports = (fromNote && toNote) ? resolveLinePorts(line, fromNote, toNote) : { fromPort: 'right', toPort: 'left' };
+
+      const cycle = ['top', 'right', 'bottom', 'left'];
+      const curIdx = cycle.indexOf(ports.fromPort);
+      const nextPort = cycle[(curIdx + 1) % cycle.length];
+
+      pushHistory();
+      line.fromPort = nextPort;
+      line.updatedAt = new Date().toISOString();
+
+      saveState(true);
+      renderConnections();
+      updateLineToolbarPosition();
+      showToast(`起點已切換至【${PORT_NAMES[nextPort]}】邊。`);
+    }
+
+    function cycleCurrentLineToPort() {
+      if (!selectedLineId) return;
+      const line = (boardState.lines || []).find(l => l.id === selectedLineId);
+      if (!line) return;
+
+      const fromNote = (boardState.notes || []).find(n => n.id === line.fromId);
+      const toNote = (boardState.notes || []).find(n => n.id === line.toId);
+      const ports = (fromNote && toNote) ? resolveLinePorts(line, fromNote, toNote) : { fromPort: 'right', toPort: 'left' };
+
+      const cycle = ['left', 'bottom', 'right', 'top'];
+      const curIdx = cycle.indexOf(ports.toPort);
+      const nextPort = cycle[(curIdx + 1) % cycle.length];
+
+      pushHistory();
+      line.toPort = nextPort;
+      line.updatedAt = new Date().toISOString();
+
+      saveState(true);
+      renderConnections();
+      updateLineToolbarPosition();
+      showToast(`終點已切換至【${PORT_NAMES[nextPort]}】邊。`);
+    }
+
+    function cycleCurrentLineStrokeWidth() {
+      if (!selectedLineId) return;
+      const line = (boardState.lines || []).find(l => l.id === selectedLineId);
+      if (!line) return;
+
+      pushHistory();
+      const current = Number(line.strokeWidth) || 2.5;
+      let nextWidth = 2.5;
+      if (current === 1.5) nextWidth = 2.5;
+      else if (current === 2.5) nextWidth = 4.0;
+      else nextWidth = 1.5;
+
+      line.strokeWidth = nextWidth;
+      line.updatedAt = new Date().toISOString();
+
+      const widthInd = document.getElementById('line-width-indicator');
+      if (widthInd) widthInd.innerText = `${nextWidth}px`;
+
+      saveState(true);
+      renderConnections();
+    }
+
+    function deleteCurrentSelectedLine() {
+      if (!selectedLineId) return;
+      pushHistory();
+      const lineIdToDelete = selectedLineId;
+      hideLineToolbar();
+      boardState.lines = (boardState.lines || []).filter(l => l.id !== lineIdToDelete);
+      saveState(true);
+      renderConnections();
+      showToast("連線已刪除。");
+    }
+
+    // --- 連線說明文字對話框 (Modal) ---
+    function openLineTextModal(lineId) {
+      editingLineId = lineId;
+      const line = (boardState.lines || []).find(l => l.id === lineId);
+      if (!line) return;
+
+      const modal = document.getElementById('line-text-modal');
+      const input = document.getElementById('line-text-input');
+      if (!modal || !input) return;
+
+      input.value = line.text || '';
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        input.focus();
+        input.select();
+      }, 10);
+      lucide.createIcons({ scope: modal });
+    }
+
+    function closeLineTextModal() {
+      const modal = document.getElementById('line-text-modal');
+      if (modal) {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+      }
+      editingLineId = null;
+    }
+
+    function saveLineTextFromModal() {
+      if (!editingLineId) return;
+      const line = (boardState.lines || []).find(l => l.id === editingLineId);
+      const input = document.getElementById('line-text-input');
+      if (line && input) {
+        pushHistory();
+        line.text = input.value.trim();
+        line.updatedAt = new Date().toISOString();
+        saveState(true);
+        renderConnections();
+      }
+      closeLineTextModal();
+    }
+
+    // =========================================================================
+    // --- 圖片上傳、220x220 縮圖適配引擎與 Lightbox 燈箱系統 ---
+    // =========================================================================
+
+    function formatFileSize(bytes) {
+      if (!bytes || bytes === 0) return '';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // 透過 HTML5 Canvas 於本機端依原圖長寬比例縮放生成高清輕量縮圖 (完整呈現內容，絕不裁切畫面)
+    async function generateProportionalThumbnail(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const fullDataUrl = event.target.result;
+          const img = new Image();
+          img.onload = () => {
+            const origWidth = img.naturalWidth || img.width;
+            const origHeight = img.naturalHeight || img.height;
+
+            const maxDim = 440;
+            let targetWidth = origWidth;
+            let targetHeight = origHeight;
+
+            if (origWidth > maxDim || origHeight > maxDim) {
+              if (origWidth >= origHeight) {
+                targetWidth = maxDim;
+                targetHeight = Math.max(1, Math.round((origHeight * maxDim) / origWidth));
+              } else {
+                targetHeight = maxDim;
+                targetWidth = Math.max(1, Math.round((origWidth * maxDim) / origHeight));
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+            let thumbUrl = '';
+            try {
+              thumbUrl = canvas.toDataURL('image/webp', 0.85);
+              if (!thumbUrl.startsWith('data:image/webp')) {
+                thumbUrl = canvas.toDataURL('image/jpeg', 0.82);
+              }
+            } catch(e) {
+              thumbUrl = canvas.toDataURL('image/jpeg', 0.82);
+            }
+
+            resolve({
+              thumbUrl,
+              fullDataUrl,
+              width: origWidth,
+              height: origHeight
+            });
+          };
+          img.onerror = reject;
+          img.src = fullDataUrl;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // 將圖檔轉化為標準 220x220 便利貼卡片
+    async function processImageFileToNote(file, targetWorldX = null, targetWorldY = null) {
+      if (!file || !file.type || !file.type.startsWith('image/')) {
+        showToast("僅支援上傳圖片格式 (PNG, JPG, WebP, GIF)", "warning");
+        return;
+      }
+
+      showToast(`正在擷取與縮放圖片「${file.name}」...`, "info");
+
+      try {
+        const { thumbUrl, fullDataUrl, width, height } = await generateProportionalThumbnail(file);
+
+        let posX = targetWorldX;
+        let posY = targetWorldY;
+
+        if (posX === null || posY === null || isNaN(posX) || isNaN(posY)) {
+          const rect = container.getBoundingClientRect();
+          const boardPos = containerToBoard(rect.width / 2, rect.height / 2);
+          posX = boardPos.x - 110 + (Math.random() * 40 - 20);
+          posY = boardPos.y - 110 + (Math.random() * 40 - 20);
+        }
+
+        const noteId = 'img-' + Math.random().toString(36).substring(2, 10) + '-' + Date.now().toString(36);
+        const cleanFileName = file.name || '未命名圖片.png';
+        const caption = cleanFileName.replace(/\.[^/.]+$/, '');
+
+        // 存入本機記憶體快取以供即時全尺寸燈箱預覽
+        localImageFullCache.set(noteId, fullDataUrl);
+
+        const newNote = {
+          id: noteId,
+          type: 'image',
+          text: caption,
+          ac: '',
+          color: '#FFFFFF',
+          isBigText: false,
+          thumbUrl: thumbUrl,
+          originalUrl: '',
+          fileName: cleanFileName,
+          fileSize: file.size,
+          width: width,
+          height: height,
+          x: Math.round(posX),
+          y: Math.round(posY),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        pushHistory();
+        boardState.notes.push(newNote);
+        renderNotes();
+        updateStickyNotesCount();
+        saveState(true);
+        showToast(`已建立圖片卡片「${caption}」！點選可展開全螢幕預覽。`);
+
+        // 線上環境且 storage 存在時非同步嘗試備份上傳原圖
+        const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (storage && !isLocalHost) {
+          try {
+            const cleanName = cleanFileName.replace(/[^a-zA-Z0-9._\-\u4e00-\u9fa5]/g, '_');
+            const storagePath = `board_images/${CURRENT_ROOM_ID}/${newNote.id}_${cleanName}`;
+            const ref = storage.ref(storagePath);
+            ref.put(file).then(snapshot => snapshot.ref.getDownloadURL()).then(cloudUrl => {
+              newNote.originalUrl = cloudUrl;
+              saveState(true);
+            }).catch(err => {
+              console.warn("[Storage] Cloud upload warning:", err);
+            });
+          } catch (err) {
+            console.warn("[Storage] Cloud upload error:", err);
+          }
+        }
+      } catch (err) {
+        console.error("處理圖片失敗:", err);
+        showToast(`圖片處理失敗：${err.message || '未知錯誤'}`, "warning");
+      }
+    }
+
+    function triggerImageUpload() {
+      const input = document.getElementById('board-image-file-input');
+      if (input) {
+        input.value = '';
+        input.click();
+      }
+    }
+
+    function handleImageFileInputChange(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+      Array.from(files).forEach((file, idx) => {
+        setTimeout(() => {
+          processImageFileToNote(file, null, null);
+        }, idx * 100);
+      });
+    }
+
+    function triggerNoteImageClick(noteId, event) {
+      if (event) event.stopPropagation();
+      if (Date.now() - lastCardDragEndTimestamp < 250) {
+        return; // 剛拖曳放開，不觸發預覽
+      }
+      openImageLightbox(noteId);
+    }
+
+    // --- 全螢幕圖片燈箱預覽視窗 (Image Lightbox Viewer Engine) ---
+    let currentLightboxNoteId = null;
+    let lightboxScale = 1.0;
+    let lightboxPanX = 0;
+    let lightboxPanY = 0;
+    let isLightboxDragging = false;
+    let lightboxStartX = 0;
+    let lightboxStartY = 0;
+
+    function openImageLightbox(noteId) {
+      const note = boardState.notes.find(n => n.id === noteId);
+      if (!note || (note.type !== 'image' && !note.thumbUrl)) return;
+
+      currentLightboxNoteId = noteId;
+      lightboxScale = 1.0;
+      lightboxPanX = 0;
+      lightboxPanY = 0;
+
+      const modal = document.getElementById('image-lightbox-modal');
+      const filenameEl = document.getElementById('lightbox-filename');
+      const metaEl = document.getElementById('lightbox-meta');
+      const img = document.getElementById('lightbox-image');
+
+      filenameEl.innerText = note.fileName || note.text || '圖片預覽';
+      metaEl.innerText = `${note.width || '?'} × ${note.height || '?'} (${formatFileSize(note.fileSize)})`;
+
+      const fullSrc = localImageFullCache.get(note.id) || note.originalUrl || note.thumbUrl;
+      img.src = fullSrc;
+
+      updateLightboxTransform();
+      updateLightboxNavButtons();
+
+      modal.classList.remove('hidden');
+      setTimeout(() => modal.classList.remove('opacity-0'), 10);
+      lucide.createIcons({ scope: modal });
+    }
+
+    function closeImageLightbox() {
+      const modal = document.getElementById('image-lightbox-modal');
+      if (!modal) return;
+      modal.classList.add('opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        const img = document.getElementById('lightbox-image');
+        if (img) img.src = '';
+      }, 200);
+      currentLightboxNoteId = null;
+    }
+
+    function updateLightboxTransform() {
+      const wrapper = document.getElementById('lightbox-img-wrapper');
+      const zoomLevelEl = document.getElementById('lightbox-zoom-level');
+      if (wrapper) {
+        wrapper.style.transform = `translate(${lightboxPanX}px, ${lightboxPanY}px) scale(${lightboxScale})`;
+      }
+      if (zoomLevelEl) {
+        zoomLevelEl.innerText = `${Math.round(lightboxScale * 100)}%`;
+      }
+    }
+
+    function lightboxZoomIn() {
+      lightboxScale = Math.min(5.0, lightboxScale * 1.25);
+      updateLightboxTransform();
+    }
+
+    function lightboxZoomOut() {
+      lightboxScale = Math.max(0.2, lightboxScale / 1.25);
+      updateLightboxTransform();
+    }
+
+    function lightboxResetZoom() {
+      lightboxScale = 1.0;
+      lightboxPanX = 0;
+      lightboxPanY = 0;
+      updateLightboxTransform();
+    }
+
+    function lightboxNav(direction) {
+      const imageNotes = boardState.notes.filter(n => n.type === 'image' || n.thumbUrl);
+      if (imageNotes.length <= 1) return;
+
+      const currentIndex = imageNotes.findIndex(n => n.id === currentLightboxNoteId);
+      if (currentIndex === -1) return;
+
+      let nextIndex = (currentIndex + direction + imageNotes.length) % imageNotes.length;
+      openImageLightbox(imageNotes[nextIndex].id);
+    }
+
+    function updateLightboxNavButtons() {
+      const imageNotes = boardState.notes.filter(n => n.type === 'image' || n.thumbUrl);
+      const prevBtn = document.getElementById('lightbox-prev-btn');
+      const nextBtn = document.getElementById('lightbox-next-btn');
+      if (imageNotes.length <= 1) {
+        if (prevBtn) prevBtn.classList.add('hidden');
+        if (nextBtn) nextBtn.classList.add('hidden');
+      } else {
+        if (prevBtn) prevBtn.classList.remove('hidden');
+        if (nextBtn) nextBtn.classList.remove('hidden');
+      }
+    }
+
+    function downloadCurrentLightboxImage() {
+      if (!currentLightboxNoteId) return;
+      const note = boardState.notes.find(n => n.id === currentLightboxNoteId);
+      if (!note) return;
+
+      const fullSrc = localImageFullCache.get(note.id) || note.originalUrl || note.thumbUrl;
+      if (!fullSrc) return;
+
+      const a = document.createElement('a');
+      a.href = fullSrc;
+      a.download = note.fileName || `image_${note.id}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast("已開始下載原始圖檔！");
+    }
+
+    function setupLightboxInteraction() {
+      const viewport = document.getElementById('lightbox-viewport');
+      if (!viewport) return;
+
+      viewport.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          lightboxScale = Math.min(5.0, lightboxScale * 1.15);
+        } else {
+          lightboxScale = Math.max(0.2, lightboxScale / 1.15);
+        }
+        updateLightboxTransform();
+      }, { passive: false });
+
+      viewport.addEventListener('pointerdown', function(e) {
+        if (e.target.closest('button')) return;
+        isLightboxDragging = true;
+        lightboxStartX = e.clientX - lightboxPanX;
+        lightboxStartY = e.clientY - lightboxPanY;
+        viewport.setPointerCapture(e.pointerId);
+      });
+
+      viewport.addEventListener('pointermove', function(e) {
+        if (!isLightboxDragging) return;
+        lightboxPanX = e.clientX - lightboxStartX;
+        lightboxPanY = e.clientY - lightboxStartY;
+        updateLightboxTransform();
+      });
+
+      viewport.addEventListener('pointerup', function(e) {
+        if (!isLightboxDragging) return;
+        isLightboxDragging = false;
+        viewport.releasePointerCapture(e.pointerId);
+      });
+
+      window.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('image-lightbox-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+          if (e.key === 'Escape') {
+            closeImageLightbox();
+            e.preventDefault();
+          } else if (e.key === 'ArrowLeft') {
+            lightboxNav(-1);
+            e.preventDefault();
+          } else if (e.key === 'ArrowRight') {
+            lightboxNav(1);
+            e.preventDefault();
+          }
+        }
+      });
+    }
+
+    function setupImageUploadListeners() {
+      // 1. 剪貼簿截圖直接貼上 (Ctrl+V / Cmd+V)
+      window.addEventListener('paste', function(e) {
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+          return;
+        }
+
+        if (e.clipboardData && e.clipboardData.items) {
+          const items = Array.from(e.clipboardData.items);
+          const imageItem = items.find(item => item.type && item.type.startsWith('image/'));
+          if (imageItem) {
+            const file = imageItem.getAsFile();
+            if (file) {
+              e.preventDefault();
+              let spawnX = null, spawnY = null;
+              if (lastMouseEvent) {
+                const pos = containerToBoard(lastMouseEvent.clientX, lastMouseEvent.clientY);
+                spawnX = pos.x - 110;
+                spawnY = pos.y - 110;
+              }
+              processImageFileToNote(file, spawnX, spawnY);
+            }
+          }
+        }
+      });
+
+      // 2. 桌面檔案拖曳放至白板 (Drag & Drop)
+      container.addEventListener('dragover', function(e) {
+        if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+
+      container.addEventListener('drop', function(e) {
+        if (isUserDraggingNote) {
+          e.preventDefault();
+          return;
+        }
+        if (e.target && e.target.closest && e.target.closest('#notes-container')) {
+          return;
+        }
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          const files = Array.from(e.dataTransfer.files).filter(f => f.type && f.type.startsWith('image/'));
+          if (files.length > 0) {
+            e.preventDefault();
+            const pos = containerToBoard(e.clientX, e.clientY);
+            files.forEach((file, idx) => {
+              processImageFileToNote(file, pos.x - 110 + idx * 30, pos.y - 110 + idx * 30);
+            });
+          }
+        }
+      });
+    }
+
     function renderNotes() {
       notesContainer.innerHTML = '';
       boardState.notes.forEach(note => {
         const card = createNoteElement(note);
         notesContainer.appendChild(card);
         const textEl = card.querySelector('.note-text-el');
-        if (textEl) {
+        if (textEl && note.type !== 'image' && !note.thumbUrl) {
           fitTextToCard(card, textEl, note);
         }
       });
+      renderConnections();
       updateMinimap();
     }
 
-    // 建立便利貼元件並綁定雙擊編輯/拖曳/AC 懸浮
+    // 建立便利貼元件並綁定雙擊編輯/拖曳/AC 懸浮 (相容文字卡片與 220x220 圖片卡片)
     function createNoteElement(note) {
-      const textColor = getContrastColor(note.color);
+      const defaultTextColor = getContrastColor(note.color || '#FFFFFF');
+      const textColor = note.textColor || defaultTextColor;
       const isDarkCard = (textColor === '#FFFFFF');
       const isLockedByOther = isNoteLockedByOther(note);
+      const isImageNote = (note.type === 'image' || !!note.thumbUrl);
 
       const card = document.createElement('div');
       card.id = `note-${note.id}`;
       
       const isSelected = selectedNoteIds.has(note.id);
-      let borderStyle = isDarkCard ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)';
+      let borderStyle = isDarkCard ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.08)';
       let statusClasses = isSelected ? 'ring-4 ring-emerald-500/80 scale-[1.02] z-30 shadow-lg' : 'z-10';
 
       if (isLockedByOther) {
@@ -2138,12 +3633,19 @@
         borderStyle = '2px solid #F59E0B';
       }
 
-      card.className = `absolute pointer-events-auto rounded-2xl shadow-md hover:shadow-xl select-none paper-texture flex flex-col p-4 w-[220px] h-[220px] transition-all duration-200 ${isLockedByOther ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'} ${statusClasses}`;
+      const cardPadding = isImageNote ? 'p-3' : 'p-4';
+      card.className = `absolute pointer-events-auto rounded-2xl shadow-md hover:shadow-xl select-none paper-texture flex flex-col ${cardPadding} w-[220px] h-[220px] transition-all duration-200 ${isLockedByOther ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'} ${statusClasses}`;
       card.style.left = `${note.x}px`;
       card.style.top = `${note.y}px`;
-      card.style.backgroundColor = note.color;
+      card.style.backgroundColor = note.color || '#FFFFFF';
       card.style.color = textColor;
       card.style.border = borderStyle;
+
+      // 嚴格禁止瀏覽器對卡片及其內容啟動 HTML5 原生圖片拖曳，防止卡片搬移被中斷或誤觸 drop 複製
+      card.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        return false;
+      });
 
       const lockBadgeHtml = isLockedByOther ? `
         <div class="absolute -top-3 left-3 bg-amber-500 text-white font-bold text-[11px] px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1 z-30 animate-pulse pointer-events-none">
@@ -2152,32 +3654,74 @@
         </div>
       ` : '';
 
+      let bodyHtml = '';
+      if (isImageNote) {
+        const imgSrc = note.thumbUrl || note.originalUrl || '';
+        const displayName = note.text || note.fileName || '圖片';
+        bodyHtml = `
+          <div class="relative w-full flex-1 rounded-xl overflow-hidden bg-slate-900/5 flex items-center justify-center p-1 group/thumb cursor-pointer select-none" onclick="triggerNoteImageClick('${note.id}', event)">
+            <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(displayName)}" draggable="false" class="max-w-full max-h-full object-contain pointer-events-none select-none transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy">
+            <!-- 懸浮點擊預覽遮罩 -->
+            <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold pointer-events-none">
+              <i data-lucide="maximize-2" class="w-4 h-4"></i>
+              <span>點擊預覽</span>
+            </div>
+            <!-- 尺寸與類型標籤 -->
+            <div class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white text-[9px] font-mono tracking-tight flex items-center gap-1 pointer-events-none">
+              <i data-lucide="image" class="w-2.5 h-2.5"></i>
+              <span>${formatFileSize(note.fileSize) || '圖片'}</span>
+            </div>
+          </div>
+          <!-- 圖片底部簡短說明與工具按鈕 -->
+          <div class="mt-1.5 px-0.5 flex items-center justify-between gap-1 text-[11px] font-bold text-inherit truncate">
+            <span class="truncate flex-1" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</span>
+            ${!isLockedByOther ? `
+            <div class="flex items-center space-x-0.5 flex-shrink-0">
+              <button onclick="event.stopPropagation(); toggleNoteTextColor('${note.id}')" class="p-1 rounded hover:bg-black/10 text-inherit/70 hover:text-inherit transition-colors" title="切換文字深淺色 (黑/白)">
+                <i data-lucide="sun-moon" class="w-3 h-3"></i>
+              </button>
+              <button onclick="event.stopPropagation(); openNoteModal('edit', '${note.id}')" class="p-1 rounded hover:bg-black/10 text-inherit/70 hover:text-inherit transition-colors" title="編輯備註說明">
+                <i data-lucide="edit-3" class="w-3 h-3"></i>
+              </button>
+            </div>
+            ` : ''}
+          </div>
+        `;
+      } else {
+        bodyHtml = `
+          <div class="flex items-start justify-between gap-1 mb-2">
+            <div class="note-text-el font-bold text-sm tracking-tight leading-snug line-clamp-4 pr-3 select-none pointer-events-none w-full" style="word-break: break-all;">
+              ${escapeHtml(note.text)}
+            </div>
+            <div class="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity note-tool-btn">
+              ${!isLockedByOther ? `
+              <button onclick="event.stopPropagation(); toggleNoteTextColor('${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center" title="切換文字深淺色 (黑/白)">
+                <i data-lucide="sun-moon" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="event.stopPropagation(); toggleNoteFontFit('${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center" title="字體自適應最大化 (快捷鍵: F)">
+                <i data-lucide="${note.isBigText ? 'minimize-2' : 'type'}" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="event.stopPropagation(); openNoteModal('edit', '${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center" title="編輯卡片">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              </button>
+              ` : `
+              <div class="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold flex items-center gap-0.5 shadow-2xs" title="鎖定中"><i data-lucide="lock" class="w-3 h-3"></i> 鎖定</div>
+              `}
+            </div>
+          </div>
+          
+          ${note.ac ? `
+          <div class="mt-auto border-t border-current/10 pt-2 flex items-center gap-1 text-[10px] opacity-80">
+            <i data-lucide="info" class="w-3 h-3 flex-shrink-0"></i>
+            <span class="truncate">驗收條件: ${escapeHtml(note.ac)}</span>
+          </div>
+          ` : ''}
+        `;
+      }
+
       const contentHtml = `
         ${lockBadgeHtml}
-        <div class="flex items-start justify-between gap-1 mb-2">
-          <div class="note-text-el font-bold text-sm tracking-tight leading-snug line-clamp-4 pr-3 select-none pointer-events-none w-full" style="word-break: break-all;">
-            ${escapeHtml(note.text)}
-          </div>
-          <div class="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity note-tool-btn">
-            ${!isLockedByOther ? `
-            <button onclick="event.stopPropagation(); toggleNoteFontFit('${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center" title="字體自適應最大化 (快捷鍵: F)">
-              <i data-lucide="${note.isBigText ? 'minimize-2' : 'type'}" class="w-3.5 h-3.5"></i>
-            </button>
-            <button onclick="event.stopPropagation(); openNoteModal('edit', '${note.id}')" class="p-1 rounded-lg hover:bg-black/10 text-inherit/80 flex items-center justify-center" title="編輯卡片">
-              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-            </button>
-            ` : `
-            <div class="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold flex items-center gap-0.5 shadow-2xs" title="鎖定中"><i data-lucide="lock" class="w-3 h-3"></i> 鎖定</div>
-            `}
-          </div>
-        </div>
-        
-        ${note.ac ? `
-        <div class="mt-auto border-t border-current/10 pt-2 flex items-center gap-1 text-[10px] opacity-80">
-          <i data-lucide="info" class="w-3 h-3 flex-shrink-0"></i>
-          <span class="truncate">驗收條件: ${escapeHtml(note.ac)}</span>
-        </div>
-        ` : ''}
+        ${bodyHtml}
 
         ${!isLockedByOther ? `
         <div class="quick-palette absolute bottom-2 left-2 right-2 h-7 bg-white/90 backdrop-blur border border-slate-300/30 rounded-xl px-1.5 flex items-center justify-between shadow-md opacity-0 translate-y-2 pointer-events-none transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
@@ -2187,11 +3731,35 @@
           <div class="w-[1px] h-3 bg-slate-300"></div>
           <button onclick="event.stopPropagation(); openNoteModal('edit', '${note.id}')" class="text-[10px] text-slate-600 font-bold hover:text-emerald-600 transition-all">更多</button>
         </div>
+
+        <!-- Miro 風格 4 邊連線手柄 (拖曳可拉出箭頭線) -->
+        <div class="note-port note-port-top absolute w-3.5 h-3.5 bg-white border-2 border-indigo-500 rounded-full shadow-sm cursor-crosshair opacity-0 group-hover:opacity-100 z-30 flex items-center justify-center hover:bg-indigo-600 hover:border-white transition-all" data-port="top" title="拖曳以拉出箭頭連線">
+          <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full pointer-events-none"></div>
+        </div>
+        <div class="note-port note-port-bottom absolute w-3.5 h-3.5 bg-white border-2 border-indigo-500 rounded-full shadow-sm cursor-crosshair opacity-0 group-hover:opacity-100 z-30 flex items-center justify-center hover:bg-indigo-600 hover:border-white transition-all" data-port="bottom" title="拖曳以拉出箭頭連線">
+          <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full pointer-events-none"></div>
+        </div>
+        <div class="note-port note-port-left absolute w-3.5 h-3.5 bg-white border-2 border-indigo-500 rounded-full shadow-sm cursor-crosshair opacity-0 group-hover:opacity-100 z-30 flex items-center justify-center hover:bg-indigo-600 hover:border-white transition-all" data-port="left" title="拖曳以拉出箭頭連線">
+          <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full pointer-events-none"></div>
+        </div>
+        <div class="note-port note-port-right absolute w-3.5 h-3.5 bg-white border-2 border-indigo-500 rounded-full shadow-sm cursor-crosshair opacity-0 group-hover:opacity-100 z-30 flex items-center justify-center hover:bg-indigo-600 hover:border-white transition-all" data-port="right" title="拖曳以拉出箭頭連線">
+          <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full pointer-events-none"></div>
+        </div>
         ` : ''}
       `;
 
       card.innerHTML = contentHtml;
       card.classList.add('group');
+
+      // 綁定連線拖曳手柄事件
+      card.querySelectorAll('.note-port').forEach(portEl => {
+        portEl.addEventListener('pointerdown', function(e) {
+          e.stopPropagation();
+          e.preventDefault();
+          const port = this.getAttribute('data-port') || 'right';
+          startConnecting(note.id, port, e);
+        });
+      });
 
       // 雙擊開啟編輯視窗
       card.addEventListener('dblclick', function(e) {
@@ -2211,7 +3779,9 @@
 
       card.addEventListener('pointerdown', function(e) {
         if (currentMode === 'hand') return; 
-        if (e.target.closest('.note-tool-btn') || e.target.closest('.quick-palette')) return;
+        if (e.target.closest('.note-tool-btn') || e.target.closest('.quick-palette') || e.target.closest('.note-port')) return;
+
+        hideLineToolbar();
 
         if (isLockedByOther) {
           showToast(`🔒「${note.lock.lockedBy || '其他成員'}」正在編輯此便利貼，已被鎖定！`, "warning");
@@ -2287,6 +3857,7 @@
           }
         });
 
+        updateConnectedLines();
         updateMinimap();
       });
 
@@ -2309,6 +3880,7 @@
         // 判斷是否為實際位移
         const moveDist = Math.hypot(e.clientX - startX, e.clientY - startY);
         if (moveDist > 2) {
+          lastCardDragEndTimestamp = Date.now();
           pushHistory(pendingNotesStateBeforeDrag);
           saveState(true);
         } else {
@@ -2319,6 +3891,20 @@
             updateNotesSelectionVisuals();
           }
         }
+
+        // 處理拖曳期間暫存的遠端快照
+        if (pendingRemoteNotes) {
+          mergeRemoteNotes(pendingRemoteNotes);
+          pendingRemoteNotes = null;
+          renderNotes();
+        }
+        if (pendingRemoteLines) {
+          mergeRemoteLines(pendingRemoteLines);
+          pendingRemoteLines = null;
+          renderConnections();
+        }
+        renderConnections();
+
         pendingNotesStateBeforeDrag = null;
         updateMinimap();
       });
@@ -2338,6 +3924,19 @@
         try {
           card.releasePointerCapture(e.pointerId);
         } catch (err) {}
+
+        if (pendingRemoteNotes) {
+          mergeRemoteNotes(pendingRemoteNotes);
+          pendingRemoteNotes = null;
+          renderNotes();
+        }
+        if (pendingRemoteLines) {
+          mergeRemoteLines(pendingRemoteLines);
+          pendingRemoteLines = null;
+          renderConnections();
+        }
+        renderConnections();
+
         pendingNotesStateBeforeDrag = null;
         updateMinimap();
       });
@@ -2465,6 +4064,42 @@
       showToast(anyDisabled ? "已將所選卡片字體最大化！" : "已還原所選卡片預設字體。");
     }
 
+    // --- 切換便利貼字體深淺色 (黑 / 白) ---
+    function toggleNoteTextColor(noteId) {
+      const note = boardState.notes.find(n => n.id === noteId);
+      if (!note) return;
+      if (isNoteLockedByOther(note)) {
+        showToast(`🔒「${note.lock?.lockedBy || '其他成員'}」正在編輯此便利貼，已被鎖定！`, "warning");
+        return;
+      }
+      pushHistory();
+      const defaultColor = getContrastColor(note.color || '#FFFFFF');
+      const current = note.textColor || defaultColor;
+      note.textColor = (current === '#FFFFFF') ? '#0F172A' : '#FFFFFF';
+      note.updatedAt = new Date().toISOString();
+      saveState(true);
+      renderNotes();
+      showToast(note.textColor === '#FFFFFF' ? "已切換為【白色文字】" : "已切換為【深色文字】");
+    }
+
+    function toggleSelectedNotesTextColor() {
+      if (selectedNoteIds.size === 0) return;
+      pushHistory();
+      selectedNoteIds.forEach(id => {
+        const note = boardState.notes.find(n => n.id === id);
+        if (note) {
+          const defaultColor = getContrastColor(note.color || '#FFFFFF');
+          const current = note.textColor || defaultColor;
+          note.textColor = (current === '#FFFFFF') ? '#0F172A' : '#FFFFFF';
+          note.updatedAt = new Date().toISOString();
+        }
+      });
+      saveState(true);
+      renderNotes();
+      updateNotesSelectionVisuals();
+      showToast("已批次切換所選便利貼文字深淺色！");
+    }
+
     function updateNotesSelectionVisuals() {
       boardState.notes.forEach(n => {
         const card = document.getElementById(`note-${n.id}`);
@@ -2525,7 +4160,7 @@
           note.updatedAt = new Date().toISOString();
           const card = document.getElementById(`note-${id}`);
           if (card) {
-            const textColor = getContrastColor(hex);
+            const textColor = note.textColor || getContrastColor(hex);
             card.style.backgroundColor = hex;
             card.style.color = textColor;
             card.style.border = (textColor === '#FFFFFF') ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)';
@@ -2539,6 +4174,7 @@
         }
       });
       saveState(true);
+      renderConnections();
       updateMinimap();
       showToast(`已批次將 ${selectedNoteIds.size} 張卡片變更色彩！`);
     }
@@ -2612,7 +4248,11 @@
       const count = selectedNoteIds.size;
       showCustomConfirm("批次刪除確認", `確定要永久刪除已選取的 ${count} 張敏捷卡片嗎？`, function() {
         pushHistory();
-        boardState.notes = boardState.notes.filter(n => !selectedNoteIds.has(n.id));
+        const deletedSet = new Set(selectedNoteIds);
+        boardState.notes = boardState.notes.filter(n => !deletedSet.has(n.id));
+        if (boardState.lines) {
+          boardState.lines = boardState.lines.filter(l => !deletedSet.has(l.fromId) && !deletedSet.has(l.toId));
+        }
         selectedNoteIds.clear();
         saveState(true);
         renderNotes();
@@ -2637,11 +4277,12 @@
         
         const card = document.getElementById(`note-${noteId}`);
         if (card) {
-          const textColor = getContrastColor(newHex);
+          const textColor = note.textColor || getContrastColor(newHex);
           card.style.backgroundColor = newHex;
           card.style.color = textColor;
           card.style.border = (textColor === '#FFFFFF') ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)';
         }
+        renderConnections();
         showToast("已快速變更卡片顏色！");
         updateMinimap();
       }
@@ -2723,19 +4364,27 @@
         acInput.value = '';
         deleteBtn.classList.add('hidden');
         
-        if (spawnCoordinates) {
+        if (spawnCoordinates && typeof spawnCoordinates.x === 'number') {
           activeEditingNoteId = spawnCoordinates;
         } else {
-          // 在畫布中心生成
+          // 在畫布中心生成 (若中心已有卡片則微幅錯開 35px，避免完全被覆蓋遮擋)
           const rect = container.getBoundingClientRect();
           const cx = rect.width / 2;
           const cy = rect.height / 2;
           const boardPos = containerToBoard(cx, cy);
-          activeEditingNoteId = { x: boardPos.x - 110, y: boardPos.y - 110 };
+          let spawnX = boardPos.x - 110;
+          let spawnY = boardPos.y - 110;
+          while (boardState.notes.some(n => Math.abs(n.x - spawnX) < 15 && Math.abs(n.y - spawnY) < 15)) {
+            spawnX += 35;
+            spawnY += 35;
+          }
+          activeEditingNoteId = { x: Math.round(spawnX), y: Math.round(spawnY) };
         }
 
         const randomPreset = presetColors[Math.floor(Math.random() * presetColors.length)];
         selectModalColor(randomPreset.hex);
+        modalSelectedTextColor = 'auto';
+        updateModalTextColorUI();
         
       } else if (mode === 'edit') {
         const noteId = spawnCoordinates;
@@ -2757,13 +4406,19 @@
         saveState(true);
         startLockHeartbeat(note.id);
 
-        title.innerHTML = `<i data-lucide="file-edit" class="text-emerald-600 w-5 h-5"></i> 編輯卡片與 AC`;
+        if (note.type === 'image' || note.thumbUrl) {
+          title.innerHTML = `<i data-lucide="image" class="text-indigo-600 w-5 h-5"></i> 編輯圖片卡片說明與色彩`;
+        } else {
+          title.innerHTML = `<i data-lucide="file-edit" class="text-emerald-600 w-5 h-5"></i> 編輯卡片與 AC`;
+        }
         textInput.value = note.text;
         acInput.value = note.ac || '';
         deleteBtn.classList.remove('hidden');
         
         activeEditingNoteId = noteId;
-        selectModalColor(note.color);
+        selectModalColor(note.color || '#FFFFFF');
+        modalSelectedTextColor = note.textColor || 'auto';
+        updateModalTextColorUI();
       }
       
       modal.classList.remove('hidden');
@@ -2783,58 +4438,96 @@
       }
       stopLockHeartbeat();
       const modal = document.getElementById('note-modal');
-      modal.classList.remove('opacity-100');
-      setTimeout(() => modal.classList.add('hidden'), 300);
+      if (modal) {
+        modal.classList.remove('opacity-100');
+        modal.classList.add('hidden');
+      }
       activeEditingNoteId = null;
     }
 
     function saveNoteModal() {
-      const text = document.getElementById('modal-note-text').value.trim();
-      const ac = document.getElementById('modal-note-ac').value.trim();
+      const textInput = document.getElementById('modal-note-text');
+      const acInput = document.getElementById('modal-note-ac');
+      const text = textInput ? textInput.value.trim() : '';
+      const ac = acInput ? acInput.value.trim() : '';
 
       if (!text) {
         showToast("「內容 (Text)」不可為空白！", "warning");
+        if (textInput) textInput.focus();
         return;
       }
 
       pushHistory();
 
-      if (activeModalMode === 'create') {
-        const isBigPref = (localStorage.getItem('aigile_board_font_fit') === 'true');
-        const newNote = {
-          id: 'note-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now().toString(36),
-          text: text,
-          ac: ac,
-          color: modalSelectedColor,
-          isBigText: isBigPref,
-          x: activeEditingNoteId && activeEditingNoteId.x !== undefined ? activeEditingNoteId.x : 3900,
-          y: activeEditingNoteId && activeEditingNoteId.y !== undefined ? activeEditingNoteId.y : 3900,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        boardState.notes.push(newNote);
-        showToast("成功建立卡片！");
-      } else {
-        const note = boardState.notes.find(n => n.id === activeEditingNoteId);
-        if (note) {
-          note.text = text;
-          note.ac = ac;
-          note.color = modalSelectedColor;
-          note.updatedAt = new Date().toISOString();
-          note.lock = { isLocked: false, lockedBy: '', lockedAt: 0 };
-          showToast("卡片已成功儲存！");
+      try {
+        if (activeModalMode === 'create') {
+          const isBigPref = (localStorage.getItem('aigile_board_font_fit') === 'true');
+          const targetX = (activeEditingNoteId && typeof activeEditingNoteId.x === 'number' && !isNaN(activeEditingNoteId.x)) ? Math.round(activeEditingNoteId.x) : 3900;
+          const targetY = (activeEditingNoteId && typeof activeEditingNoteId.y === 'number' && !isNaN(activeEditingNoteId.y)) ? Math.round(activeEditingNoteId.y) : 3900;
+
+          const newNote = {
+            id: 'note-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now().toString(36),
+            text: text,
+            ac: ac,
+            color: modalSelectedColor || '#FECACA',
+            isBigText: isBigPref,
+            x: targetX,
+            y: targetY,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          if (modalSelectedTextColor && modalSelectedTextColor !== 'auto') {
+            newNote.textColor = modalSelectedTextColor;
+          }
+          boardState.notes.push(newNote);
+
+          selectedNoteIds.clear();
+          selectedNoteIds.add(newNote.id);
+          showToast("成功建立卡片！");
+        } else {
+          const note = boardState.notes.find(n => n.id === activeEditingNoteId);
+          if (note) {
+            note.text = text;
+            note.ac = ac;
+            note.color = modalSelectedColor || '#FEF08A';
+            if (modalSelectedTextColor && modalSelectedTextColor !== 'auto') {
+              note.textColor = modalSelectedTextColor;
+            } else {
+              delete note.textColor;
+            }
+            note.updatedAt = new Date().toISOString();
+            note.lock = { isLocked: false, lockedBy: '', lockedAt: 0 };
+            showToast("卡片已成功儲存！");
+          }
         }
+      } catch (err) {
+        console.error("[saveNoteModal] Data prep error:", err);
       }
 
-      stopLockHeartbeat();
-      saveState(true);
-      renderNotes();
-      updateStickyNotesCount();
-
+      // 1. 立即關閉對話框 (Form 瞬間消失)
       const modal = document.getElementById('note-modal');
-      modal.classList.remove('opacity-100');
-      setTimeout(() => modal.classList.add('hidden'), 300);
+      if (modal) {
+        modal.classList.remove('opacity-100');
+        modal.classList.add('hidden');
+      }
       activeEditingNoteId = null;
+      stopLockHeartbeat();
+
+      // 2. 立即重繪白板與選取光圈
+      try {
+        renderNotes();
+        updateNotesSelectionVisuals();
+        updateStickyNotesCount();
+      } catch (err) {
+        console.error("[saveNoteModal] Render error:", err);
+      }
+
+      // 3. 雲端同步
+      try {
+        saveState(true);
+      } catch (err) {
+        console.error("[saveNoteModal] saveState error:", err);
+      }
     }
 
     function deleteNoteFromModal() {
@@ -2842,14 +4535,20 @@
         showCustomConfirm("刪除確認", "確定要永久刪除此敏捷卡片嗎？", function() {
           pushHistory();
           stopLockHeartbeat();
-          boardState.notes = boardState.notes.filter(n => n.id !== activeEditingNoteId);
-          saveState(true);
+          const noteIdToDelete = activeEditingNoteId;
+          boardState.notes = boardState.notes.filter(n => n.id !== noteIdToDelete);
+          if (boardState.lines) {
+            boardState.lines = boardState.lines.filter(l => l.fromId !== noteIdToDelete && l.toId !== noteIdToDelete);
+          }
+          const modal = document.getElementById('note-modal');
+          if (modal) {
+            modal.classList.remove('opacity-100');
+            modal.classList.add('hidden');
+          }
+          activeEditingNoteId = null;
           renderNotes();
           updateStickyNotesCount();
-          const modal = document.getElementById('note-modal');
-          modal.classList.remove('opacity-100');
-          setTimeout(() => modal.classList.add('hidden'), 300);
-          activeEditingNoteId = null;
+          saveState(true);
           showToast("卡片已刪除。");
         });
       }

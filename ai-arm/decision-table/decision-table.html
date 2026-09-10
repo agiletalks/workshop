@@ -314,6 +314,12 @@
     box-shadow: inset 0 0 0 2px var(--active);
   }
 
+  .cell:focus-visible {
+    outline: 3px solid #4f46e5;
+    outline-offset: -3px;
+    z-index: 10;
+  }
+
   .yes {
     background: var(--yes);
     color: var(--yes-text);
@@ -520,15 +526,15 @@
   <!-- Team Info Bar -->
   <div id="team-bar-display" class="team-bar" style="display: none;">
     <div class="team-bar-info">
-      <span class="team-bar-badge">🟢 已連線</span>
+      <span class="team-bar-badge" title="本工具資料儲存於瀏覽器本機。多人討論時建議由一人主控投影操作或匯出分享">💾 本機儲存</span>
       <span>當前小組：<span id="team-name-span" class="team-bar-name"></span></span>
       <span style="color: #475569;">|</span>
       <span>暱稱：<span id="nickname-span" style="color: #f3f4f6;"></span></span>
     </div>
     <div class="team-bar-nav">
-      <a href="../status-transition-matrix/status-transition-matrix.html">📊 狀態轉換矩陣</a>
-      <a href="../decision-table/decision-table.html" class="active">⚡ 決策表</a>
-      <a href="../event-stormer/event-stormer.html">📌 Event Stormer</a>
+      <a href="../decision-table/decision-table.html" class="active">🔲 決策表</a>
+      <a href="../status-transition-matrix/status-transition-matrix.html">🔄 狀態轉換矩陣</a>
+      <a href="../board.html">🎨 小組共享白板</a>
     </div>
     <a href="../index.html" class="team-bar-link">返回大廳 ←</a>
   </div>
@@ -589,7 +595,9 @@ const defaultRules = [
 ];
 
 // Active team session check
-const team = localStorage.getItem("ai_arm_team") || "default_team";
+const rawTeam = localStorage.getItem("ai_arm_team") || localStorage.getItem("ai_arm_team_id") || "default_team";
+const teamNumMatch = String(rawTeam).match(/\d+/);
+const team = teamNumMatch ? ("team-" + teamNumMatch[0]) : rawTeam;
 const nickname = localStorage.getItem("ai_arm_nickname") || "Guest";
 
 // Storage Configuration Keys
@@ -817,11 +825,22 @@ function render() {
       const val = rule.inputs[inputName] || "—";
       td.className = "cell " + labelClass(val);
       td.textContent = val;
+      td.setAttribute("tabindex", "0");
+      td.setAttribute("role", "button");
+      td.setAttribute("aria-label", `${inputName} 規則 ${rule.name}: 目前值 ${val}，按 Enter 或空白鍵切換`);
       
-      td.onclick = () => {
+      const toggleAction = () => {
         rule.inputs[inputName] = nextValue(val);
         saveTables();
         render();
+      };
+
+      td.onclick = toggleAction;
+      td.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleAction();
+        }
       };
       tr.appendChild(td);
     });
@@ -896,11 +915,22 @@ function render() {
       const val = rule.outputs[outputName] || "—";
       td.className = "cell " + labelClass(val);
       td.textContent = val;
+      td.setAttribute("tabindex", "0");
+      td.setAttribute("role", "button");
+      td.setAttribute("aria-label", `${outputName} 規則 ${rule.name}: 目前值 ${val}，按 Enter 或空白鍵切換`);
 
-      td.onclick = () => {
+      const toggleAction = () => {
         rule.outputs[outputName] = nextValue(val);
         saveTables();
         render();
+      };
+
+      td.onclick = toggleAction;
+      td.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleAction();
+        }
       };
       tr.appendChild(td);
     });
@@ -1222,7 +1252,7 @@ function escapeHtml(string) {
 
 // Check Active Session Gate
 function checkTeamSession() {
-  const teamId = localStorage.getItem("ai_arm_team");
+  const teamId = localStorage.getItem("ai_arm_team") || localStorage.getItem("ai_arm_team_id");
   const nicknameVal = localStorage.getItem("ai_arm_nickname");
 
   if (!teamId || !nicknameVal) {
@@ -1237,15 +1267,15 @@ function checkTeamSession() {
 }
 
 function translateTeamName(t) {
-  const map = {
-    "Team 1": "第一組 (Team 1)",
-    "Team 2": "第二組 (Team 2)",
-    "Team 3": "第三組 (Team 3)",
-    "Team 4": "第四組 (Team 4)",
-    "Team 5": "第五組 (Team 5)",
-    "Team 6": "第六組 (Team 6)"
-  };
-  return map[t] || t;
+  if (!t) return "未指定小組";
+  const numMatch = String(t).match(/\d+/);
+  if (numMatch) {
+    const num = numMatch[0];
+    const chineseNums = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+    const cNum = chineseNums[parseInt(num, 10)] || num;
+    return `第${cNum}組 (Team ${num})`;
+  }
+  return t;
 }
 
 // Initialization calls
