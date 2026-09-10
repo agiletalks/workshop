@@ -53,6 +53,29 @@ graph LR
 
 ---
 
+## 📊 AI-ARM 全流程 14 大專屬 Prompt 清單一覽表
+
+| 階段 | Prompt 編號與名稱 | 狀態 | 核心輸入 | 核心標準產出物 |
+| :--- | :--- | :---: | :--- | :--- |
+| **Stage 1<br>Frame** | **P1.1A 訪談逐字稿整理** | ✅ 已有 | 原始語音辨識錄音文字 | 忠於原意、角色分離的格式化逐字稿 |
+| | **P1.1B 專案願景說明書 (Envisioning)** | ✅ 已有 | 格式化訪談逐字稿 | 包含 6 大維度的《專案願景說明書》 |
+| | **P1.2 Context 系統邊界圖** | 📝 待設計 | 願景 Scope/Features + 訪談 | In/Out 邊界對照表 + **Mermaid 系統邊界圖** |
+| | **P1.3 Stakeholder 角色與權限** | 📝 待設計 | 訪談對話 + 目標用戶 | 角色輪廓清單 + **RACI 權限矩陣** + 訪綱指引 |
+| **Stage 2<br>Understand<br>(4大模型)** | **P2.1 Process 流程模型** | 📝 待設計 | 訪談 + 邊界 + 角色 | Happy Path + 例外分支 + **Mermaid 泳道流程圖** |
+| | **P2.2 Decision 決策模型 (決策表)** | 📝 待設計 | 商業規則 + 流程判斷點 | **標準二維決策表** + 無關標記化簡規則 |
+| | **P2.3 Data 資料模型 (資料字典)** | 📝 待設計 | 表單項目 + 決策計算欄位 | 實體關聯 + **資料字典約束規格表** |
+| | **P2.4 State 狀態模型 (狀態矩陣)** | 📝 待設計 | 流程事件 + 生命週期 | **狀態轉換矩陣 (STM)** + **Mermaid 狀態機圖** |
+| **Stage 3<br>Translate** | **P3.1 Screen Flow 畫面流動圖** | 📝 待設計 | Process 流程 + 角色 + 狀態 | 頁面拓撲清單 + **Mermaid 畫面流轉圖** |
+| | **P3.2 Interaction 互動規格書** | 📝 待設計 | 4 大模型 (欄位/規則/狀態/路由) | 結構化 **UI 互動規格書 (Markdown)** |
+| **Stage 4<br>Prototype** | **P4.1 Prototype Brief 原型設定** | 📝 待設計 | Screen Flow + 互動規格 + Mock | 標準化《Prototype Brief 提示詞包》 |
+| | **P4.2 Vibe Coding 原型代碼生成** | 📝 待設計 | Prototype Brief + 互動規格 | 單一 HTML+Tailwind+JS **Clickable 原型代碼** |
+| **Stage 5<br>Refine** | **P5.1 SPLIT 增量垂直切片** | 📝 待設計 | Clickable 原型 + 流程 + 決策 | 4 大手法 **MVP 增量垂直切片地圖** |
+| | **P5.2 Ready User Story & BDD AC** | 📝 待設計 | 指定切片範圍 + 決策 + 狀態 | INVEST 使用者故事 + **Given-When-Then AC** |
+| **Stage 6<br>Task** | **P6.1 4 維度 Task List 任務拆解** | 📝 待設計 | Ready Story & BDD AC | **UI / Logic / Data / Test** 4 維度技術任務表 |
+| | **P6.2 Sprint 看板時序與站會** | 📝 待設計 | 4 維度 Task List | Sprint 執行時序 + 關鍵路徑 + 站會檢核清單 |
+
+---
+
 ## 📋 每一交付物的三大討論維度定義
 
 在完善每一個交付物模組時，我們將聚焦討論以下三個問題：

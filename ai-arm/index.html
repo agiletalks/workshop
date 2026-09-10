@@ -199,8 +199,8 @@
 
     <!-- 右側：全域白板、建模工具、學員身分、全螢幕 (自適應排版，投影/筆電無遮蔽) -->
     <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0 select-none">
-      <!-- 建模工具箱下拉選單 (決策表 / 狀態矩陣 / Event Stormer) -->
-      <div class="relative group">
+      <!-- 建模工具箱下拉選單 (目前先暫時隱藏，待後續工具與 Prompt 完備後再開放) -->
+      <div class="relative group" style="display: none;" id="nav-modeling-toolkits">
         <button class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="開啟 AI-ARM 需求建模專屬工具箱">
           <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
           <span class="hidden md:inline">建模工具</span>
