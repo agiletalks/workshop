@@ -187,153 +187,111 @@
 <body class="h-full bg-slate-100 text-slate-800 flex flex-col font-sans overflow-hidden">
 
   <!-- ==================== 頂部主導覽列 (自適應投影機與筆電，確保所有按鈕與身分完整呈現) ==================== -->
-  <header class="h-14 bg-white border-b border-slate-200 px-2 sm:px-4 flex items-center justify-between shadow-2xs z-30 flex-shrink-0 gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
+  <header class="h-13 bg-white border-b border-slate-200 px-2 sm:px-3 flex items-center justify-between shadow-2xs z-30 flex-shrink-0 gap-1 overflow-x-auto scrollbar-none">
     <!-- 左側：漢堡包目錄按鈕 ＋ 標題與章節主題 -->
-    <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
+    <div class="flex items-center gap-1.5 flex-shrink-0 min-w-0">
       <!-- 漢堡包目錄按鈕 (唯一全域課程大綱目錄) -->
-      <button id="btn-toggle-toc" onclick="toggleTocDrawer()" class="px-2 sm:px-2.5 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 active:scale-95 transition-all flex items-center gap-1 border border-slate-200 shadow-2xs cursor-pointer select-none" title="開啟完整課程大綱目錄 (快捷鍵：M 或點擊頁碼)">
+      <button id="btn-toggle-toc" onclick="toggleTocDrawer()" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 active:scale-95 transition-all flex items-center gap-1 border border-slate-200 shadow-2xs cursor-pointer select-none" title="開啟完整課程大綱目錄 (快捷鍵：M 或點擊頁碼)">
         <i data-lucide="menu" class="w-4 h-4 text-slate-600"></i>
-        <span class="text-xs font-bold hidden sm:inline text-slate-700">目錄</span>
+        <span class="text-xs font-bold hidden md:inline text-slate-700">目錄</span>
       </button>
 
-      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 select-none">
-        <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-2xs flex-shrink-0">ARM</span>
-        <div class="hidden sm:block">
-          <h1 class="text-xs sm:text-sm font-bold text-slate-900 leading-tight">AI 需求建模</h1>
-          <p class="text-[10px] text-slate-500 font-medium hidden 2xl:block">敏捷 Refinement 實戰</p>
+      <div class="flex items-center gap-1.5 flex-shrink-0 select-none">
+        <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-2xs flex-shrink-0">ARM</span>
+        <div class="hidden lg:block">
+          <h1 class="text-xs font-bold text-slate-900 leading-tight">AI 需求建模</h1>
         </div>
       </div>
 
-      <div class="h-4 w-[1px] bg-slate-200 hidden lg:block"></div>
+      <div class="h-4 w-[1px] bg-slate-200 hidden xl:block"></div>
 
       <!-- 章節 Badge 與投影片標題 (在筆電/投影寬度彈性收納，絕不向右推擠按鈕) -->
-      <div class="hidden lg:flex items-center gap-1.5 min-w-0 max-w-[130px] xl:max-w-[220px] 2xl:max-w-sm">
-        <div id="header-chapter-badge" class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 flex-shrink-0">
+      <div class="hidden xl:flex items-center gap-1.5 min-w-0 max-w-[140px] 2xl:max-w-xs">
+        <div id="header-chapter-badge" class="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 flex-shrink-0">
           <span id="header-chapter-code">WHY</span>
-          <span class="text-amber-400 hidden xl:inline">·</span>
-          <span id="header-chapter-name" class="hidden xl:inline">目標</span>
         </div>
         <div class="truncate text-xs font-semibold text-slate-700">
           <span id="header-slide-title" class="font-bold text-slate-800 truncate"></span>
-          <span id="header-slide-subtitle" class="text-slate-400 text-[11px] ml-1.5 hidden 2xl:inline"></span>
         </div>
       </div>
     </div>
 
     <!-- 中間：極簡換頁控制器與目前頁碼 (點擊頁碼可直接展開左側課程目錄) -->
-    <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 select-none">
-      <button id="btn-prev-slide" onclick="navigateSlide(-1)" class="p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer" title="上一頁 (← / PageUp)">
+    <div class="flex items-center gap-1 flex-shrink-0 select-none">
+      <button id="btn-prev-slide" onclick="navigateSlide(-1)" class="p-1 sm:px-1.5 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center text-xs font-medium cursor-pointer" title="上一頁 (← / PageUp)">
         <i data-lucide="chevron-left" class="w-4 h-4"></i>
-        <span class="hidden xl:inline">上一頁</span>
       </button>
 
-      <button id="btn-slide-indicator" onclick="openTocDrawer()" class="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer border border-slate-200/60 shadow-2xs" title="目前進度，點擊展開完整課程大綱目錄">
-        <span id="current-slide-label" class="font-mono text-slate-900">P01 / 46</span>
-        <i data-lucide="list" class="w-3.5 h-3.5 text-slate-400"></i>
+      <button id="btn-slide-indicator" onclick="openTocDrawer()" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer border border-slate-200/60 shadow-2xs" title="目前進度，點擊展開完整課程大綱目錄">
+        <span id="current-slide-label" class="font-mono text-slate-900 text-xs">P01 / 46</span>
+        <i data-lucide="list" class="w-3 h-3 text-slate-400"></i>
       </button>
 
-      <button id="btn-next-slide" onclick="navigateSlide(1)" class="p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer" title="下一頁 (→ / PageDown / Space)">
-        <span class="hidden xl:inline">下一頁</span>
+      <button id="btn-next-slide" onclick="navigateSlide(1)" class="p-1 sm:px-1.5 sm:py-1 rounded-lg hover:bg-slate-100 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center text-xs font-medium cursor-pointer" title="下一頁 (→ / PageDown / Space)">
         <i data-lucide="chevron-right" class="w-4 h-4"></i>
       </button>
     </div>
 
-    <!-- 右側：全域白板、建模工具、學員身分、全螢幕 (自適應排版，投影/筆電無遮蔽) -->
-    <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0 select-none">
-      <!-- 建模工具箱下拉選單 (目前先暫時隱藏，待後續工具與 Prompt 完備後再開放) -->
-      <div class="relative group" style="display: none;" id="nav-modeling-toolkits">
-        <button class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="開啟 AI-ARM 需求建模專屬工具箱">
-          <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
-          <span class="hidden md:inline">建模工具</span>
-          <i data-lucide="chevron-down" class="w-3 h-3 opacity-80"></i>
-        </button>
-        <div class="absolute right-0 top-full pt-1.5 hidden group-hover:block hover:block z-50 w-60">
-          <div class="bg-white rounded-xl shadow-xl border border-slate-200 p-2 space-y-1">
-            <a href="decision-table/decision-table.html" target="_blank" class="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-emerald-50 text-slate-800 text-xs font-semibold transition-colors">
-              <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">🔲</span>
-              <div>
-                <div class="text-slate-900 font-bold">決策表 (Decision Table)</div>
-                <div class="text-[10px] text-slate-500 font-normal">多條件/動作規則解耦建模</div>
-              </div>
-            </a>
-            <a href="status-transition-matrix/status-transition-matrix.html" target="_blank" class="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-indigo-50 text-slate-800 text-xs font-semibold transition-colors">
-              <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">🔄</span>
-              <div>
-                <div class="text-slate-900 font-bold">狀態轉換矩陣 (STM)</div>
-                <div class="text-[10px] text-slate-500 font-normal">實體生命週期與狀態防禦</div>
-              </div>
-            </a>
-            <a href="event-stormer/event-stormer.html" target="_blank" class="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-amber-50 text-slate-800 text-xs font-semibold transition-colors">
-              <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">🧱</span>
-              <div>
-                <div class="text-slate-900 font-bold">Event Stormer 白板</div>
-                <div class="text-[10px] text-slate-500 font-normal">事件風暴與主幹流程梳理</div>
-              </div>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- 全域課堂學習公約按鈕 (常駐頂部，隨時呼叫 8 大敏捷協作守則) -->
-      <button id="btn-learning-agreement" onclick="openAgreementModal()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="開啟課堂學習公約 (8 項敏捷協作心法)">
+    <!-- 右側：功能按鈕與身分 -->
+    <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 select-none">
+      <!-- 全域課堂學習公約按鈕 -->
+      <button id="btn-learning-agreement" onclick="openAgreementModal()" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="開啟課堂學習公約 (8 項敏捷協作心法)">
         <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-        <span class="hidden sm:inline">學習公約</span>
+        <span class="hidden md:inline">學習公約</span>
       </button>
 
       <!-- 全域 Prompt 順序清單與工具庫按鈕 -->
-      <button id="btn-assets-catalog" onclick="openAssetsModal()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="開啟 AI-ARM 順序 Prompt 清單與工具庫">
+      <button id="btn-assets-catalog" onclick="openAssetsModal()" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="開啟 AI-ARM 順序 Prompt 清單與工具庫">
         <i data-lucide="layers" class="w-3.5 h-3.5"></i>
         <span class="hidden md:inline">Prompt & 工具</span>
-        <span class="md:hidden hidden sm:inline">資產庫</span>
       </button>
 
-      <!-- 全域小組線上白板按鈕 (常駐頂部，點擊新分頁開啟該組專屬大白板) -->
-      <button id="btn-global-board" onclick="openTeamWhiteboard()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all flex-shrink-0 cursor-pointer" title="在新分頁開啟小組專屬共享線上白板 (整門課專屬 8000px 大畫布)">
+      <!-- 全域小組線上白板按鈕 -->
+      <button id="btn-global-board" onclick="openTeamWhiteboard()" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all flex-shrink-0 cursor-pointer" title="在新分頁開啟小組專屬共享線上白板">
         <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
         <span class="hidden md:inline">小組白板</span>
-        <span class="md:hidden hidden sm:inline">白板</span>
-        <i data-lucide="external-link" class="w-3 h-3 opacity-80 hidden 2xl:inline"></i>
       </button>
 
-      <!-- 全域課堂倒數計時器 (Global Workshop Timer) -->
+      <!-- 全域課堂倒數計時器 -->
       <div class="relative flex items-center flex-shrink-0" id="global-timer-container">
-        <div id="btn-global-timer" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-all shadow-2xs select-none">
-          <button type="button" onclick="openTimerModal()" class="flex items-center gap-1.5 cursor-pointer hover:text-amber-600 transition-colors" title="設定課堂任務倒數計時器">
+        <div id="btn-global-timer" class="flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-all shadow-2xs select-none">
+          <button type="button" onclick="openTimerModal()" class="flex items-center gap-1 cursor-pointer hover:text-amber-600 transition-colors" title="設定課堂任務倒數計時器">
             <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-500" id="header-timer-icon"></i>
-            <span id="header-timer-display" class="font-mono font-bold tracking-tight text-slate-800">10:00</span>
+            <span id="header-timer-display" class="font-mono font-bold text-xs tracking-tight text-slate-800">10:00</span>
           </button>
           <button type="button" id="btn-timer-quick-toggle" onclick="toggleTimerPlayPause(event)" class="w-5 h-5 rounded-md flex items-center justify-center bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-700 shadow-2xs border border-slate-200 transition-all cursor-pointer" title="開始 / 暫停倒數">
             <i data-lucide="play" class="w-2.5 h-2.5" id="header-timer-toggle-icon"></i>
           </button>
         </div>
       </div>
-      <button id="btn-toggle-layout" onclick="toggleWorkstationMode()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="切換劇院大圖模式 / 小組工作台模式">
+
+      <!-- 切換工作台/劇院模式 -->
+      <button id="btn-toggle-layout" onclick="toggleWorkstationMode()" class="p-1.5 sm:px-2 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="切換劇院大圖模式 / 小組工作台模式">
         <i data-lucide="layout-panel-left" class="w-3.5 h-3.5 text-slate-600" id="layout-mode-icon"></i>
-        <span id="layout-mode-text" class="hidden xl:inline">工作台</span>
+        <span id="layout-mode-text" class="hidden 2xl:inline">工作台</span>
       </button>
 
-      <!-- 全域列印筆記按鈕 (依主題章節完整彙整輸出 PDF) -->
-      <button id="btn-print-notes" onclick="openPrintNotesModal()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="列印全課程小組筆記為 PDF (依主題章節彙整)">
+      <!-- 全域列印筆記按鈕 -->
+      <button id="btn-print-notes" onclick="openPrintNotesModal()" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center transition-all cursor-pointer flex-shrink-0" title="列印全課程小組筆記為 PDF (依主題章節彙整)">
         <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-600"></i>
-        <span class="hidden 2xl:inline">列印筆記</span>
       </button>
 
       <!-- 學員身分徽章 -->
-      <div id="user-badge" class="flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 sm:px-2.5 py-1 rounded-xl text-xs flex-shrink-0">
+      <div id="user-badge" class="flex items-center gap-1 bg-slate-100 border border-slate-200 px-1.5 sm:px-2 py-1 rounded-xl text-xs flex-shrink-0">
         <i data-lucide="users" class="w-3.5 h-3.5 text-indigo-600"></i>
-        <span id="user-team-name" class="font-bold text-indigo-700">第 1 組</span>
-        <span class="text-slate-300">|</span>
-        <span id="user-display-name" class="font-medium text-slate-700 max-w-[60px] sm:max-w-[80px] truncate">學員</span>
+        <span id="user-team-name" class="font-bold text-indigo-700 text-xs">第 1 組</span>
+        <span class="text-slate-300 hidden sm:inline">|</span>
+        <span id="user-display-name" class="font-medium text-slate-700 max-w-[50px] sm:max-w-[70px] truncate hidden sm:inline">學員</span>
       </div>
 
       <!-- 切換身分 / 登出 -->
       <button onclick="openLoginModal(true)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors flex-shrink-0" title="更換組別或姓名">
-        <i data-lucide="log-out" class="w-4 h-4"></i>
+        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
       </button>
 
       <!-- 全螢幕切換 -->
       <button onclick="toggleFullScreen()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors hidden sm:block flex-shrink-0" title="切換全螢幕">
-        <i data-lucide="maximize" class="w-4 h-4" id="fullscreen-icon"></i>
+        <i data-lucide="maximize" class="w-3.5 h-3.5" id="fullscreen-icon"></i>
       </button>
     </div>
   </header>
@@ -743,7 +701,14 @@
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">選擇您所屬的組別 (共 6 組)</label>
-          <div class="grid grid-cols-3 gap-2" id="login-team-selector"></div>
+          <div class="grid grid-cols-3 gap-2" id="login-team-selector">
+            <button type="button" id="login-opt-team-1" onclick="selectLoginTeam('team-1')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-amber-500 text-white border-amber-500 shadow-sm">第 1 組</button>
+            <button type="button" id="login-opt-team-2" onclick="selectLoginTeam('team-2')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 2 組</button>
+            <button type="button" id="login-opt-team-3" onclick="selectLoginTeam('team-3')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 3 組</button>
+            <button type="button" id="login-opt-team-4" onclick="selectLoginTeam('team-4')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 4 組</button>
+            <button type="button" id="login-opt-team-5" onclick="selectLoginTeam('team-5')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 5 組</button>
+            <button type="button" id="login-opt-team-6" onclick="selectLoginTeam('team-6')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 6 組</button>
+          </div>
           <input type="hidden" id="input-team-val" value="team-1" />
         </div>
 
@@ -848,12 +813,12 @@
             <button id="btn-assets-tab-prompts" onclick="switchAssetsTab('prompts')" class="px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-indigo-700 shadow-2xs">
               <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
               <span>順序 Prompt 清單</span>
-              <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-800 font-mono">3 已就緒</span>
+              <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-800 font-mono">10 已就緒</span>
             </button>
             <button id="btn-assets-tab-tools" onclick="switchAssetsTab('tools')" class="px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900">
               <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
               <span>輔助工具箱</span>
-              <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-mono">4 工具</span>
+              <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-mono">3 工具</span>
             </button>
           </div>
 
@@ -1630,6 +1595,10 @@
         loggedInAt: Date.now()
       };
       localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
+      // 同步獨立 HTML 工具 (decision-table 與 status-transition-matrix) 所需之 session key
+      const teamNum = team.replace('team-', '');
+      localStorage.setItem('ai_arm_team', `Team `);
+      localStorage.setItem('ai_arm_nickname', name);
       activeTeamId = team;
 
       applyUserIdentityUI();
@@ -1639,6 +1608,12 @@
 
     function applyUserIdentityUI() {
       if (!currentUser) return;
+      // 同步獨立 HTML 工具 session key (以防重新整理或切換身分時遺漏)
+      if (currentUser.team && currentUser.name) {
+        const teamNum = currentUser.team.replace('team-', '');
+        localStorage.setItem('ai_arm_team', `Team `);
+        localStorage.setItem('ai_arm_nickname', currentUser.name);
+      }
       document.getElementById('user-team-name').innerText = getTeamDisplayName(currentUser.team);
       document.getElementById('user-display-name').innerText = currentUser.name;
       renderTeamTabs();
@@ -1745,17 +1720,20 @@
 
       // 章節指示
       const chapter = CHAPTERS.find(c => c.id === slide.chapterId) || CHAPTERS[0];
-      document.getElementById('header-chapter-code').innerText = chapter.code;
-      document.getElementById('header-chapter-name').innerText = chapter.name.replace(/^[A-Z]+\s*/, '');
+      const codeEl = document.getElementById('header-chapter-code');
+      const nameEl = document.getElementById('header-chapter-name');
+      if (codeEl) codeEl.innerText = chapter.code;
+      if (nameEl) nameEl.innerText = chapter.name.replace(/^[A-Z]+\s*/, '');
 
       // 按鈕狀態
-      document.getElementById('btn-prev-slide').disabled = (index === 1);
-      document.getElementById('btn-next-slide').disabled = (index === SLIDES_DATA.length);
+      const btnPrev = document.getElementById('btn-prev-slide');
+      const btnNext = document.getElementById('btn-next-slide');
+      if (btnPrev) btnPrev.disabled = (index === 1);
+      if (btnNext) btnNext.disabled = (index === SLIDES_DATA.length);
 
       // 判斷是否顯示「線上白板」與「翻面看範例」
       updateSlideToolsBar(slide);
 
-      // 換頁時重設手動版面覆蓋，根據是否為任務或收斂頁決定版面模式
       userManualLayoutOverride = null;
       const isTaskOrTakeAway = !!(slide.isTeamTask || slide.isTakeAway);
       applyLayoutMode(isTaskOrTakeAway);
@@ -2207,7 +2185,6 @@
       currentViewingPrompt = null;
       currentViewingPromptSlideIndex = null;
     }
-
     function isPromptModalOpen() {
       const modal = document.getElementById('prompt-preview-modal');
       return modal && !modal.classList.contains('hidden');
@@ -5199,10 +5176,8 @@
           }" title="#0${a.index} ${a.title}"></button>
         `).join('');
       }
-
       if (window.lucide) lucide.createIcons();
     }
-
     // ==========================================
     // --- AI-ARM 全流程資產庫 (Prompt & 工具清單) ---
     // ==========================================
@@ -5236,13 +5211,6 @@
             status: "ready",
             slideIndex: 11,
             desc: "將六大維度願景轉譯為具備 5 大敘事原型的單頁資訊海報（Markdown / 自適應 HTML 雙模），凝聚團隊北極星共識。"
-          },
-          {
-            id: "prompt-1-2-context",
-            code: "P1.2",
-            name: "Context 系統邊界圖 (In/Out 邊界) Prompt",
-            status: "planned",
-            desc: "由願景範圍推導出系統邊界、外部相依與 In/Out 對照表，產出 Mermaid 系統邊界圖。"
           }
         ]
       },
@@ -5258,13 +5226,6 @@
             status: "ready",
             slideIndex: 24,
             desc: "選定 BA/SA/SD/UR 視角，輸入專案背景或逐字稿，設計半結構化訪綱初稿與背景待補事項。"
-          },
-          {
-            id: "prompt-1-3-stakeholder",
-            code: "P1.3B",
-            name: "Stakeholder 角色輪廓與 RACI 權限矩陣 Prompt",
-            status: "planned",
-            desc: "盤點主要角色、業務職責、關鍵利害關係人與 RACI 權限矩陣，產出訪綱指引。"
           }
         ]
       },
@@ -5288,90 +5249,45 @@
             status: "ready",
             slideIndex: 27,
             desc: "結合 P24 初稿與 P27A 研究結果，產出可追溯、可執行的完整修訂版訪談大綱。"
-          },
-          {
-            id: "prompt-2-1-process",
-            code: "P2.1",
-            name: "Process 流程模型 (泳道圖) Prompt",
-            status: "planned",
-            desc: "梳理使用者任務工作流、Happy Path、分支與例外事件，產出 Mermaid 泳道流程圖。"
-          },
-          {
-            id: "prompt-2-2-decision",
-            code: "P2.2",
-            name: "Decision 決策模型 (決策表) Prompt",
-            status: "planned",
-            desc: "將複雜商業規則與判斷條件化為二維標準決策表，進行無關標記化簡，沉澱核心業務規則。"
-          },
-          {
-            id: "prompt-2-3-data",
-            code: "P2.3",
-            name: "Data 資料模型 (資料字典約束) Prompt",
-            status: "planned",
-            desc: "萃取實體欄位、資料型別、長度限制與 Validation Rules，產出 SA/SD 共用語彙規格表。"
-          },
-          {
-            id: "prompt-2-4-state",
-            code: "P2.4",
-            name: "State 狀態模型 (狀態轉換矩陣 STM) Prompt",
-            status: "planned",
-            desc: "識別實體生命週期事件、定義合法狀態轉移與非法防禦阻擋，產出 STM 矩陣與狀態機圖。"
           }
         ]
       },
       {
-        stage: "WHAT: 原型、切片與任務拆解",
+        stage: "WHAT: 需求候選、故事與原型",
         stageCode: "WHAT",
         color: "rose",
         items: [
           {
-            id: "prompt-3-1-screenflow",
+            id: "prompt-p39-requirement-candidates",
             code: "P3.1",
-            name: "Screen Flow 畫面流動圖 Prompt",
-            status: "planned",
-            desc: "結合流程與狀態模型，轉化為系統頁面導航拓撲與操作動線。"
+            name: "訪談結果 → 需求候選與待確認事項 Prompt",
+            status: "ready",
+            slideIndex: 39,
+            desc: "將訪談與分析成果整理為有來源的需求候選，標示確認狀態、規則、例外與疑問，供小組選定後撰寫故事。"
           },
           {
-            id: "prompt-3-2-interactionspec",
+            id: "prompt-p41-user-story-ac",
             code: "P3.2",
-            name: "UI 互動規格書 (Interaction Spec) Prompt",
-            status: "planned",
-            desc: "結合欄位規則、按鈕事件、狀態判斷與 API Payload 預期之結構化 UI 規格書。"
+            name: "選定需求候選 → User Story 與 AC Prompt",
+            status: "ready",
+            slideIndex: 41,
+            desc: "依小組選定範圍產出具垂直價值的 User Story 草稿與可驗證 AC，保留待確認事項，不自動宣告 Ready。"
           },
           {
-            id: "prompt-4-1-proto-brief",
+            id: "prompt-p44-prototype-brief",
             code: "P4.1",
-            name: "Prototype Brief 原型設定包 Prompt",
-            status: "planned",
-            desc: "定義 Clickable 原型範圍、核心使用者旅程與假說驗證邊界。"
+            name: "選定 Story 與 AC → 原型設計說明 Prompt",
+            status: "ready",
+            slideIndex: 44,
+            desc: "將選定故事與 AC 整理為可供 AI 生成 Clickable Prototype 的設計說明，分開依據需求、展示假設與待決策事項。"
           },
           {
-            id: "prompt-4-2-vibe-coding",
+            id: "prompt-p45-clickable-prototype",
             code: "P4.2",
-            name: "Vibe Coding 原型代碼生成 Prompt",
-            status: "planned",
-            desc: "透過 AI 生成單一 HTML + Tailwind CSS + JS 互動式原型，進行黑箱走查與正確性驗收。"
-          },
-          {
-            id: "prompt-5-1-split",
-            code: "P5.1",
-            name: "SPLIT 增量垂直切片地圖 Prompt",
-            status: "planned",
-            desc: "以 4 大切片手法切出一個 Sprint 內可完成且具垂直商業價值的 MVP 切片地圖。"
-          },
-          {
-            id: "prompt-5-2-ready-story",
-            code: "P5.2",
-            name: "Ready User Story & Given-When-Then AC Prompt",
-            status: "planned",
-            desc: "將切片寫成符合 INVEST 原則的故事，並定義無爭議的 Given-When-Then 驗收準則。"
-          },
-          {
-            id: "prompt-6-1-task-list",
-            code: "P6.1",
-            name: "4 維度 Task List 任務拆解 Prompt",
-            status: "planned",
-            desc: "將 Ready Story 拆成 UI / Logic / Data / Test 四維度開發任務，銜接團隊分工與 SA/SD 協作。"
+            name: "已檢查設計說明 → Clickable Prototype Prompt",
+            status: "ready",
+            slideIndex: 45,
+            desc: "根據已檢查的設計說明生成可操作、可重設的 Clickable Prototype，保留故事與 AC 對應，不宣稱為正式產品。"
           }
         ]
       }
@@ -5380,36 +5296,25 @@
     const AI_ARM_TOOLS_CATALOG = [
       {
         id: "tool-decision-table",
-        name: "決策表建模工具 (Decision Table)",
-        badge: "規則解耦",
+        name: "決策表討論助手｜選用",
+        badge: "選用討論工具",
         badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
         icon: "🔲",
         url: "decision-table/decision-table.html",
         target: "_blank",
-        desc: "多條件、多動作之商業規則視覺化解耦工具。支援無關標記化簡、衝突檢驗與測試案例反向生成，告別散文規格漏失。",
-        actionText: "開啟決策表 ↗"
+        desc: "把條件組合與可能動作攤開，討論『這種情況應該怎麼處理？』表格是討論中的紀錄，不自動代表已核准需求。可保留分歧與待確認事項，只有明確確認的結論才帶入後續故事與 AC。",
+        actionText: "開啟工具 ↗"
       },
       {
         id: "tool-stm",
-        name: "狀態轉換矩陣 (STM)",
-        badge: "生命週期防禦",
+        name: "狀態表討論助手｜選用",
+        badge: "選用討論工具",
         badgeColor: "bg-indigo-100 text-indigo-800 border-indigo-200",
         icon: "🔄",
         url: "status-transition-matrix/status-transition-matrix.html",
         target: "_blank",
-        desc: "實體狀態生命週期二維矩陣。清楚定義每一事件在各狀態下的合法流轉與非法阻擋，杜絕狀態機邏輯漏洞。",
-        actionText: "開啟狀態矩陣 ↗"
-      },
-      {
-        id: "tool-event-stormer",
-        name: "Event Stormer 事件風暴白板",
-        badge: "流程主幹梳理",
-        badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
-        icon: "🧱",
-        url: "event-stormer/event-stormer.html",
-        target: "_blank",
-        desc: "以橘色領域事件（Domain Events）、藍色命令（Commands）與黃色角色（Actors）迅速梳理端到端業務主幹工作流。",
-        actionText: "開啟 Event Stormer ↗"
+        desc: "把狀態關係攤開，討論『這樣能不能轉？什麼情況可以？』表格是討論中的紀錄，不自動代表已核准需求。可保留分歧與待確認事項，只有明確確認的結論才帶入後續故事與 AC。",
+        actionText: "開啟工具 ↗"
       },
       {
         id: "tool-whiteboard",
@@ -5420,30 +5325,11 @@
         customAction: "openTeamWhiteboard()",
         desc: "專屬大畫布即時協作連線、雙向箭頭連接線、圖片卡片燈箱、3M 品牌配色便利貼，整門課程小組共創的核心實作場域。",
         actionText: "進入本組白板 ↗"
-      },
-      {
-        id: "tool-slot-1",
-        isSlot: true,
-        name: "預留工具擴充槽 (Reserved Slot 1)",
-        badge: "可隨時掛載",
-        badgeColor: "bg-slate-100 text-slate-500 border-slate-200",
-        icon: "➕",
-        desc: "此處已為您後續提供的新工具預留標準插槽。可隨時掛載獨立 HTML 工具、外部驗證鏈結或資料輔助應用。",
-        actionText: "待掛載"
-      },
-      {
-        id: "tool-slot-2",
-        isSlot: true,
-        name: "預留工具擴充槽 (Reserved Slot 2)",
-        badge: "可隨時掛載",
-        badgeColor: "bg-slate-100 text-slate-500 border-slate-200",
-        icon: "➕",
-        desc: "支援後續由老師或團隊陸續開放的專屬輔助工具（如資料字典檢驗器、規格轉譯工具等）。",
-        actionText: "待掛載"
       }
     ];
 
     let currentAssetsTab = 'prompts'; // 'prompts' or 'tools'
+
 
     function isAssetsModalOpen() {
       const modal = document.getElementById('assets-modal');
