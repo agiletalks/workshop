@@ -1099,3 +1099,97 @@ const SLIDES_DATA = [
     "isTakeAway": true
   }
 ];
+
+// 課堂學習公約 (8 項敏捷協作心法)
+const LEARNING_AGREEMENTS = [
+  {
+    id: "la-1",
+    index: 1,
+    title: "以動制靜",
+    slogan: "動手做、動口說，打破沈默僵局",
+    tag: "動能 Flow",
+    color: "amber",
+    image: "assets/以動制靜.png",
+    desc: "在敏捷工作坊中化被動為自主行動。遇到卡關時動手試做、開啟對話，讓團隊保持高能量流動。"
+  },
+  {
+    id: "la-2",
+    index: 2,
+    title: "以圖代文",
+    slogan: "一張好圖勝過千言萬語",
+    tag: "共識 Alignment",
+    color: "blue",
+    image: "assets/以圖代文.png",
+    desc: "減少冗長文字敘述，多用草圖、線框、視覺化架構表達需求，讓跨部門溝通直觀同頻。"
+  },
+  {
+    id: "la-3",
+    index: 3,
+    title: "以多勝少",
+    slogan: "先發散求量、再收斂求質",
+    tag: "創意 Diverge",
+    color: "emerald",
+    image: "assets/以多勝少.png",
+    desc: "在腦力激盪初期不要過早批判，盡可能產出多元觀點與大量便利貼，豐富選項才能淘出真金。"
+  },
+  {
+    id: "la-4",
+    index: 4,
+    title: "反客為主",
+    slogan: "站在使用者視角，創造真正價值",
+    tag: "換位 Empathy",
+    color: "purple",
+    image: "assets/反客為主.png",
+    desc: "跳脫主觀本位主義，積極切換至利害關係人與終端用戶情境，萃取核心真實痛點。"
+  },
+  {
+    id: "la-5",
+    index: 5,
+    title: "截長補短",
+    slogan: "跨部門優勢互補，團隊共創",
+    tag: "協作 Synergy",
+    color: "indigo",
+    image: "assets/截長補短.png",
+    desc: "業務懂市場、PM 懂節奏、工程懂架構。尊重並結合各自專業，拼出最完整可行的產品方案。"
+  },
+  {
+    id: "la-6",
+    index: 6,
+    title: "有問有答",
+    slogan: "開放傾聽、積極回應、保持透明",
+    tag: "溝通 Dialogue",
+    color: "sky",
+    image: "assets/有問有答.png",
+    desc: "大膽提出心中的疑惑，誠懇給予具體回饋。在心理安全的環境中，每一次提問都是對齊的契機。"
+  },
+  {
+    id: "la-7",
+    index: 7,
+    title: "聽完就說",
+    slogan: "即時給予回饋，思緒不放過夜",
+    tag: "節奏 Cadence",
+    color: "rose",
+    image: "assets/聽完就說.png",
+    desc: "聽完夥伴分享後立刻交換第一手想法與感受，抓住靈感火花，維持工作坊敏捷緊湊的討論脈動。"
+  },
+  {
+    id: "la-8",
+    index: 8,
+    title: "讀了要寫",
+    slogan: "化吸收為產出，隨手記錄洞見",
+    tag: "實踐 Action",
+    color: "orange",
+    image: "assets/讀了要寫.png",
+    desc: "看完教材概念與範例後，立刻在隨堂筆記與線上白板具體化你的點子，學到即產出。"
+  }
+];
+
+if (typeof window !== 'undefined') {
+  window.CHAPTERS = CHAPTERS;
+  window.SLIDES_DATA = SLIDES_DATA;
+  window.LEARNING_AGREEMENTS = LEARNING_AGREEMENTS;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { CHAPTERS, SLIDES_DATA, LEARNING_AGREEMENTS };
+}
+

@@ -5085,7 +5085,7 @@
 
       renderAgreementGrid();
 
-      if (typeof initialIndex === 'number' && initialIndex >= 1 && initialIndex <= LEARNING_AGREEMENTS.length) {
+      if (typeof initialIndex === 'number' && initialIndex >= 1 && window.LEARNING_AGREEMENTS && initialIndex <= window.LEARNING_AGREEMENTS.length) {
         currentAgreementIndex = initialIndex;
         setAgreementViewMode('carousel');
       } else {
