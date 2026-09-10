@@ -82,6 +82,47 @@
       background: rgba(156, 163, 175, 0.5);
       border-radius: 3px;
     }
+
+    /* 課堂即時情緒表情向上飄散動畫 */
+    @keyframes reactionFloatUp {
+      0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(0.8) rotate(0deg);
+      }
+      20% {
+        transform: translate(var(--dx, 0px), -40px) scale(1.35) rotate(var(--rot, 0deg));
+      }
+      80% {
+        opacity: 0.95;
+        transform: translate(var(--dx2, 0px), -180px) scale(1.1) rotate(var(--rot2, 0deg));
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--dx3, 0px), -260px) scale(0.6) rotate(var(--rot3, 0deg));
+      }
+    }
+    .reaction-particle {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      font-size: 30px;
+      animation: reactionFloatUp 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      z-index: 40;
+    }
+
+    /* 計時器時間到鈴鐺晃動特效 */
+    @keyframes bellShake {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      15%, 45% { transform: rotate(-18deg) scale(1.1); }
+      30%, 60% { transform: rotate(18deg) scale(1.1); }
+      75% { transform: rotate(-8deg) scale(1.05); }
+      90% { transform: rotate(8deg) scale(1.05); }
+    }
+    .animate-bell {
+      animation: bellShake 0.8s infinite ease-in-out;
+      transform-origin: top center;
+    }
+
     /* 列印與 PDF 匯出專用樣式 */
     @media print {
       body {
@@ -239,12 +280,36 @@
         <span class="hidden sm:inline">學習公約</span>
       </button>
 
+      <!-- 全域 Prompt 順序清單與工具庫按鈕 -->
+      <button id="btn-assets-catalog" onclick="openAssetsModal()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="開啟 AI-ARM 順序 Prompt 清單與工具庫">
+        <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+        <span class="hidden md:inline">Prompt & 工具</span>
+        <span class="md:hidden hidden sm:inline">資產庫</span>
+      </button>
+
       <!-- 全域小組線上白板按鈕 (常駐頂部，點擊新分頁開啟該組專屬大白板) -->
       <button id="btn-global-board" onclick="openTeamWhiteboard()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 transition-all flex-shrink-0 cursor-pointer" title="在新分頁開啟小組專屬共享線上白板 (整門課專屬 8000px 大畫布)">
         <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
         <span class="hidden md:inline">小組白板</span>
         <span class="md:hidden hidden sm:inline">白板</span>
         <i data-lucide="external-link" class="w-3 h-3 opacity-80 hidden 2xl:inline"></i>
+      </button>
+
+      <!-- 全域課堂倒數計時器 (Global Workshop Timer) -->
+      <div class="relative flex items-center flex-shrink-0" id="global-timer-container">
+        <div id="btn-global-timer" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-all shadow-2xs select-none">
+          <button type="button" onclick="openTimerModal()" class="flex items-center gap-1.5 cursor-pointer hover:text-amber-600 transition-colors" title="設定課堂任務倒數計時器">
+            <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-500" id="header-timer-icon"></i>
+            <span id="header-timer-display" class="font-mono font-bold tracking-tight text-slate-800">10:00</span>
+          </button>
+          <button type="button" id="btn-timer-quick-toggle" onclick="toggleTimerPlayPause(event)" class="w-5 h-5 rounded-md flex items-center justify-center bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-700 shadow-2xs border border-slate-200 transition-all cursor-pointer" title="開始 / 暫停倒數">
+            <i data-lucide="play" class="w-2.5 h-2.5" id="header-timer-toggle-icon"></i>
+          </button>
+        </div>
+      </div>
+      <button id="btn-toggle-layout" onclick="toggleWorkstationMode()" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1 transition-all cursor-pointer flex-shrink-0" title="切換劇院大圖模式 / 小組工作台模式">
+        <i data-lucide="layout-panel-left" class="w-3.5 h-3.5 text-slate-600" id="layout-mode-icon"></i>
+        <span id="layout-mode-text" class="hidden xl:inline">工作台</span>
       </button>
 
       <!-- 全域列印筆記按鈕 (依主題章節完整彙整輸出 PDF) -->
@@ -301,6 +366,10 @@
           <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-700"></i>
           <span>學習公約</span>
         </button>
+        <button onclick="openAssetsModal(); closeTocDrawer();" class="flex items-center gap-1 font-bold text-indigo-900 bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1.5 rounded-lg border border-indigo-300 shadow-2xs transition-colors cursor-pointer" title="開啟 Prompt 與工具庫">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-700"></i>
+          <span>Prompt & 工具</span>
+        </button>
         <button onclick="openPrintNotesModal(); closeTocDrawer();" class="flex items-center gap-1 font-bold text-slate-700 bg-white hover:bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer" title="列印全課程筆記為 PDF (依主題分類)">
           <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-600"></i>
           <span>列印筆記</span>
@@ -313,11 +382,12 @@
   <!-- ==================== 主工作區 (電腦版左右雙欄，行動端直向自適應平滑滾動) ==================== -->
   <main class="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden relative">
 
-    <!-- 左側：投影片瀏覽器 (高清晰、滿版、無遮蔽、沉浸式，行動端自適應比例) -->
-    <section class="w-full md:w-1/2 min-h-[220px] max-h-[42vh] md:max-h-none md:h-full bg-slate-100/60 flex flex-col items-center justify-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 flex-shrink-0">
+    <!-- 左側：投影片瀏覽器 (高清晰、滿版、無遮蔽、沉浸式，劇院模式下佔據 100% 版面) -->
+    <!-- 左側：投影片瀏覽器 (高清晰、滿版、無遮蔽、沉浸式，劇院模式下佔據 100% 版面) -->
+    <section id="slide-section" class="w-full md:w-full h-full flex flex-col relative overflow-hidden bg-slate-100/60 transition-all duration-300 flex-shrink-0 flex-1">
       
-      <!-- 投影片圖檔展示容器 -->
-      <div id="slide-container" class="w-full h-full flex items-center justify-center p-3 sm:p-5 lg:p-6 overflow-hidden relative">
+      <!-- 投影片圖檔展示畫布 (flex-1 搭配 min-h-0，確保圖片自適應縮放，永不被任何下方工具列遮蔽) -->
+      <div id="slide-container" class="flex-1 min-h-0 w-full flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden relative">
         <img id="slide-img" src="assets/投影片1.PNG" alt="投影片內容" class="max-w-full max-h-full object-contain rounded-xl shadow-md border border-slate-200/80 transition-all duration-150 select-none pointer-events-none" />
         
         <!-- 載入中動畫 -->
@@ -325,27 +395,103 @@
           <div class="animate-spin rounded-full h-10 w-10 border-4 border-amber-500 border-t-transparent"></div>
         </div>
 
-        <!-- 左下角浮動實戰案例按鈕 (當該頁有範例圖時顯示) -->
-        <div id="slide-example-badge-container" class="hidden absolute bottom-3 left-3 z-10">
-          <button onclick="openExampleLightbox(0)" class="px-3 py-1.5 rounded-xl bg-slate-900/85 hover:bg-slate-900 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-2 transition-all active:scale-95 group cursor-pointer select-none" title="查看本單元真實標竿案例解析">
-            <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-            <i data-lucide="images" class="w-4 h-4 text-amber-400"></i>
-            <span id="slide-example-badge-text">實戰案例圖庫</span>
-            <span class="text-[10px] bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded-md border border-amber-400/30 group-hover:bg-amber-500 group-hover:text-white transition-colors">全螢幕導讀</span>
+        <!-- 即時浮動表情粒子層 (粒子依然自由在整個簡報大圖畫面上飄散綻放) -->
+        <div id="reactions-particle-container" class="absolute inset-0 pointer-events-none overflow-hidden z-30"></div>
+
+        <!-- 大螢幕懸浮倒數時鐘 (可由 Timer 設定開啟/關閉，大字清晰，投影全場可見) -->
+        <div id="slide-floating-big-timer" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-950/90 text-white backdrop-blur-md border border-amber-400/80 shadow-2xl transition-all select-none">
+          <i data-lucide="timer" class="w-5 h-5 text-amber-400 animate-pulse"></i>
+          <span id="floating-big-timer-display" class="font-mono text-2xl sm:text-3xl font-black text-amber-300 tracking-wider">10:00</span>
+          <div class="h-6 w-px bg-white/20"></div>
+          <button type="button" onclick="toggleTimerPlayPause(event)" class="p-1.5 rounded-xl hover:bg-white/20 text-white transition-colors cursor-pointer" title="開始 / 暫停">
+            <i data-lucide="play" class="w-4 h-4" id="floating-timer-toggle-icon"></i>
+          </button>
+          <button type="button" onclick="toggleBigClockDisplay(false)" class="p-1.5 rounded-xl hover:bg-white/20 text-slate-400 hover:text-white transition-colors cursor-pointer" title="收起大時鐘">
+            <i data-lucide="minimize-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- 右上角極簡縮放工具 (浮動微按鈕，不佔版面) -->
+        <div class="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity select-none">
+          <button onclick="toggleSlideZoom()" class="p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 shadow-xs border border-slate-200 transition-all" title="適應視窗 / 100% 原始比例">
+            <i data-lucide="zoom-in" class="w-4 h-4"></i>
           </button>
         </div>
       </div>
 
-      <!-- 右上角極簡縮放工具 (浮動微按鈕，不佔版面) -->
-      <div class="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity select-none">
-        <button onclick="toggleSlideZoom()" class="p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 shadow-xs border border-slate-200 transition-all" title="適應視窗 / 100% 原始比例">
-          <i data-lucide="zoom-in" class="w-4 h-4"></i>
-        </button>
+      <!-- 底部獨立控制與微互動列 (高度固定 44px，獨立於圖面之外，徹底解決遮蔽問題) -->
+      <div id="slide-bottom-bar" class="w-full h-11 sm:h-12 px-3 sm:px-4 bg-slate-900/90 backdrop-blur-md border-t border-slate-800 flex items-center justify-between gap-2 flex-shrink-0 z-20 select-none">
+        
+        <!-- 左側：實戰案例按鈕 (當該頁有範例圖或任務指引時顯示) -->
+        <div id="slide-example-badge-container" class="hidden flex items-center flex-shrink-0">
+          <button onclick="openExampleLightbox(0)" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-white/15 shadow-xs flex items-center gap-1.5 transition-all active:scale-95 group cursor-pointer" title="查看本單元真實標竿案例解析">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+            <i data-lucide="images" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span id="slide-example-badge-text">實戰案例圖庫</span>
+            <span class="text-[10px] bg-amber-500/25 text-amber-300 px-1.5 py-0.2 rounded font-bold hidden sm:inline">全螢幕導讀</span>
+          </button>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <!-- 右側：線上會議反應微互動列 + 提問便利貼 (帶直屬氣泡通知) -->
+        <div id="slide-interaction-dock" class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+          <button type="button" onclick="sendSlideReaction('heart', event)" class="reaction-btn p-1 hover:scale-130 active:scale-95 transition-transform text-base sm:text-lg cursor-pointer" title="送出愛心 ❤️">❤️</button>
+          <button type="button" onclick="sendSlideReaction('firework', event)" class="reaction-btn p-1 hover:scale-130 active:scale-95 transition-transform text-base sm:text-lg cursor-pointer" title="放煙火慶祝 🎆">🎆</button>
+          <button type="button" onclick="sendSlideReaction('thumbsup', event)" class="reaction-btn p-1 hover:scale-130 active:scale-95 transition-transform text-base sm:text-lg cursor-pointer" title="聽懂了 / 贊同 👍">👍</button>
+          <button type="button" onclick="sendSlideReaction('clap', event)" class="reaction-btn p-1 hover:scale-130 active:scale-95 transition-transform text-base sm:text-lg cursor-pointer" title="熱烈拍手 👏">👏</button>
+          <button type="button" onclick="sendSlideReaction('bulb', event)" class="reaction-btn p-1 hover:scale-130 active:scale-95 transition-transform text-base sm:text-lg cursor-pointer" title="獲得靈感 💡">💡</button>
+          <button type="button" onclick="sendSlideReaction('mindblown', event)" class="reaction-btn p-1 hover:scale-130 active:scale-95 transition-transform text-base sm:text-lg cursor-pointer" title="腦洞大開 / 驚豔 🤯">🤯</button>
+          
+          <div class="h-4 w-px bg-white/20 mx-1"></div>
+
+          <!-- 提問與便利貼按鈕及直屬新提問通知氣泡 -->
+          <div class="relative flex items-center" id="slide-questions-btn-wrapper">
+            <!-- 收到新便利貼浮動氣泡 (直接長在啟動點上方，帶向下指示箭頭) -->
+            <div id="incoming-question-toast" onclick="handleIncomingQuestionClick()" class="hidden absolute bottom-full right-0 mb-3 w-72 sm:w-84 bg-slate-950/95 text-white backdrop-blur-md rounded-2xl p-3 shadow-2xl border border-amber-400/80 transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 pointer-events-auto z-40 cursor-pointer group">
+              <!-- 對齊按鈕的向下三角指示箭頭 -->
+              <div class="absolute -bottom-1.5 right-6 w-3 h-3 bg-slate-950 border-b border-r border-amber-400/80 transform rotate-45"></div>
+
+              <div class="flex items-start justify-between gap-2 relative z-10">
+                <div class="flex items-center gap-1.5">
+                  <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                  </span>
+                  <span class="text-xs font-black text-amber-400 flex items-center gap-1">
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>收到新便利貼提問！</span>
+                  </span>
+                </div>
+                <button onclick="event.stopPropagation(); dismissIncomingQuestionToast();" class="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer" title="關閉提示">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <p id="incoming-question-text" class="mt-1.5 text-xs font-medium text-slate-200 line-clamp-2 bg-slate-900/90 p-2 rounded-xl border border-slate-800 font-sans group-hover:border-amber-400/50 transition-colors"></p>
+
+              <div class="mt-2 flex items-center justify-between gap-2 relative z-10">
+                <span id="incoming-question-meta" class="text-[11px] text-amber-300/90 font-bold truncate">第 1 組 學員</span>
+                <button id="incoming-question-action-btn" onclick="event.stopPropagation(); handleIncomingQuestionClick();" class="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-xs flex items-center gap-1 shadow-xs cursor-pointer flex-shrink-0 transition-all">
+                  <span id="incoming-question-action-text">查看</span>
+                  <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 便利貼啟動按鈕 -->
+            <button type="button" id="slide-questions-btn" onclick="toggleSlideQuestionsDrawer(true)" class="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-xs cursor-pointer" title="開啟本頁提問與便利貼看板">
+              <i data-lucide="message-square-plus" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">提問/便利貼</span>
+              <span id="slide-questions-count-badge" class="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-300 text-[10px] font-mono font-bold">0</span>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- 右側：沉浸式小組隨堂筆記區 (行動端彈性延展至少 380px，電腦版 50% 滿版) -->
-    <aside class="w-full md:w-1/2 flex-1 md:h-full bg-white flex flex-col overflow-hidden min-h-[380px]">
+    <!-- 右側：沉浸式小組隨堂筆記區 (行動端彈性延展至少 380px，工作台模式下展開) -->
+    <aside id="notes-aside" class="hidden w-full md:w-1/2 flex-1 md:h-full bg-white flex flex-col overflow-hidden min-h-[380px] border-t md:border-t-0 md:border-l border-slate-200">
 
       <!-- 整合式工作台頂部工具列 (單一精簡 44px 列：組別下拉選單 + 組員即時在線 + 翻面 + 同步狀態) -->
       <div class="bg-slate-50/90 border-b border-slate-200 px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
@@ -457,12 +603,12 @@
                   </div>
                   <span class="text-xs font-bold text-slate-800">小組實作附件</span>
                   <span id="attachments-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-slate-200 text-slate-700">0</span>
-                  <span class="text-[10px] text-slate-400 hidden md:inline">支援 照片 / PDF / Word / Excel / HTML (≤10MB)</span>
+                  <span class="text-[10px] text-slate-400 hidden md:inline">支援 圖片 / PDF / Office (Word, PPT, Excel) / 原型與代碼 (HTML, JSON, ZIP) / 繪圖檔 (drawio) (≤20MB)</span>
                 </div>
 
                 <div class="flex items-center gap-1.5 flex-shrink-0">
-                  <input type="file" id="attachment-file-input" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.docx,.doc,.xlsx,.xls,.csv,.html,.htm" class="hidden" onchange="handleFileInputChange(event)" />
-                  <button id="btn-add-attachment" type="button" onclick="triggerAttachmentFileInput()" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="上傳白板照片、簡報、試算表或原型">
+                  <input type="file" id="attachment-file-input" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.svg,.bmp,.pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.txt,.md,.html,.htm,.json,.zip,.drawio,.vsdx" class="hidden" onchange="handleFileInputChange(event)" />
+                  <button id="btn-add-attachment" type="button" onclick="triggerAttachmentFileInput()" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="上傳白板照片、簡報、試算表、原型或代碼包">
                     <i data-lucide="upload" class="w-3.5 h-3.5"></i>
                     <span>上傳附件</span>
                   </button>
@@ -677,6 +823,65 @@
     </div>
   </div>
 
+  <!-- ==================== AI-ARM 全流程 Prompt 順序清單與工具庫 Modal ==================== -->
+  <div id="assets-modal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
+    <div id="assets-modal-card" class="bg-white rounded-3xl max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      
+      <!-- 彈窗頂部列 -->
+      <div class="p-3.5 sm:p-4 border-b border-slate-200 bg-slate-50/90 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-tight">AI-ARM 全流程資產庫</h3>
+              <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 hidden sm:inline">Playbook & Toolkits</span>
+            </div>
+            <p class="text-[11px] text-slate-500">依需求交付時序串聯的核心提示詞與實戰建模工具</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 模式切換：Prompt 清單 vs 輔助工具箱 -->
+          <div class="bg-slate-200/80 p-0.5 rounded-xl flex items-center gap-0.5 text-xs">
+            <button id="btn-assets-tab-prompts" onclick="switchAssetsTab('prompts')" class="px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-indigo-700 shadow-2xs">
+              <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+              <span>順序 Prompt 清單</span>
+              <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-800 font-mono">3 已就緒</span>
+            </button>
+            <button id="btn-assets-tab-tools" onclick="switchAssetsTab('tools')" class="px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900">
+              <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
+              <span>輔助工具箱</span>
+              <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-mono">4 工具</span>
+            </button>
+          </div>
+
+          <!-- 關閉按鈕 -->
+          <button onclick="closeAssetsModal()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" title="關閉 (快捷鍵：Esc)">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 彈窗內容區 -->
+      <div id="assets-modal-body" class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-100/60">
+        
+        <!-- 視角 1：順序 Prompt 清單 -->
+        <div id="assets-view-prompts" class="space-y-5 max-w-4xl mx-auto">
+          <!-- 由 JS renderAssetsPrompts() 動態渲染 -->
+        </div>
+
+        <!-- 視角 2：輔助工具箱 -->
+        <div id="assets-view-tools" class="hidden space-y-5 max-w-4xl mx-auto">
+          <!-- 由 JS renderAssetsTools() 動態渲染 -->
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
   <!-- ==================== 課堂學習公約 (Learning Agreement) Modal ==================== -->
   <div id="agreement-modal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
     <div id="agreement-modal-card" class="bg-white rounded-3xl max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
@@ -859,16 +1064,16 @@
     </div>
   </div>
 
-  <!-- ==================== Prompt 完整指令檢視與複製 Modal ==================== -->
+  <!-- ==================== Prompt 演練沙盒 (可編輯文字方塊 ＋ 一鍵複製 ＋ 一鍵還原) ==================== -->
   <div id="prompt-preview-modal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-5">
-    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] h-[88vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
       <!-- Modal Header -->
       <div class="px-5 py-3.5 border-b border-slate-200 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
         <div class="flex items-center gap-2.5 min-w-0">
-          <span id="prompt-modal-badge" class="px-2.5 py-1 rounded-md text-xs font-bold text-white bg-amber-500 flex-shrink-0">步驟 4</span>
+          <span id="prompt-modal-badge" class="px-2.5 py-1 rounded-md text-xs font-bold text-white bg-amber-500 flex-shrink-0">AI 指令</span>
           <div class="min-w-0">
-            <h3 id="prompt-modal-title" class="font-bold text-slate-900 text-sm sm:text-base truncate">Prompt 指令全文</h3>
-            <p id="prompt-modal-desc" class="text-xs text-slate-500 truncate mt-0.5">點擊下方按鈕即可一鍵複製全文</p>
+            <h3 id="prompt-modal-title" class="font-bold text-slate-900 text-sm sm:text-base truncate">Prompt 演練工作台</h3>
+            <p id="prompt-modal-desc" class="text-xs text-slate-500 truncate mt-0.5">可原地自由編輯條件或填入專案資料，改完一鍵複製走</p>
           </div>
         </div>
         <button onclick="closePromptModal()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer" title="關閉視窗 (Esc)">
@@ -876,14 +1081,105 @@
         </button>
       </div>
 
-      <!-- Modal Body (Prompt Text) -->
-      <div class="flex-1 overflow-y-auto p-4 sm:p-5 bg-slate-900 text-slate-100 font-mono text-xs sm:text-sm leading-relaxed whitespace-pre-wrap select-text" id="prompt-modal-content">
+      <!-- P24 專屬分析視角與模式切換區塊 (動態切換顯示) -->
+      <div id="prompt-p24-controls-container" class="hidden border-b border-slate-200 bg-slate-50/95 px-4 sm:px-5 py-2.5 space-y-2 flex-shrink-0">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 分析視角 -->
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+              <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-600"></i>
+              主要視角：
+            </span>
+            <div class="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 shadow-2xs text-xs" id="p24-role-selector">
+              <button type="button" onclick="setP24PromptRole('BA')" id="btn-p24-role-BA" class="p24-role-btn px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer bg-indigo-600 text-white shadow-xs" title="BA 業務分析：探索委託目的、商務成果、業務範圍與規則">BA 業務分析</button>
+              <button type="button" onclick="setP24PromptRole('SA')" id="btn-p24-role-SA" class="p24-role-btn px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100" title="SA 系統分析：探索系統範圍、事件、資料來源與流向、狀態">SA 系統分析</button>
+              <button type="button" onclick="setP24PromptRole('SD')" id="btn-p24-role-SD" class="p24-role-btn px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100" title="SD 系統設計：探索技術限制、品質要求、介接與復原">SD 系統設計</button>
+              <button type="button" onclick="setP24PromptRole('UR')" id="btn-p24-role-UR" class="p24-role-btn px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100" title="UR 用戶研究：探索實際工作情境、具體事件、困難與痛點">UR 用戶研究</button>
+            </div>
+          </div>
+          <!-- 模式切換 -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+              <i data-lucide="sliders" class="w-3.5 h-3.5 text-amber-600"></i>
+              模式引導：
+            </span>
+            <div class="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 shadow-2xs text-xs" id="p24-mode-selector">
+              <button type="button" onclick="setP24InputMode('direct')" id="btn-p24-mode-direct" class="px-2.5 py-0.5 rounded-md font-bold transition-all cursor-pointer bg-amber-500 text-white shadow-xs">直接填寫</button>
+              <button type="button" onclick="setP24InputMode('transcript')" id="btn-p24-mode-transcript" class="px-2.5 py-0.5 rounded-md font-bold transition-all cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100">口述逐字稿</button>
+            </div>
+          </div>
+        </div>
+        <!-- 視角說明提示 -->
+        <p class="text-[11px] text-slate-500 leading-normal flex items-center gap-1">
+          <i data-lucide="info" class="w-3 h-3 text-slate-400 flex-shrink-0"></i>
+          <span>這是你進行訪談的分析視角；受訪對象請在輸入資料中另外說明。次要視角與組織特殊定義保留在下方文字填寫。</span>
+        </p>
+        <!-- 口述逐字稿 6 題引導 (可收合) -->
+        <div id="p24-transcript-guide-box" class="hidden bg-amber-50/80 border border-amber-200 rounded-xl p-3 space-y-2 text-xs text-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-amber-950 flex items-center gap-1.5">
+              <i data-lucide="mic" class="w-3.5 h-3.5 text-amber-700"></i>
+              訪談前準備討論（口述模式 6 題討論引導）：
+            </span>
+            <button type="button" onclick="jumpToTranscriptSection()" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-amber-900 font-bold text-[10px] border border-amber-300 transition-colors flex items-center gap-1 cursor-pointer">
+              <span>前往貼上逐字稿</span>
+              <i data-lucide="corner-down-right" class="w-3 h-3"></i>
+            </button>
+          </div>
+          <ol class="list-decimal list-inside space-y-0.5 text-[11px] text-slate-700 pl-1 font-medium leading-relaxed">
+            <li>這是什麼案子？誰委託、為什麼做、目前到哪個階段？</li>
+            <li>我們以 BA、SA、SD 或 UR 的哪個視角進行訪談？</li>
+            <li>準備訪談誰？對方負責什麼、知道什麼、能決定什麼？</li>
+            <li>最想釐清什麼？結果要支援哪項工作或決策？</li>
+            <li>已知與未知有哪些？有哪些資料、假設、爭議或限制？</li>
+            <li>有多少時間？哪些事情必須優先確認？</li>
+          </ol>
+          <p class="text-[10px] text-amber-800 italic pt-0.5 border-t border-amber-200/60">
+            說明：使用既有錄音與轉文字工具，將小組的訪談前準備討論轉成逐字稿，再貼入下方。這不是正式受訪者的訪談紀錄。
+          </p>
+        </div>
+      </div>
+
+      <!-- P27 專屬提示條 (動態切換顯示) -->
+      <div id="prompt-p27-hint-bar" class="hidden border-b border-emerald-200 bg-emerald-50/90 px-4 sm:px-5 py-2 text-xs text-emerald-950 flex items-center gap-2 flex-shrink-0">
+        <i data-lucide="lightbulb" class="w-3.5 h-3.5 text-emerald-700 flex-shrink-0"></i>
+        <span id="prompt-p27-hint-text">先整理資料與來源，再帶入研究結果修訂訪綱；資料不足時保留缺口。</span>
+      </div>
+
+      <!-- Tips Bar & Jump Buttons -->
+      <div class="px-4 sm:px-5 py-2 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-b border-amber-200/80 flex items-center justify-between gap-2 text-xs text-amber-950 flex-shrink-0">
+        <div class="flex items-center gap-1.5 min-w-0 truncate">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600 flex-shrink-0"></i>
+          <span class="truncate">💡 提示：在下方文字框中微調約束或填入資料，隨時可複製；改亂了隨時可點「還原原版」。</span>
+        </div>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <button type="button" onclick="jumpToInputSection()" class="px-2 py-0.5 rounded-md bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs" title="快速前往【輸入資料】填寫區塊">
+            <i data-lucide="file-input" class="w-3 h-3 text-amber-700"></i>
+            <span>前往輸入資料</span>
+          </button>
+          <button type="button" onclick="jumpToNextPlaceholder()" class="px-2 py-0.5 rounded-md bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs" title="游標自動尋找並選取下一個【...】佔位符">
+            <i data-lucide="crosshair" class="w-3 h-3 text-amber-700"></i>
+            <span>定位【...】</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body (Editable Textarea) -->
+      <div class="flex-1 flex flex-col p-0 overflow-hidden bg-slate-900 relative">
+        <textarea id="prompt-modal-editor" oninput="handlePromptEditorInput(event)" class="w-full h-full p-4 sm:p-5 bg-slate-900 text-slate-100 font-mono text-xs sm:text-sm leading-relaxed outline-none resize-none border-none select-text focus:ring-0" placeholder="在此檢視與編輯 Prompt 全文..."></textarea>
       </div>
 
       <!-- Modal Footer -->
       <div class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-shrink-0">
-        <span class="text-xs text-slate-500 hidden sm:inline">複製後可直接貼至 AI 工具執行</span>
-        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div class="flex items-center gap-2">
+          <button id="btn-modal-reset-prompt" onclick="resetCurrentPromptToDefault()" class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 border border-slate-300 flex items-center gap-1.5 transition-colors cursor-pointer" title="放棄修改，恢復為系統原版 Prompt">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            <span>還原原版</span>
+          </button>
+          <span id="prompt-custom-status-text" class="text-xs text-slate-500 hidden sm:inline">未修改 (原版)</span>
+        </div>
+
+        <div class="flex items-center gap-2">
           <button onclick="closePromptModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer">
             關閉
           </button>
@@ -892,6 +1188,171 @@
             <span id="btn-modal-copy-prompt-text">複製完整 Prompt</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 投影片專屬提問與便利貼 Drawer / Modal ==================== -->
+  <div id="slide-questions-modal" class="hidden fixed inset-0 bg-slate-950/25 backdrop-blur-[2px] z-50 flex items-stretch justify-end p-0 sm:p-3 transition-all" onclick="if(event.target===this) toggleSlideQuestionsDrawer(false);">
+    <div class="w-full sm:w-[440px] h-full sm:h-[94vh] my-auto bg-white/95 backdrop-blur-xl sm:rounded-3xl shadow-2xl flex flex-col border border-slate-300/80 overflow-hidden" onclick="event.stopPropagation()">
+      <!-- Header -->
+      <div class="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-7 h-7 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0 shadow-2xs">
+            <i data-lucide="message-square" class="w-4 h-4"></i>
+          </span>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <h3 class="text-sm font-bold text-slate-900 truncate" id="slide-questions-title">課堂提問與便利貼</h3>
+              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">全班共覽 · 各組皆可解答</span>
+            </div>
+            <p class="text-[11px] text-slate-500 truncate">針對本頁有任何疑問？貼在下方，任何組別皆可討論與解答！</p>
+          </div>
+        </div>
+        <button onclick="toggleSlideQuestionsDrawer(false)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer flex-shrink-0" title="關閉提問板 (Esc)">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Input Section: Create new sticky note -->
+      <div class="p-3 bg-slate-50/80 border-b border-slate-200 flex-shrink-0">
+        <textarea id="slide-question-input" rows="2" placeholder="在此輸入問題、疑問或心得便利貼..." class="w-full p-2.5 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all shadow-2xs"></textarea>
+        <div class="flex items-center justify-between mt-2 gap-2">
+          <!-- Color selector -->
+          <div class="flex items-center gap-2" id="sticky-color-picker">
+            <button type="button" onclick="selectStickyColor('yellow')" id="sticky-color-yellow" class="w-5 h-5 rounded-full bg-amber-200 border-2 border-amber-500 ring-2 ring-amber-400/40 cursor-pointer" title="經典黃"></button>
+            <button type="button" onclick="selectStickyColor('pink')" id="sticky-color-pink" class="w-5 h-5 rounded-full bg-pink-200 border-2 border-transparent hover:border-pink-400 cursor-pointer" title="溫暖粉"></button>
+            <button type="button" onclick="selectStickyColor('blue')" id="sticky-color-blue" class="w-5 h-5 rounded-full bg-sky-200 border-2 border-transparent hover:border-sky-400 cursor-pointer" title="清新藍"></button>
+            <button type="button" onclick="selectStickyColor('green')" id="sticky-color-green" class="w-5 h-5 rounded-full bg-emerald-200 border-2 border-transparent hover:border-emerald-400 cursor-pointer" title="薄荷綠"></button>
+          </div>
+          <button onclick="postSlideQuestion()" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black text-xs flex items-center gap-1 shadow-xs cursor-pointer transition-all">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+            <span>張貼便利貼</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Questions Feed -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-3" id="slide-questions-list">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== 全域倒數計時器設定 Modal ==================== -->
+  <div id="timer-settings-modal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 select-none">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden transform transition-all duration-200 scale-95 opacity-0" id="timer-modal-panel">
+      <!-- 標題列 -->
+      <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+            <i data-lucide="timer" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-slate-900 text-sm sm:text-base">課堂任務倒數計時</h3>
+            <p class="text-[11px] text-slate-500 font-medium">支援實時多端同步與時間到動作與聲音</p>
+          </div>
+        </div>
+        <button onclick="closeTimerModal()" class="p-1.5 rounded-xl hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer" title="關閉 (Esc)">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- 核心倒數大面板 -->
+      <div class="p-6 flex flex-col items-center">
+        <!-- 巨型數字倒數顯示 -->
+        <div class="flex items-baseline justify-center font-mono font-black text-5xl sm:text-6xl text-slate-900 tracking-tight my-2" id="modal-timer-digits">
+          <span id="modal-timer-min">10</span>
+          <span class="text-amber-500 mx-1">:</span>
+          <span id="modal-timer-sec">00</span>
+        </div>
+
+        <!-- 狀態標籤 -->
+        <div class="mt-1 mb-4">
+          <span id="modal-timer-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+            待命中
+          </span>
+        </div>
+
+        <!-- 倒數進度條 -->
+        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-5 border border-slate-200/60">
+          <div id="modal-timer-progress" class="bg-amber-500 h-full rounded-full transition-all duration-300" style="width: 100%;"></div>
+        </div>
+
+        <!-- 快速預設時間按鈕 (Agile Workshop 常用時間) -->
+        <div class="w-full mb-4">
+          <label class="block text-[11px] font-bold text-slate-500 mb-2">快速選擇預設時間：</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button onclick="setTimerPreset(60)" class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 text-xs font-bold text-slate-700 transition-all cursor-pointer">1 分鐘</button>
+            <button onclick="setTimerPreset(180)" class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 text-xs font-bold text-slate-700 transition-all cursor-pointer">3 分鐘</button>
+            <button onclick="setTimerPreset(300)" class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 text-xs font-bold text-slate-700 transition-all cursor-pointer">5 分鐘</button>
+            <button onclick="setTimerPreset(600)" class="py-1.5 px-2 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-xs font-bold text-amber-900 transition-all cursor-pointer">10 分鐘</button>
+            <button onclick="setTimerPreset(900)" class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 text-xs font-bold text-slate-700 transition-all cursor-pointer">15 分鐘</button>
+            <button onclick="setTimerPreset(1200)" class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 text-xs font-bold text-slate-700 transition-all cursor-pointer">20 分鐘</button>
+            <button onclick="setTimerPreset(1800)" class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 text-xs font-bold text-slate-700 transition-all cursor-pointer">30 分鐘</button>
+            <button onclick="setTimerPreset(2700)" class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 text-xs font-bold text-slate-700 transition-all cursor-pointer">45 分鐘</button>
+          </div>
+        </div>
+
+        <!-- 微調按鈕 (+/-) -->
+        <div class="flex items-center gap-1.5 mb-5 flex-wrap justify-center">
+          <button onclick="adjustTimerSeconds(-60)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 cursor-pointer">-1 分鐘</button>
+          <button onclick="adjustTimerSeconds(-30)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 cursor-pointer">-30 秒</button>
+          <button onclick="adjustTimerSeconds(30)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 cursor-pointer">+30 秒</button>
+          <button onclick="adjustTimerSeconds(60)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 cursor-pointer">+1 分鐘</button>
+          <button onclick="adjustTimerSeconds(300)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 cursor-pointer">+5 分鐘</button>
+        </div>
+
+        <!-- 核心操作按鈕 (開始 / 暫停 / 重設) -->
+        <div class="flex items-center gap-3 w-full">
+          <button id="btn-modal-timer-main" onclick="toggleTimerPlayPauseFromModal()" class="flex-1 py-3 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-slate-950 font-black text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer">
+            <i data-lucide="play" class="w-4 h-4" id="modal-timer-main-icon"></i>
+            <span id="modal-timer-main-text">開始倒數</span>
+          </button>
+          <button onclick="resetTimerAction()" class="py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-700 font-bold text-sm border border-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer" title="重設回初始設定時間">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            <span>重設</span>
+          </button>
+        </div>
+
+        <!-- 輔助切換：投影懸浮大時鐘 ＆ 試聽音效 -->
+        <div class="mt-5 pt-4 border-t border-slate-100 w-full flex items-center justify-between text-xs text-slate-600">
+          <button onclick="toggleBigClockDisplay()" class="flex items-center gap-1.5 text-slate-700 hover:text-indigo-600 font-bold cursor-pointer transition-colors" title="在投影片畫面上浮現超大時鐘">
+            <i data-lucide="tv" class="w-3.5 h-3.5 text-indigo-500"></i>
+            <span id="btn-big-clock-text">開啟大螢幕時鐘</span>
+          </button>
+          <button onclick="playTimerAlarmSound()" class="flex items-center gap-1 text-slate-500 hover:text-amber-600 font-medium cursor-pointer transition-colors" title="試聽時間到的提醒音效">
+            <i data-lucide="volume-2" class="w-3.5 h-3.5 text-amber-500"></i>
+            <span>試聽鐘聲</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 時間到提醒 Modal (帶鈴鐺動畫與聲音) ==================== -->
+  <div id="timer-alarm-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none">
+    <div class="bg-white rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-sm overflow-hidden p-6 text-center transform transition-all">
+      <!-- 晃動的鈴鐺動畫圖標 -->
+      <div class="w-20 h-20 rounded-full bg-amber-100 text-amber-600 mx-auto flex items-center justify-center mb-4 shadow-inner ring-8 ring-amber-50 animate-bell">
+        <i data-lucide="bell-ring" class="w-10 h-10 text-amber-600"></i>
+      </div>
+
+      <h3 class="text-2xl font-black text-slate-900 mb-2">⏰ 任務時間到！</h3>
+      <p class="text-xs text-slate-600 leading-relaxed mb-6">
+        倒數計時已結束，請各小組停筆收斂。<br/>準備進入下一階段討論或成果發表！
+      </p>
+
+      <div class="flex flex-col gap-2">
+        <button onclick="dismissTimerAlarm()" class="w-full py-3 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black text-sm shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>知道了，結束任務</span>
+        </button>
+        <button onclick="extendTimer(120)" class="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs border border-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+          <i data-lucide="clock-plus" class="w-3.5 h-3.5 text-amber-600"></i>
+          <span>+2 分鐘寬限加時</span>
+        </button>
       </div>
     </div>
   </div>
@@ -990,6 +1451,7 @@
     const COURSE_PASSWORD = "agile-2026";
     const TOTAL_TEAMS = 6;
     const APP_STORAGE_KEY = "ai_arm_auth_user";
+    const NOTES_COLLECTION = 'aigile_boards';
 
     let currentSlideIndex = 1; // 1-based (P01 ~ P40)
     let activeTeamId = 'team-1';
@@ -1027,6 +1489,7 @@
           firebase.initializeApp(firebaseConfig);
         }
         db = firebase.firestore();
+        window.db = db;
         try {
           if (firebase.storage) {
             storage = firebase.storage();
@@ -1038,6 +1501,7 @@
         if (currentUser) {
           initPresence();
         }
+        initReactionStreamListener();
       } catch (err) {
         console.warn("Firebase 初始化異常:", err);
         updateSyncStatus('offline', '本地離線模式');
@@ -1187,6 +1651,55 @@
       return `第 ${num} 組`;
     }
 
+    // --- 劇院大圖模式 ⇋ 小組工作台模式 控制器 ---
+    let currentLayoutMode = 'theater';
+    let userManualLayoutOverride = null;
+
+    function applyLayoutMode(isWorkstation) {
+      const section = document.getElementById('slide-section');
+      const aside = document.getElementById('notes-aside');
+      const btnIcon = document.getElementById('layout-mode-icon');
+      const btnText = document.getElementById('layout-mode-text');
+      const btn = document.getElementById('btn-toggle-layout');
+
+      const activeMode = (userManualLayoutOverride !== null) ? userManualLayoutOverride : (isWorkstation ? 'workstation' : 'theater');
+      currentLayoutMode = activeMode;
+
+      if (activeMode === 'workstation') {
+        if (section) {
+          section.classList.remove('w-full', 'md:w-full');
+          section.classList.add('w-full', 'md:w-1/2');
+        }
+        if (aside) {
+          aside.classList.remove('hidden');
+          aside.classList.add('flex');
+        }
+        if (btnIcon) btnIcon.setAttribute('data-lucide', 'maximize-2');
+        if (btnText) btnText.innerText = '劇院模式';
+        if (btn) btn.title = '切換為劇院滿版大圖模式';
+      } else {
+        if (section) {
+          section.classList.remove('md:w-1/2');
+          section.classList.add('w-full', 'md:w-full');
+        }
+        if (aside) {
+          aside.classList.add('hidden');
+          aside.classList.remove('flex');
+        }
+        if (btnIcon) btnIcon.setAttribute('data-lucide', 'layout-panel-left');
+        if (btnText) btnText.innerText = '工作台';
+        if (btn) btn.title = '切換為小組協作工作台模式';
+      }
+      if (window.lucide && btn) lucide.createIcons({ scope: btn });
+    }
+
+    function toggleWorkstationMode() {
+      const nextMode = (currentLayoutMode === 'workstation') ? 'theater' : 'workstation';
+      userManualLayoutOverride = nextMode;
+      applyLayoutMode(nextMode === 'workstation');
+      showToast(nextMode === 'workstation' ? '已切換為小組工作台模式' : '已切換為劇院滿版大圖模式', 'slate');
+    }
+
     // --- 投影片導覽與頁面切換 ---
     function renderSlide(index) {
       if (index < 1) index = 1;
@@ -1242,6 +1755,21 @@
       // 判斷是否顯示「線上白板」與「翻面看範例」
       updateSlideToolsBar(slide);
 
+      // 換頁時重設手動版面覆蓋，根據是否為任務或收斂頁決定版面模式
+      userManualLayoutOverride = null;
+      const isTaskOrTakeAway = !!(slide.isTeamTask || slide.isTakeAway);
+      applyLayoutMode(isTaskOrTakeAway);
+
+      // 依據是否為 TEAM TASK 或 TAKE AWAY 控制附件上傳區
+      const attachSection = document.getElementById('team-attachments-section');
+      if (attachSection) {
+        if (isTaskOrTakeAway) {
+          attachSection.classList.remove('hidden');
+        } else {
+          attachSection.classList.add('hidden');
+        }
+      }
+
       // 更新輸入框情境提示詞
       const memoInput = document.getElementById('team-memo-input');
       if (memoInput) {
@@ -1253,12 +1781,42 @@
       // 渲染團隊任務 AI Prompt 快捷列
       renderTeamTaskPrompts(slide);
 
+      // 載入當前頁面的提問與便利貼
+      loadSlideQuestions(index);
+
       // 訂閱當前頁面與當前組別的 Firestore 筆記
       subscribeToFirestore();
     }
 
     // --- 團隊任務 AI Prompt 指令庫與複製控制器 (通用架構，後續任務直接複用) ---
     let currentViewingPrompt = null;
+    let currentViewingPromptSlideIndex = null;
+    let p24CurrentRole = 'BA';
+    let p24CurrentMode = 'direct'; // 'direct' or 'transcript'
+
+    function getPromptStorageKey(promptId) {
+      const team = (currentUser && currentUser.team) ? currentUser.team : (activeTeamId || 'team-1');
+      return "ai_arm_custom_prompt_" + promptId + "_" + team;
+    }
+
+    function getSavedPromptDraft(promptId) {
+      const teamKey = getPromptStorageKey(promptId);
+      const teamVal = localStorage.getItem(teamKey);
+      if (teamVal !== null) return teamVal;
+      return localStorage.getItem("ai_arm_custom_prompt_" + promptId);
+    }
+
+    function savePromptDraft(promptId, content) {
+      const teamKey = getPromptStorageKey(promptId);
+      localStorage.setItem(teamKey, content);
+      localStorage.setItem("ai_arm_custom_prompt_" + promptId, content);
+    }
+
+    function removePromptDraft(promptId) {
+      const teamKey = getPromptStorageKey(promptId);
+      localStorage.removeItem(teamKey);
+      localStorage.removeItem("ai_arm_custom_prompt_" + promptId);
+    }
 
     function renderTeamTaskPrompts(slide) {
       const bar = document.getElementById('team-task-prompt-bar');
@@ -1278,32 +1836,50 @@
         const btnGroup = document.createElement('div');
         btnGroup.className = 'inline-flex items-center rounded-xl shadow-2xs overflow-hidden border border-amber-300 bg-white hover:border-amber-400 transition-all';
 
-        // 複製按鈕 (主動作)
-        const copyBtn = document.createElement('button');
-        copyBtn.id = `btn-copy-prompt-${pIdx}`;
-        copyBtn.className = 'px-3 py-1.5 bg-amber-100/90 hover:bg-amber-200 active:scale-95 text-amber-950 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer';
-        copyBtn.title = `點擊一鍵複製「${prompt.title}」全文至剪貼簿`;
-        copyBtn.onclick = () => copyPromptToClipboard(pIdx);
-        
-        const badgeColorCls = (prompt.badgeColor === 'indigo') 
-          ? 'bg-indigo-600 text-white' 
-          : 'bg-amber-600 text-white';
+        const savedContent = getSavedPromptDraft(prompt.id);
+        const hasCustom = (savedContent !== null && savedContent !== prompt.content);
 
-        copyBtn.innerHTML = `
-          <span class="px-1.5 py-0.5 rounded text-[10px] font-black ${badgeColorCls}">${prompt.stepBadge || 'Prompt'}</span>
-          <i data-lucide="copy" class="w-3.5 h-3.5 text-amber-800"></i>
-          <span id="prompt-btn-label-${pIdx}">${prompt.actionLabel || prompt.shortTitle || prompt.title}</span>
-        `;
+        // 主按鈕：準備 Prompt (點擊展開 Prompt 編輯沙盒，避免未填資料暗中複製舊版)
+        const mainBtn = document.createElement('button');
+        mainBtn.id = "btn-main-prompt-" + pIdx;
+        mainBtn.className = 'px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-950 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer';
+        mainBtn.title = "開啟「" + prompt.title + "」編輯沙盒 (選定視角與填寫資料)";
+        mainBtn.onclick = () => openPromptModal(pIdx);
 
-        // 預覽按鈕 (查看全文)
-        const viewBtn = document.createElement('button');
-        viewBtn.className = 'px-2 py-1.5 bg-white hover:bg-amber-50 text-slate-500 hover:text-amber-800 border-l border-amber-200 text-xs flex items-center justify-center transition-colors cursor-pointer';
-        viewBtn.title = '預覽與檢視 Prompt 完整指令全文';
-        viewBtn.onclick = () => openPromptModal(pIdx);
-        viewBtn.innerHTML = `<i data-lucide="eye" class="w-3.5 h-3.5"></i>`;
+        let badgeHtml = '';
+        if (prompt.stepBadge) {
+          let badgeColorCls = 'bg-amber-600 text-white';
+          if (prompt.badgeColor === 'indigo') badgeColorCls = 'bg-indigo-600 text-white';
+          if (prompt.badgeColor === 'emerald') badgeColorCls = 'bg-emerald-600 text-white';
+          if (prompt.badgeColor === 'rose') badgeColorCls = 'bg-rose-600 text-white';
+          badgeHtml = '<span class="px-1.5 py-0.5 rounded text-[10px] font-black ' + badgeColorCls + '">' + prompt.stepBadge + '</span>';
+        }
 
-        btnGroup.appendChild(copyBtn);
-        btnGroup.appendChild(viewBtn);
+        const mainLabel = prompt.actionLabel || prompt.shortTitle || prompt.title;
+        mainBtn.innerHTML = badgeHtml + '<i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i><span id="prompt-btn-label-' + pIdx + '">' + mainLabel + '</span>';
+
+        // 快捷複製按鈕 (若已有編輯版本，可複製最新版本；若尚未編輯，提示先進入沙盒)
+        const quickCopyBtn = document.createElement('button');
+        quickCopyBtn.id = "btn-quick-copy-" + pIdx;
+        quickCopyBtn.className = "px-2.5 py-1.5 border-l border-amber-200 text-xs flex items-center gap-1 transition-colors cursor-pointer " +
+          (hasCustom 
+            ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold' 
+            : 'bg-white hover:bg-amber-50 text-slate-500 hover:text-amber-800');
+        quickCopyBtn.title = hasCustom 
+          ? '一鍵複製最近一次自訂編輯之完整 Prompt' 
+          : '尚未自訂，點擊前往沙盒準備並填寫 Prompt';
+        quickCopyBtn.onclick = () => {
+          if (hasCustom) {
+            copyPromptToClipboard(pIdx);
+          } else {
+            showToast('請先在沙盒中設定分析視角與填寫資料後再複製', 'amber');
+            openPromptModal(pIdx);
+          }
+        };
+        quickCopyBtn.innerHTML = '<i data-lucide="copy" class="w-3.5 h-3.5"></i><span class="text-[11px] hidden sm:inline">' + (hasCustom ? '複製最新版' : '複製') + '</span>';
+
+        btnGroup.appendChild(mainBtn);
+        btnGroup.appendChild(quickCopyBtn);
         container.appendChild(btnGroup);
       });
 
@@ -1315,8 +1891,12 @@
       if (!slide || !slide.prompts || !slide.prompts[promptIndex]) return;
       const p = slide.prompts[promptIndex];
 
+      const savedContent = getSavedPromptDraft(p.id);
+      const isCustom = (savedContent !== null && savedContent !== p.content);
+      const contentToCopy = (savedContent !== null) ? savedContent : p.content;
+
       const handleSuccess = () => {
-        const labelEl = document.getElementById(`prompt-btn-label-${promptIndex}`);
+        const labelEl = document.getElementById("prompt-btn-label-" + promptIndex);
         if (labelEl) {
           const originalText = labelEl.innerText;
           labelEl.innerHTML = '<span class="text-emerald-700 font-black">✓ 已複製！</span>';
@@ -1324,15 +1904,15 @@
             labelEl.innerText = originalText;
           }, 2000);
         }
-        showToast(`已成功複製「${p.title}」！`);
+        showToast("已成功複製「" + p.title + "」" + (isCustom ? ' (已自訂版)' : '') + "！");
       };
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(p.content).then(handleSuccess).catch(() => {
-          fallbackCopyText(p.content, handleSuccess);
+        navigator.clipboard.writeText(contentToCopy).then(handleSuccess).catch(() => {
+          fallbackCopyText(contentToCopy, handleSuccess);
         });
       } else {
-        fallbackCopyText(p.content, handleSuccess);
+        fallbackCopyText(contentToCopy, handleSuccess);
       }
     }
 
@@ -1354,33 +1934,278 @@
       document.body.removeChild(ta);
     }
 
-    function openPromptModal(promptIndex) {
-      const slide = SLIDES_DATA[currentSlideIndex - 1];
+    // --- Prompt 演練沙盒核心控制器 ---
+    function openPromptModal(promptIndex, optSlideIndex) {
+      const targetSlideIndex = (typeof optSlideIndex === 'number') ? optSlideIndex : currentSlideIndex;
+      const slide = SLIDES_DATA[targetSlideIndex - 1];
       if (!slide || !slide.prompts || !slide.prompts[promptIndex]) return;
       const p = slide.prompts[promptIndex];
       currentViewingPrompt = p;
+      currentViewingPromptSlideIndex = targetSlideIndex;
 
+      const editor = document.getElementById('prompt-modal-editor');
       const badgeEl = document.getElementById('prompt-modal-badge');
-      if (badgeEl) {
-        badgeEl.innerText = p.stepBadge || 'Prompt';
-        badgeEl.className = `px-2.5 py-1 rounded-md text-xs font-bold text-white ${p.badgeColor === 'indigo' ? 'bg-indigo-600' : 'bg-amber-500'} flex-shrink-0`;
-      }
       const titleEl = document.getElementById('prompt-modal-title');
-      if (titleEl) titleEl.innerText = p.title;
       const descEl = document.getElementById('prompt-modal-desc');
-      if (descEl) descEl.innerText = p.desc || 'AI 實作專屬任務指令';
-      const contentEl = document.getElementById('prompt-modal-content');
-      if (contentEl) contentEl.innerText = p.content;
+      const statusText = document.getElementById('prompt-custom-status-text');
+      const copyBtnText = document.getElementById('btn-modal-copy-prompt-text');
+
+      if (titleEl) titleEl.innerText = p.title;
+      if (descEl) descEl.innerText = p.desc || '可原地自由編輯條件或填入專案資料，改完一鍵複製走';
+
+      const savedContent = getSavedPromptDraft(p.id);
+      const hasCustom = (savedContent !== null && savedContent !== p.content);
+      const contentToDisplay = (savedContent !== null) ? savedContent : p.content;
+
+      if (editor) {
+        editor.value = contentToDisplay;
+      }
+
+      // 檢查是否為 P24 / P27 專用功能列
+      const p24Controls = document.getElementById('prompt-p24-controls-container');
+      const p27HintBar = document.getElementById('prompt-p27-hint-bar');
+      const p27HintText = document.getElementById('prompt-p27-hint-text');
+
+      if (p.id === 'prompt-p24-interview-draft') {
+        if (p24Controls) p24Controls.classList.remove('hidden');
+        if (p27HintBar) p27HintBar.classList.add('hidden');
+        initP24SandboxControls(contentToDisplay);
+      } else if (p.id === 'prompt-p27a-desk-research') {
+        if (p24Controls) p24Controls.classList.add('hidden');
+        if (p27HintBar) {
+          p27HintBar.classList.remove('hidden');
+          if (p27HintText) p27HintText.innerText = '先整理資料與來源，再帶入研究結果修訂訪綱；資料不足時保留缺口。';
+        }
+      } else if (p.id === 'prompt-p27b-interview-revision') {
+        if (p24Controls) p24Controls.classList.add('hidden');
+        if (p27HintBar) {
+          p27HintBar.classList.remove('hidden');
+          if (p27HintText) p27HintText.innerText = '修訂工具輸入包含初稿、研究結果、補充修正與最新訪談設定。用完整修訂版支援後續訪談。';
+        }
+      } else {
+        if (p24Controls) p24Controls.classList.add('hidden');
+        if (p27HintBar) p27HintBar.classList.add('hidden');
+      }
+
+      if (badgeEl) {
+        let badgeBg = hasCustom ? 'bg-indigo-600' : 'bg-amber-500';
+        badgeEl.innerText = hasCustom ? '已自訂修改' : 'AI 指令';
+        badgeEl.className = "px-2.5 py-1 rounded-md text-xs font-bold text-white " + badgeBg + " flex-shrink-0";
+      }
+
+      if (statusText) {
+        statusText.innerText = hasCustom ? ("已自訂 (" + contentToDisplay.length + " 字)") : '未修改 (原版)';
+      }
+
+      if (copyBtnText) {
+        copyBtnText.innerText = '複製完整 Prompt';
+      }
 
       const modal = document.getElementById('prompt-preview-modal');
       if (modal) modal.classList.remove('hidden');
       if (window.lucide) lucide.createIcons({ scope: modal });
     }
 
+    function initP24SandboxControls(content) {
+      let role = 'BA';
+      if (/主要視角：【SA/i.test(content)) role = 'SA';
+      else if (/主要視角：【SD/i.test(content)) role = 'SD';
+      else if (/主要視角：【UR/i.test(content)) role = 'UR';
+      else if (/主要視角：【BA/i.test(content)) role = 'BA';
+      p24CurrentRole = role;
+      updateP24RoleButtonsUI(role);
+      setP24InputMode('direct');
+    }
+
+    function updateP24RoleButtonsUI(role) {
+      const roles = ['BA', 'SA', 'SD', 'UR'];
+      roles.forEach(r => {
+        const btn = document.getElementById("btn-p24-role-" + r);
+        if (btn) {
+          if (r === role) {
+            btn.className = 'p24-role-btn px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer bg-indigo-600 text-white shadow-xs';
+          } else {
+            btn.className = 'p24-role-btn px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100';
+          }
+        }
+      });
+    }
+
+    function setP24PromptRole(role) {
+      p24CurrentRole = role;
+      updateP24RoleButtonsUI(role);
+
+      const editor = document.getElementById('prompt-modal-editor');
+      if (!editor) return;
+      let text = editor.value;
+
+      const pattern = /主要視角：【[^】]*】/g;
+      if (pattern.test(text)) {
+        text = text.replace(pattern, "主要視角：【" + role + "】");
+      } else if (/主要視角：.*/.test(text)) {
+        text = text.replace(/主要視角：.*/, "主要視角：【" + role + "】");
+      }
+
+      editor.value = text;
+      handlePromptEditorInput({ target: editor });
+      showToast("已切換主要視角為【" + role + "】", 'indigo');
+    }
+
+    function setP24InputMode(mode) {
+      p24CurrentMode = mode;
+      const btnDirect = document.getElementById('btn-p24-mode-direct');
+      const btnTranscript = document.getElementById('btn-p24-mode-transcript');
+      const guideBox = document.getElementById('p24-transcript-guide-box');
+
+      if (mode === 'transcript') {
+        if (btnTranscript) btnTranscript.className = 'px-2.5 py-0.5 rounded-md font-bold transition-all cursor-pointer bg-amber-500 text-white shadow-xs';
+        if (btnDirect) btnDirect.className = 'px-2.5 py-0.5 rounded-md font-bold transition-all cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100';
+        if (guideBox) guideBox.classList.remove('hidden');
+      } else {
+        if (btnDirect) btnDirect.className = 'px-2.5 py-0.5 rounded-md font-bold transition-all cursor-pointer bg-amber-500 text-white shadow-xs';
+        if (btnTranscript) btnTranscript.className = 'px-2.5 py-0.5 rounded-md font-bold transition-all cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100';
+        if (guideBox) guideBox.classList.add('hidden');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function jumpToTranscriptSection() {
+      const editor = document.getElementById('prompt-modal-editor');
+      if (!editor) return;
+      const val = editor.value;
+      const target = '## B. 訪談前準備討論逐字稿';
+      const idx = val.indexOf(target);
+      if (idx !== -1) {
+        const start = idx + target.length + 1;
+        editor.focus();
+        editor.setSelectionRange(start, start);
+        const ratio = idx / val.length;
+        editor.scrollTop = editor.scrollHeight * ratio;
+        showToast('已定位至逐字稿填寫區', 'amber');
+      }
+    }
+
+    function jumpToInputSection() {
+      const editor = document.getElementById('prompt-modal-editor');
+      if (!editor) return;
+      const val = editor.value;
+      let target = '# 輸入資料';
+      let idx = val.indexOf(target);
+      if (idx === -1) {
+        target = '## A. 結構化輸入';
+        idx = val.indexOf(target);
+      }
+      if (idx === -1) {
+        target = '## 1. 專案願景';
+        idx = val.indexOf(target);
+      }
+      if (idx === -1) {
+        target = '## 1. P24 訪綱初稿';
+        idx = val.indexOf(target);
+      }
+      if (idx !== -1) {
+        editor.focus();
+        editor.setSelectionRange(idx, idx + target.length);
+        const ratio = idx / val.length;
+        editor.scrollTop = editor.scrollHeight * ratio;
+        showToast('已前往輸入資料區塊', 'amber');
+      } else {
+        showToast('本 Prompt 已在編輯範圍內', 'slate');
+      }
+    }
+
+    function handlePromptEditorInput(e) {
+      if (!currentViewingPrompt) return;
+      const editor = e.target;
+      const val = editor.value;
+      const badgeEl = document.getElementById('prompt-modal-badge');
+      const statusText = document.getElementById('prompt-custom-status-text');
+
+      if (val === currentViewingPrompt.content) {
+        removePromptDraft(currentViewingPrompt.id);
+        if (badgeEl) {
+          badgeEl.innerText = 'AI 指令';
+          badgeEl.className = 'px-2.5 py-1 rounded-md text-xs font-bold text-white bg-amber-500 flex-shrink-0';
+        }
+        if (statusText) statusText.innerText = '未修改 (原版)';
+      } else {
+        savePromptDraft(currentViewingPrompt.id, val);
+        if (badgeEl) {
+          badgeEl.innerText = '已自訂修改';
+          badgeEl.className = 'px-2.5 py-1 rounded-md text-xs font-bold text-white bg-indigo-600 flex-shrink-0';
+        }
+        if (statusText) statusText.innerText = "已自訂 (" + val.length + " 字)";
+      }
+
+      if (currentViewingPrompt.id === 'prompt-p24-interview-draft') {
+        let role = 'BA';
+        if (/主要視角：【SA/i.test(val)) role = 'SA';
+        else if (/主要視角：【SD/i.test(val)) role = 'SD';
+        else if (/主要視角：【UR/i.test(val)) role = 'UR';
+        else if (/主要視角：【BA/i.test(val)) role = 'BA';
+        p24CurrentRole = role;
+        updateP24RoleButtonsUI(role);
+      }
+
+      const currentSlide = SLIDES_DATA[currentSlideIndex - 1];
+      if (currentSlide) renderTeamTaskPrompts(currentSlide);
+    }
+
+    function resetCurrentPromptToDefault() {
+      if (!currentViewingPrompt) return;
+      if (!confirm("確定要將「" + currentViewingPrompt.title + "」還原為原版嗎？\n您目前的自訂修改將會被清除。")) {
+        return;
+      }
+      removePromptDraft(currentViewingPrompt.id);
+      const editor = document.getElementById('prompt-modal-editor');
+      if (editor) editor.value = currentViewingPrompt.content;
+
+      if (currentViewingPrompt.id === 'prompt-p24-interview-draft') {
+        initP24SandboxControls(currentViewingPrompt.content);
+      }
+
+      const badgeEl = document.getElementById('prompt-modal-badge');
+      if (badgeEl) {
+        badgeEl.innerText = 'AI 指令';
+        badgeEl.className = 'px-2.5 py-1 rounded-md text-xs font-bold text-white bg-amber-500 flex-shrink-0';
+      }
+      const statusText = document.getElementById('prompt-custom-status-text');
+      if (statusText) statusText.innerText = '未修改 (原版)';
+
+      const currentSlide = SLIDES_DATA[currentSlideIndex - 1];
+      if (currentSlide) renderTeamTaskPrompts(currentSlide);
+
+      showToast('已還原為原版 Prompt', 'slate');
+    }
+
+    function jumpToNextPlaceholder() {
+      const editor = document.getElementById('prompt-modal-editor');
+      if (!editor) return;
+      const val = editor.value;
+      const startPos = editor.selectionEnd || 0;
+      let nextOpen = val.indexOf('【', startPos);
+      let nextClose = -1;
+      if (nextOpen !== -1) {
+        nextClose = val.indexOf('】', nextOpen);
+      }
+      if (nextOpen === -1 || nextClose === -1) {
+        nextOpen = val.indexOf('【', 0);
+        if (nextOpen !== -1) nextClose = val.indexOf('】', nextOpen);
+      }
+      if (nextOpen !== -1 && nextClose !== -1) {
+        editor.focus();
+        editor.setSelectionRange(nextOpen, nextClose + 1);
+        showToast('已定位到填寫處', 'amber');
+      } else {
+        showToast('本 Prompt 無更多【...】佔位符號', 'slate');
+      }
+    }
+
     function closePromptModal() {
       const modal = document.getElementById('prompt-preview-modal');
       if (modal) modal.classList.add('hidden');
       currentViewingPrompt = null;
+      currentViewingPromptSlideIndex = null;
     }
 
     function isPromptModalOpen() {
@@ -1389,25 +2214,1031 @@
     }
 
     function copyCurrentModalPrompt() {
-      if (!currentViewingPrompt) return;
+      const editor = document.getElementById('prompt-modal-editor');
+      if (!editor || !currentViewingPrompt) return;
+      let text = editor.value;
+
+      // P24 智慧輸入模式判定
+      if (currentViewingPrompt.id === 'prompt-p24-interview-draft') {
+        const secAIndex = text.indexOf('## A. 結構化輸入');
+        const secBIndex = text.indexOf('## B. 訪談前準備討論逐字稿');
+        const secCIndex = text.indexOf('## C. 補充資料與修正說明');
+
+        let hasSecA = false;
+        let hasSecB = false;
+
+        if (secAIndex !== -1 && secBIndex !== -1) {
+          const secAText = text.substring(secAIndex, secBIndex);
+          const cleanedA = secAText
+            .replace(/## A\. 結構化輸入/g, '')
+            .replace(/\d+\.\s*[^：]+：/g, '')
+            .replace(/【請填寫】/g, '')
+            .replace(/【請填寫或貼上】/g, '')
+            .replace(/【有特殊分工時補充，主要視角以上方設定為準】/g, '')
+            .replace(/【可留空】/g, '')
+            .trim();
+          hasSecA = cleanedA.length > 5;
+        }
+
+        if (secBIndex !== -1) {
+          const endIdx = (secCIndex !== -1) ? secCIndex : text.length;
+          const secBText = text.substring(secBIndex, endIdx);
+          const cleanedB = secBText
+            .replace(/## B\. 訪談前準備討論逐字稿/g, '')
+            .replace(/【口述模式請貼在這裡；不是正式受訪者的訪談紀錄】/g, '')
+            .trim();
+          hasSecB = cleanedB.length > 5;
+        }
+
+        let detectedMode = '結構化填寫';
+        if (hasSecA && hasSecB) {
+          detectedMode = '兩者並用';
+        } else if (hasSecB) {
+          detectedMode = '口述逐字稿';
+        } else if (hasSecA) {
+          detectedMode = '結構化填寫';
+        } else {
+          detectedMode = (p24CurrentMode === 'transcript') ? '口述逐字稿' : '結構化填寫';
+        }
+
+        if (/輸入模式：【[^】]*】/.test(text)) {
+          text = text.replace(/輸入模式：【[^】]*】/, "輸入模式：【" + detectedMode + "】");
+        }
+        editor.value = text;
+        savePromptDraft(currentViewingPrompt.id, text);
+      }
+
       const handleSuccess = () => {
         const btnText = document.getElementById('btn-modal-copy-prompt-text');
         if (btnText) {
+          const oldText = btnText.innerText;
           btnText.innerText = '✓ 已複製！';
           setTimeout(() => {
-            btnText.innerText = '複製完整 Prompt';
+            btnText.innerText = oldText;
           }, 2000);
         }
-        showToast(`已成功複製「${currentViewingPrompt.title}」！`);
+        showToast('已成功複製完整 Prompt 全文！');
       };
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(currentViewingPrompt.content).then(handleSuccess).catch(() => {
-          fallbackCopyText(currentViewingPrompt.content, handleSuccess);
+        navigator.clipboard.writeText(text).then(handleSuccess).catch(() => {
+          fallbackCopyPrompt(editor);
         });
       } else {
-        fallbackCopyText(currentViewingPrompt.content, handleSuccess);
+        fallbackCopyPrompt(editor);
       }
+    }
+
+    function fallbackCopyPrompt(editor) {
+      if (editor) {
+        editor.focus();
+        editor.select();
+      }
+      try {
+        const ok = document.execCommand('copy');
+        if (ok) {
+          showToast('已成功複製完整 Prompt 全文！');
+          return;
+        }
+      } catch(e) {}
+      showToast('已為您全選文字，請直接按下 Ctrl+C (或 ⌘+C) 複製！', 'amber');
+    }
+
+    // --- 多分頁與跨裝置極速同步頻道 (BroadcastChannel + LocalStorage + Firestore) ---
+    const workshopSyncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('ai_arm_workshop_sync') : null;
+    if (workshopSyncChannel) {
+      workshopSyncChannel.onmessage = (event) => {
+        const data = event.data;
+        if (!data) return;
+
+        // 1. 即時情緒反應漂浮同步
+        if (data.type === 'SLIDE_REACTION' && data.slideIndex === currentSlideIndex) {
+          spawnReactionParticle(data.emoji, data.x, data.y);
+        }
+        // 2. 新便利貼提問送達 (同步清單、更新標籤、彈出即時提示 Toast)
+        else if (data.type === 'NEW_QUESTION') {
+          if (data.slideIndex === currentSlideIndex) {
+            currentSlideQuestions = data.list || currentSlideQuestions;
+            saveLocalSlideQuestions(currentSlideIndex, currentSlideQuestions);
+            renderSlideQuestions();
+            updateSlideQuestionsBadge();
+          } else if (data.slideIndex && data.list) {
+            saveLocalSlideQuestions(data.slideIndex, data.list);
+          }
+          showIncomingQuestionToast(data.question);
+        }
+        // 3. 便利貼狀態變更 (點讚、標記解答、刪除)
+        else if (data.type === 'UPDATE_QUESTIONS') {
+          if (data.slideIndex === currentSlideIndex) {
+            currentSlideQuestions = data.list || currentSlideQuestions;
+            saveLocalSlideQuestions(currentSlideIndex, currentSlideQuestions);
+            renderSlideQuestions();
+            updateSlideQuestionsBadge();
+          } else if (data.slideIndex && data.list) {
+            saveLocalSlideQuestions(data.slideIndex, data.list);
+          }
+        }
+        // 4. 全域倒數計時器同步 (開始、暫停、重設、時間到)
+        else if (data.type === 'TIMER_SYNC') {
+          handleRemoteTimerSync(data);
+        }
+      };
+    }
+
+    // ========================================================
+    // 全域課堂倒數計時器 (Global Workshop Timer)
+    // ========================================================
+    const workshopTimer = {
+      totalSeconds: 600,       // 預設 10 分鐘
+      remainingSeconds: 600,
+      isRunning: false,
+      isBigDisplay: false,
+      intervalId: null
+    };
+
+    function formatTimerDigits(totalSec) {
+      const s = Math.max(0, Math.floor(totalSec));
+      const m = Math.floor(s / 60);
+      const remS = s % 60;
+      return {
+        minStr: String(m).padStart(2, '0'),
+        secStr: String(remS).padStart(2, '0'),
+        fullStr: `${String(m).padStart(2, '0')}:${String(remS).padStart(2, '0')}`
+      };
+    }
+
+    function updateTimerUI() {
+      const { minStr, secStr, fullStr } = formatTimerDigits(workshopTimer.remainingSeconds);
+
+      // 1. 頂部導覽列計時器顯示
+      const headerDisplay = document.getElementById('header-timer-display');
+      const headerToggleIcon = document.getElementById('header-timer-toggle-icon');
+      const headerPill = document.getElementById('btn-global-timer');
+
+      if (headerDisplay) headerDisplay.innerText = fullStr;
+      if (headerToggleIcon) {
+        headerToggleIcon.setAttribute('data-lucide', workshopTimer.isRunning ? 'pause' : 'play');
+      }
+      if (headerPill) {
+        if (workshopTimer.isRunning) {
+          headerPill.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 text-xs font-bold transition-all shadow-xs ring-2 ring-amber-400/40 select-none';
+        } else if (workshopTimer.remainingSeconds <= 0) {
+          headerPill.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-700 text-xs font-bold transition-all shadow-xs ring-2 ring-rose-400/40 animate-pulse select-none';
+        } else {
+          headerPill.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-all shadow-2xs select-none';
+        }
+      }
+
+      // 2. 懸浮大螢幕倒數顯示 (若開啟)
+      const bigDisplay = document.getElementById('floating-big-timer-display');
+      const bigToggleIcon = document.getElementById('floating-timer-toggle-icon');
+      if (bigDisplay) bigDisplay.innerText = fullStr;
+      if (bigToggleIcon) {
+        bigToggleIcon.setAttribute('data-lucide', workshopTimer.isRunning ? 'pause' : 'play');
+      }
+
+      // 3. 設定 Modal 內數字與進度條
+      const modalMin = document.getElementById('modal-timer-min');
+      const modalSec = document.getElementById('modal-timer-sec');
+      const modalProgress = document.getElementById('modal-timer-progress');
+      const modalStatus = document.getElementById('modal-timer-status-badge');
+      const modalMainText = document.getElementById('modal-timer-main-text');
+      const modalMainIcon = document.getElementById('modal-timer-main-icon');
+
+      if (modalMin) modalMin.innerText = minStr;
+      if (modalSec) modalSec.innerText = secStr;
+      if (modalProgress && workshopTimer.totalSeconds > 0) {
+        const pct = Math.max(0, Math.min(100, (workshopTimer.remainingSeconds / workshopTimer.totalSeconds) * 100));
+        modalProgress.style.width = `${pct}%`;
+        modalProgress.className = (pct < 15) ? 'bg-rose-500 h-full rounded-full transition-all duration-300' : 'bg-amber-500 h-full rounded-full transition-all duration-300';
+      }
+
+      if (modalStatus) {
+        if (workshopTimer.isRunning) {
+          modalStatus.innerText = '倒數中...';
+          modalStatus.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse';
+        } else if (workshopTimer.remainingSeconds <= 0) {
+          modalStatus.innerText = '時間已到';
+          modalStatus.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300';
+        } else if (workshopTimer.remainingSeconds < workshopTimer.totalSeconds) {
+          modalStatus.innerText = '已暫停';
+          modalStatus.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300';
+        } else {
+          modalStatus.innerText = '待命中';
+          modalStatus.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200';
+        }
+      }
+
+      if (modalMainText) {
+        modalMainText.innerText = workshopTimer.isRunning ? '暫停倒數' : '開始倒數';
+      }
+      if (modalMainIcon) {
+        modalMainIcon.setAttribute('data-lucide', workshopTimer.isRunning ? 'pause' : 'play');
+      }
+
+      if (window.lucide) {
+        if (headerPill) lucide.createIcons({ scope: headerPill });
+        const bigContainer = document.getElementById('slide-floating-big-timer');
+        if (bigContainer) lucide.createIcons({ scope: bigContainer });
+        const modalPanel = document.getElementById('timer-modal-panel');
+        if (modalPanel) lucide.createIcons({ scope: modalPanel });
+      }
+    }
+
+    function startTimerTick() {
+      if (workshopTimer.intervalId) clearInterval(workshopTimer.intervalId);
+      workshopTimer.isRunning = true;
+      updateTimerUI();
+
+      workshopTimer.intervalId = setInterval(() => {
+        if (workshopTimer.remainingSeconds > 0) {
+          workshopTimer.remainingSeconds--;
+          updateTimerUI();
+
+          if (workshopTimer.remainingSeconds <= 0) {
+            clearInterval(workshopTimer.intervalId);
+            workshopTimer.intervalId = null;
+            workshopTimer.isRunning = false;
+            onTimerComplete();
+          }
+        } else {
+          clearInterval(workshopTimer.intervalId);
+          workshopTimer.intervalId = null;
+          workshopTimer.isRunning = false;
+        }
+      }, 1000);
+    }
+
+    function pauseTimer(broadcast = true) {
+      if (workshopTimer.intervalId) {
+        clearInterval(workshopTimer.intervalId);
+        workshopTimer.intervalId = null;
+      }
+      workshopTimer.isRunning = false;
+      updateTimerUI();
+
+      if (broadcast && workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'TIMER_SYNC',
+          action: 'PAUSE',
+          totalSeconds: workshopTimer.totalSeconds,
+          remainingSeconds: workshopTimer.remainingSeconds
+        });
+      }
+    }
+
+    function startTimer(broadcast = true) {
+      if (workshopTimer.remainingSeconds <= 0) {
+        workshopTimer.remainingSeconds = workshopTimer.totalSeconds || 600;
+      }
+      startTimerTick();
+
+      if (broadcast && workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'TIMER_SYNC',
+          action: 'START',
+          totalSeconds: workshopTimer.totalSeconds,
+          remainingSeconds: workshopTimer.remainingSeconds
+        });
+      }
+    }
+
+    function toggleTimerPlayPause(e) {
+      if (e) e.stopPropagation();
+      if (workshopTimer.isRunning) {
+        pauseTimer(true);
+        showToast('計時器已暫停', 'amber');
+      } else {
+        startTimer(true);
+        showToast('計時器開始倒數', 'emerald');
+      }
+    }
+
+    function toggleTimerPlayPauseFromModal() {
+      toggleTimerPlayPause();
+    }
+
+    function resetTimerAction(broadcast = true) {
+      if (workshopTimer.intervalId) {
+        clearInterval(workshopTimer.intervalId);
+        workshopTimer.intervalId = null;
+      }
+      workshopTimer.isRunning = false;
+      workshopTimer.remainingSeconds = workshopTimer.totalSeconds;
+      updateTimerUI();
+
+      if (broadcast && workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'TIMER_SYNC',
+          action: 'RESET',
+          totalSeconds: workshopTimer.totalSeconds,
+          remainingSeconds: workshopTimer.remainingSeconds
+        });
+      }
+      showToast('計時器已重設', 'slate');
+    }
+
+    function setTimerPreset(seconds, broadcast = true) {
+      pauseTimer(false);
+      workshopTimer.totalSeconds = seconds;
+      workshopTimer.remainingSeconds = seconds;
+      updateTimerUI();
+
+      if (broadcast && workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'TIMER_SYNC',
+          action: 'SET',
+          totalSeconds: seconds,
+          remainingSeconds: seconds
+        });
+      }
+    }
+
+    function adjustTimerSeconds(deltaSec, broadcast = true) {
+      const newSec = Math.max(30, workshopTimer.remainingSeconds + deltaSec);
+      workshopTimer.remainingSeconds = newSec;
+      if (newSec > workshopTimer.totalSeconds) {
+        workshopTimer.totalSeconds = newSec;
+      }
+      updateTimerUI();
+
+      if (broadcast && workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'TIMER_SYNC',
+          action: 'SET',
+          totalSeconds: workshopTimer.totalSeconds,
+          remainingSeconds: workshopTimer.remainingSeconds
+        });
+      }
+    }
+
+    function toggleBigClockDisplay(force) {
+      const el = document.getElementById('slide-floating-big-timer');
+      const btnText = document.getElementById('btn-big-clock-text');
+      if (!el) return;
+      const shouldShow = (force !== undefined) ? force : el.classList.contains('hidden');
+      if (shouldShow) {
+        el.classList.remove('hidden');
+        workshopTimer.isBigDisplay = true;
+        if (btnText) btnText.innerText = '關閉大螢幕時鐘';
+      } else {
+        el.classList.add('hidden');
+        workshopTimer.isBigDisplay = false;
+        if (btnText) btnText.innerText = '開啟大螢幕時鐘';
+      }
+      if (window.lucide) lucide.createIcons({ scope: el });
+    }
+
+    function openTimerModal() {
+      const modal = document.getElementById('timer-settings-modal');
+      const panel = document.getElementById('timer-modal-panel');
+      if (!modal || !panel) return;
+      updateTimerUI();
+      modal.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        panel.classList.remove('scale-95', 'opacity-0');
+        panel.classList.add('scale-100', 'opacity-100');
+      });
+      if (window.lucide) lucide.createIcons({ scope: modal });
+    }
+
+    function closeTimerModal() {
+      const modal = document.getElementById('timer-settings-modal');
+      const panel = document.getElementById('timer-modal-panel');
+      if (!modal || !panel) return;
+      panel.classList.remove('scale-100', 'opacity-100');
+      panel.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 200);
+    }
+
+    function playTimerAlarmSound() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        const playNote = (freq, start, dur) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, start);
+          
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.28, start + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(start);
+          osc.stop(start + dur);
+        };
+
+        const t = ctx.currentTime;
+        // 經典水晶音效 / 課堂頌缽音階 (E5 -> G#5 -> B5 -> E6)
+        playNote(659.25, t + 0.0, 1.0);
+        playNote(830.61, t + 0.25, 1.0);
+        playNote(987.77, t + 0.5, 1.5);
+        playNote(1318.51, t + 0.75, 2.2);
+
+        // 重複第二聲增強提醒度
+        playNote(987.77, t + 1.8, 1.0);
+        playNote(830.61, t + 2.05, 1.0);
+        playNote(659.25, t + 2.3, 1.5);
+        playNote(1318.51, t + 2.55, 2.6);
+      } catch(e) {
+        console.warn("AudioContext error:", e);
+      }
+    }
+
+    function onTimerComplete(broadcast = true) {
+      playTimerAlarmSound();
+
+      // 1. 彈出醒目時間到 Modal
+      const alarmModal = document.getElementById('timer-alarm-modal');
+      if (alarmModal) {
+        alarmModal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons({ scope: alarmModal });
+      }
+
+      // 2. 螢幕全場噴發慶祝/提醒粒子 (時鐘、彩帶、拍手、煙火)
+      if (typeof spawnReactionParticle === 'function') {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        spawnReactionParticle('⏰', w * 0.3, h * 0.7);
+        spawnReactionParticle('🎉', w * 0.5, h * 0.7);
+        spawnReactionParticle('👏', w * 0.7, h * 0.7);
+        setTimeout(() => {
+          spawnReactionParticle('🎆', w * 0.4, h * 0.6);
+          spawnReactionParticle('🎆', w * 0.6, h * 0.6);
+        }, 400);
+      }
+
+      if (broadcast && workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'TIMER_SYNC',
+          action: 'FINISHED',
+          totalSeconds: workshopTimer.totalSeconds,
+          remainingSeconds: 0
+        });
+      }
+    }
+
+    function dismissTimerAlarm() {
+      const alarmModal = document.getElementById('timer-alarm-modal');
+      if (alarmModal) alarmModal.classList.add('hidden');
+      resetTimerAction(true);
+    }
+
+    function extendTimer(seconds) {
+      dismissTimerAlarm();
+      setTimerPreset(seconds, true);
+      startTimer(true);
+      showToast(`已加時 ${Math.round(seconds / 60)} 分鐘，繼續倒數！`, 'amber');
+    }
+
+    function handleRemoteTimerSync(data) {
+      if (!data) return;
+      if (data.action === 'START') {
+        workshopTimer.totalSeconds = data.totalSeconds || workshopTimer.totalSeconds;
+        workshopTimer.remainingSeconds = data.remainingSeconds || workshopTimer.remainingSeconds;
+        startTimerTick();
+      } else if (data.action === 'PAUSE') {
+        if (workshopTimer.intervalId) {
+          clearInterval(workshopTimer.intervalId);
+          workshopTimer.intervalId = null;
+        }
+        workshopTimer.isRunning = false;
+        workshopTimer.remainingSeconds = data.remainingSeconds;
+        updateTimerUI();
+      } else if (data.action === 'RESET') {
+        if (workshopTimer.intervalId) {
+          clearInterval(workshopTimer.intervalId);
+          workshopTimer.intervalId = null;
+        }
+        workshopTimer.isRunning = false;
+        workshopTimer.remainingSeconds = data.remainingSeconds || workshopTimer.totalSeconds;
+        updateTimerUI();
+      } else if (data.action === 'SET') {
+        workshopTimer.totalSeconds = data.totalSeconds;
+        workshopTimer.remainingSeconds = data.remainingSeconds;
+        updateTimerUI();
+      } else if (data.action === 'FINISHED') {
+        if (workshopTimer.intervalId) {
+          clearInterval(workshopTimer.intervalId);
+          workshopTimer.intervalId = null;
+        }
+        workshopTimer.isRunning = false;
+        workshopTimer.remainingSeconds = 0;
+        updateTimerUI();
+        onTimerComplete(false);
+      }
+    }
+
+    // 跨視窗 LocalStorage 事件監聽 (備用相容)
+    window.addEventListener('storage', (e) => {
+      if (e.key === `ai_arm_slide_questions_p${currentSlideIndex}`) {
+        try {
+          const list = JSON.parse(e.newValue);
+          if (Array.isArray(list)) {
+            currentSlideQuestions = list;
+            renderSlideQuestions();
+            updateSlideQuestionsBadge();
+          }
+        } catch (err) {}
+      }
+    });
+
+    // --- 課堂即時情緒微互動 (愛心、煙火、讚、拍手、靈感、驚艷) ---
+    const REACTION_EMOJIS = {
+      heart: '❤️',
+      firework: '🎆',
+      thumbsup: '👍',
+      clap: '👏',
+      bulb: '💡',
+      mindblown: '🤯'
+    };
+
+    function sendSlideReaction(type, event) {
+      const emoji = REACTION_EMOJIS[type] || '❤️';
+      let originX = window.innerWidth / 2;
+      let originY = window.innerHeight - 80;
+
+      if (event && event.clientX) {
+        originX = event.clientX;
+        originY = event.clientY;
+      }
+
+      // 1. 本地立即噴出
+      spawnReactionParticle(emoji, originX, originY);
+
+      // 2. 本地多分頁極速廣播 (同台電腦模擬投影 0ms 噴出)
+      if (workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'SLIDE_REACTION',
+          slideIndex: currentSlideIndex,
+          emoji: emoji,
+          x: originX,
+          y: originY
+        });
+      }
+
+      // 3. 雲端同步 (跨裝置學生送出的反應)
+      try {
+        if (db && typeof db.collection === 'function') {
+          db.collection(NOTES_COLLECTION).doc('ai_arm_reaction_latest').set({
+            type: type,
+            emoji: emoji,
+            slideIndex: currentSlideIndex,
+            xRatio: originX / window.innerWidth,
+            yRatio: originY / window.innerHeight,
+            timestamp: Date.now()
+          });
+        }
+      } catch (err) {}
+    }
+
+    function spawnReactionParticle(emoji, x, y) {
+      const container = document.getElementById('reactions-particle-container');
+      if (!container) return;
+
+      const particle = document.createElement('div');
+      particle.className = 'reaction-particle';
+      particle.innerText = emoji;
+
+      const rect = container.getBoundingClientRect();
+      const posX = (x - rect.left) || (rect.width / 2);
+      const posY = (y - rect.top) || (rect.height - 40);
+
+      particle.style.left = `${posX}px`;
+      particle.style.top = `${posY}px`;
+
+      const dx = (Math.random() - 0.5) * 80;
+      const dx2 = dx + (Math.random() - 0.5) * 120;
+      const dx3 = dx2 + (Math.random() - 0.5) * 80;
+      const rot = (Math.random() - 0.5) * 30;
+      const rot2 = (Math.random() - 0.5) * 45;
+      const rot3 = (Math.random() - 0.5) * 60;
+
+      particle.style.setProperty('--dx', `${dx}px`);
+      particle.style.setProperty('--dx2', `${dx2}px`);
+      particle.style.setProperty('--dx3', `${dx3}px`);
+      particle.style.setProperty('--rot', `${rot}deg`);
+      particle.style.setProperty('--rot2', `${rot2}deg`);
+      particle.style.setProperty('--rot3', `${rot3}deg`);
+
+      container.appendChild(particle);
+
+      setTimeout(() => {
+        if (particle.parentNode) particle.parentNode.removeChild(particle);
+      }, 1900);
+    }
+
+    function initReactionStreamListener() {
+      if (reactionStreamUnsubscribe) return;
+      if (db && typeof db.collection === 'function') {
+        try {
+          reactionStreamUnsubscribe = db.collection(NOTES_COLLECTION).doc('ai_arm_reaction_latest')
+            .onSnapshot(doc => {
+              if (doc.exists) {
+                const data = doc.data();
+                if (data && data.slideIndex === currentSlideIndex && (Date.now() - (data.timestamp || 0) < 3000)) {
+                  const x = (data.xRatio || 0.5) * window.innerWidth;
+                  const y = (data.yRatio || 0.8) * window.innerHeight;
+                  spawnReactionParticle(data.emoji || '❤️', x, y);
+                }
+              }
+            }, err => {});
+        } catch (err) {}
+      }
+    }
+
+    // --- 投影片專屬提問與便利貼看板 ---
+    let selectedStickyColor = 'yellow';
+    let currentSlideQuestions = [];
+    let slideQuestionsUnsubscribe = null;
+    let reactionStreamUnsubscribe = null;
+
+    function getQuestionsDocKey(slideIndex) {
+      return `ai_arm_questions_p${slideIndex}`;
+    }
+
+    function toggleSlideQuestionsDrawer(forceOpen) {
+      const modal = document.getElementById('slide-questions-modal');
+      if (!modal) return;
+      const shouldOpen = (forceOpen !== undefined) ? forceOpen : modal.classList.contains('hidden');
+      if (shouldOpen) {
+        modal.classList.remove('hidden');
+        const titleEl = document.getElementById('slide-questions-title');
+        if (titleEl) titleEl.innerText = `P${String(currentSlideIndex).padStart(2,'0')} 課堂提問與便利貼`;
+        renderSlideQuestions();
+        setTimeout(() => {
+          const input = document.getElementById('slide-question-input');
+          if (input) input.focus();
+        }, 100);
+      } else {
+        modal.classList.add('hidden');
+      }
+      if (window.lucide) lucide.createIcons({ scope: modal });
+    }
+
+    function selectStickyColor(color) {
+      selectedStickyColor = color;
+      const colors = ['yellow', 'pink', 'blue', 'green'];
+      colors.forEach(c => {
+        const btn = document.getElementById(`sticky-color-${c}`);
+        if (btn) {
+          if (c === color) {
+            btn.classList.add('ring-2', 'ring-amber-400/60', 'scale-110');
+          } else {
+            btn.classList.remove('ring-2', 'ring-amber-400/60', 'scale-110');
+          }
+        }
+      });
+    }
+
+    function postSlideQuestion() {
+      const input = document.getElementById('slide-question-input');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) {
+        showToast('請先輸入問題或心得內容', 'amber');
+        return;
+      }
+
+      const newQuestion = {
+        id: 'q_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        slideIndex: currentSlideIndex,
+        text: text,
+        author: currentUser ? currentUser.name : '學員',
+        team: activeTeamId,
+        color: selectedStickyColor || 'yellow',
+        likes: 0,
+        likedBy: [],
+        resolved: false,
+        createdAt: Date.now()
+      };
+
+      currentSlideQuestions.unshift(newQuestion);
+      saveLocalSlideQuestions(currentSlideIndex, currentSlideQuestions);
+
+      input.value = '';
+      renderSlideQuestions();
+      updateSlideQuestionsBadge();
+
+      // 1. 本地多分頁 0ms 極速廣播
+      if (workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'NEW_QUESTION',
+          slideIndex: currentSlideIndex,
+          question: newQuestion,
+          list: currentSlideQuestions
+        });
+      }
+
+      // 2. 雲端同步至 Firestore (全班同學/講師同步)
+      syncQuestionsToFirestore(currentSlideIndex, 'add', newQuestion);
+
+      showToast('便利貼已張貼！全班皆可看到', 'emerald');
+    }
+
+    function syncQuestionsToFirestore(slideIndex, action, newQ) {
+      if (db && typeof db.collection === 'function') {
+        try {
+          db.collection(NOTES_COLLECTION).doc(getQuestionsDocKey(slideIndex)).set({
+            questions: currentSlideQuestions,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastAction: action,
+            lastQuestion: newQ || null
+          }, { merge: true }).catch(err => {
+            console.warn("Firestore questions set warning:", err);
+          });
+        } catch (err) {
+          console.warn("Firestore questions sync error:", err);
+        }
+      }
+    }
+
+    function loadSlideQuestions(slideIndex) {
+      if (slideQuestionsUnsubscribe) {
+        slideQuestionsUnsubscribe();
+        slideQuestionsUnsubscribe = null;
+      }
+
+      // 1. 先讀取本地暫存，確保 0 秒無感切換
+      const localData = localStorage.getItem(`ai_arm_slide_questions_p${slideIndex}`);
+      if (localData) {
+        try {
+          currentSlideQuestions = JSON.parse(localData);
+        } catch (e) {
+          currentSlideQuestions = [];
+        }
+      } else {
+        currentSlideQuestions = [];
+      }
+      renderSlideQuestions();
+      updateSlideQuestionsBadge();
+
+      // 2. 監聽雲端 Firestore
+      if (db && typeof db.collection === 'function') {
+        try {
+          const docRef = db.collection(NOTES_COLLECTION).doc(getQuestionsDocKey(slideIndex));
+          slideQuestionsUnsubscribe = docRef.onSnapshot(doc => {
+            if (doc.exists) {
+              const data = doc.data();
+              const list = Array.isArray(data.questions) ? data.questions : [];
+              // 若收到新問題且非自己所發，提示 Toast
+              if (list.length > currentSlideQuestions.length && currentSlideQuestions.length > 0) {
+                const newest = list[0];
+                if (newest && (!currentUser || newest.author !== currentUser.name)) {
+                  showIncomingQuestionToast(newest);
+                }
+              }
+              currentSlideQuestions = list;
+              saveLocalSlideQuestions(slideIndex, currentSlideQuestions);
+              renderSlideQuestions();
+              updateSlideQuestionsBadge();
+            }
+          }, err => {
+            console.warn("Firestore questions subscription warning:", err);
+          });
+        } catch (err) {}
+      }
+    }
+
+    function saveLocalSlideQuestions(slideIndex, list) {
+      try {
+        localStorage.setItem(`ai_arm_slide_questions_p${slideIndex}`, JSON.stringify(list));
+      } catch (e) {}
+    }
+
+    function updateSlideQuestionsBadge() {
+      const count = currentSlideQuestions.length;
+
+      // 底部浮動 Dock 標籤與啟動按鈕
+      const badge = document.getElementById('slide-questions-count-badge');
+      const btn = document.getElementById('slide-questions-btn');
+      if (badge) {
+        badge.innerText = count;
+        badge.className = (count > 0) 
+          ? 'px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[10px] font-mono font-bold ring-2 ring-amber-300/60 animate-pulse'
+          : 'px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-300 text-[10px] font-mono font-bold';
+      }
+      if (btn) {
+        if (count > 0) {
+          btn.classList.add('ring-2', 'ring-amber-300/90', 'shadow-md');
+        } else {
+          btn.classList.remove('ring-2', 'ring-amber-300/90', 'shadow-md');
+        }
+      }
+    }
+
+    let latestIncomingQuestion = null;
+
+    function formatTime(timestamp) {
+      if (!timestamp) return '';
+      const d = new Date(timestamp);
+      if (isNaN(d.getTime())) return '';
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    function handleIncomingQuestionClick() {
+      if (latestIncomingQuestion && latestIncomingQuestion.slideIndex && latestIncomingQuestion.slideIndex !== currentSlideIndex) {
+        jumpToSlide(latestIncomingQuestion.slideIndex);
+      }
+      toggleSlideQuestionsDrawer(true);
+      dismissIncomingQuestionToast();
+    }
+
+    function showIncomingQuestionToast(q) {
+      if (!q) return;
+      latestIncomingQuestion = q;
+      const toast = document.getElementById('incoming-question-toast');
+      const txt = document.getElementById('incoming-question-text');
+      const meta = document.getElementById('incoming-question-meta');
+      const actionTxt = document.getElementById('incoming-question-action-text');
+      if (!toast || !txt) return;
+
+      txt.innerText = q.text || '';
+      const teamName = getTeamDisplayName(q.team || 'team-1');
+      const isOtherSlide = (q.slideIndex && q.slideIndex !== currentSlideIndex);
+
+      if (meta) {
+        meta.innerText = isOtherSlide 
+          ? `${teamName} · ${q.author || '學員'} (在 P${String(q.slideIndex).padStart(2,'0')})`
+          : `${teamName} · ${q.author || '學員'}`;
+      }
+
+      if (actionTxt) {
+        actionTxt.innerText = isOtherSlide ? `前往 P${String(q.slideIndex).padStart(2,'0')} 查看` : '查看便利貼';
+      }
+
+      toast.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        toast.classList.remove('scale-95', 'opacity-0');
+        toast.classList.add('scale-100', 'opacity-100');
+      });
+
+      if (window._incomingQuestionTimeout) clearTimeout(window._incomingQuestionTimeout);
+      window._incomingQuestionTimeout = setTimeout(() => {
+        dismissIncomingQuestionToast();
+      }, 7000);
+
+      if (window.lucide) lucide.createIcons({ scope: toast });
+    }
+
+    function dismissIncomingQuestionToast() {
+      const toast = document.getElementById('incoming-question-toast');
+      if (!toast) return;
+      toast.classList.remove('scale-100', 'opacity-100');
+      toast.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 300);
+    }
+
+    function renderSlideQuestions() {
+      const container = document.getElementById('slide-questions-list');
+      if (!container) return;
+
+      if (currentSlideQuestions.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 shadow-2xs">
+              <i data-lucide="help-circle" class="w-6 h-6"></i>
+            </div>
+            <p class="text-xs font-bold text-slate-600">本頁目前尚無便利貼提問</p>
+            <p class="text-[11px] text-slate-400 leading-relaxed">有疑問或想法隨時在上方貼出，各組皆可在投影或手機上即時討論！</p>
+          </div>
+        `;
+        if (window.lucide) lucide.createIcons({ scope: container });
+        return;
+      }
+
+      const colorStyles = {
+        yellow: 'bg-amber-50 border-amber-200 text-amber-950',
+        pink: 'bg-pink-50 border-pink-200 text-pink-950',
+        blue: 'bg-sky-50 border-sky-200 text-sky-950',
+        green: 'bg-emerald-50 border-emerald-200 text-emerald-950'
+      };
+
+      const pinColors = {
+        yellow: 'bg-amber-400',
+        pink: 'bg-pink-400',
+        blue: 'bg-sky-400',
+        green: 'bg-emerald-400'
+      };
+
+      container.innerHTML = '';
+      currentSlideQuestions.forEach(q => {
+        const card = document.createElement('div');
+        const cardCls = colorStyles[q.color] || colorStyles.yellow;
+        const pinCls = pinColors[q.color] || pinColors.yellow;
+        const isLiked = currentUser && Array.isArray(q.likedBy) && q.likedBy.includes(currentUser.name);
+
+        card.className = `p-3.5 rounded-2xl border shadow-xs relative flex flex-col gap-2.5 transition-all ${cardCls} ${q.resolved ? 'opacity-70 bg-slate-50 border-slate-200 text-slate-600' : ''}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+              <span class="w-2.5 h-2.5 rounded-full ${pinCls} flex-shrink-0"></span>
+              <span class="font-bold text-xs truncate">${escapeHtml(q.author || '學員')}</span>
+              <span class="text-[10px] px-1.5 py-0.2 rounded bg-black/5 font-bold">${escapeHtml(getTeamDisplayName(q.team || 'team-1'))}</span>
+              ${q.resolved ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i>已解答</span>' : ''}
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button onclick="toggleResolveSlideQuestion('${q.id}')" class="px-2 py-1 rounded-lg hover:bg-black/5 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 ${q.resolved ? 'text-slate-600 hover:text-slate-900' : 'text-emerald-700 hover:text-emerald-800'}" title="${q.resolved ? '恢復為待解答' : '標記為已解答'}">
+                <i data-lucide="${q.resolved ? 'rotate-ccw' : 'check-circle-2'}" class="w-3.5 h-3.5"></i>
+                <span class="text-[11px]">${q.resolved ? '重啟' : '已解答'}</span>
+              </button>
+              <button onclick="deleteSlideQuestion('${q.id}')" class="p-1 rounded-lg hover:bg-rose-100 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer" title="刪除此便利貼">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <p class="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed select-text font-sans font-medium ${q.resolved ? 'line-through text-slate-400' : ''}">${escapeHtml(q.text)}</p>
+
+          <div class="flex items-center justify-between pt-1.5 border-t border-black/5 text-[11px] text-slate-500">
+            <span class="font-mono text-[10px]">${formatTime(q.createdAt)}</span>
+            <button onclick="likeSlideQuestion('${q.id}')" class="px-2.5 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 active:scale-95 flex items-center gap-1 transition-all cursor-pointer font-bold ${isLiked ? 'text-rose-600 bg-rose-50 border border-rose-200' : 'text-slate-600'}">
+              <i data-lucide="thumbs-up" class="w-3 h-3 ${isLiked ? 'fill-rose-600' : ''}"></i>
+              <span>${q.likes || 0}</span>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      if (window.lucide) lucide.createIcons({ scope: container });
+    }
+
+    function likeSlideQuestion(qId) {
+      const q = currentSlideQuestions.find(x => x.id === qId);
+      if (!q) return;
+      const myName = currentUser ? currentUser.name : '學員';
+      if (!Array.isArray(q.likedBy)) q.likedBy = [];
+      if (q.likedBy.includes(myName)) {
+        q.likedBy = q.likedBy.filter(x => x !== myName);
+        q.likes = Math.max(0, (q.likes || 1) - 1);
+      } else {
+        q.likedBy.push(myName);
+        q.likes = (q.likes || 0) + 1;
+      }
+
+      saveLocalSlideQuestions(currentSlideIndex, currentSlideQuestions);
+      renderSlideQuestions();
+
+      if (workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'UPDATE_QUESTIONS',
+          slideIndex: currentSlideIndex,
+          list: currentSlideQuestions
+        });
+      }
+
+      syncQuestionsToFirestore(currentSlideIndex, 'like');
+    }
+
+    function toggleResolveSlideQuestion(qId) {
+      const q = currentSlideQuestions.find(x => x.id === qId);
+      if (!q) return;
+      q.resolved = !q.resolved;
+
+      saveLocalSlideQuestions(currentSlideIndex, currentSlideQuestions);
+      renderSlideQuestions();
+
+      if (workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'UPDATE_QUESTIONS',
+          slideIndex: currentSlideIndex,
+          list: currentSlideQuestions
+        });
+      }
+
+      syncQuestionsToFirestore(currentSlideIndex, 'resolve');
+      showToast(q.resolved ? '已標記為已解答！' : '已恢復為待解答', 'slate');
+    }
+
+    function deleteSlideQuestion(qId) {
+      currentSlideQuestions = currentSlideQuestions.filter(x => x.id !== qId);
+      saveLocalSlideQuestions(currentSlideIndex, currentSlideQuestions);
+      renderSlideQuestions();
+      updateSlideQuestionsBadge();
+
+      if (workshopSyncChannel) {
+        workshopSyncChannel.postMessage({
+          type: 'UPDATE_QUESTIONS',
+          slideIndex: currentSlideIndex,
+          list: currentSlideQuestions
+        });
+      }
+
+      syncQuestionsToFirestore(currentSlideIndex, 'delete');
+      showToast('便利貼已刪除', 'slate');
     }
 
     // --- 實戰案例圖庫與燈箱互動控制器 ---
@@ -2244,8 +4075,6 @@
     }
 
     // --- Firebase 逐頁綁定與鎖定 (一頁一筆記) ---
-    const NOTES_COLLECTION = 'aigile_boards';
-
     function getDocKey() {
       const slide = SLIDES_DATA[currentSlideIndex - 1];
       return `ai_arm_note_${slide.id}_${activeTeamId}`;
@@ -2549,11 +4378,15 @@
 
     function getAttachmentCategory(fileType, fileName) {
       const ext = (fileName.split('.').pop() || '').toLowerCase();
-      if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) || (fileType && fileType.startsWith('image/'))) return 'image';
+      if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp'].includes(ext) || (fileType && fileType.startsWith('image/'))) return 'image';
       if (ext === 'pdf' || fileType === 'application/pdf') return 'pdf';
       if (['doc', 'docx'].includes(ext) || (fileType && (fileType.includes('word') || fileType.includes('officedocument.wordprocessingml')))) return 'word';
+      if (['ppt', 'pptx'].includes(ext) || (fileType && (fileType.includes('presentation') || fileType.includes('powerpoint')))) return 'ppt';
       if (['xls', 'xlsx', 'csv'].includes(ext) || (fileType && (fileType.includes('sheet') || fileType.includes('excel') || fileType.includes('csv')))) return 'excel';
       if (['html', 'htm'].includes(ext) || fileType === 'text/html') return 'html';
+      if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext) || (fileType && fileType.includes('zip'))) return 'archive';
+      if (['drawio', 'vsdx'].includes(ext)) return 'diagram';
+      if (['json', 'js', 'ts', 'py', 'txt', 'md'].includes(ext)) return 'code';
       return 'other';
     }
 
@@ -2890,6 +4723,22 @@
             badgeColorClass = 'border-indigo-200 bg-indigo-50/40 text-indigo-900';
             iconHtml = `<div class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="code-2" class="w-3.5 h-3.5"></i></div>`;
             break;
+          case 'ppt':
+            badgeColorClass = 'border-orange-200 bg-orange-50/40 text-orange-900';
+            iconHtml = `<div class="w-6 h-6 rounded-md bg-orange-100 text-orange-700 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="presentation" class="w-3.5 h-3.5"></i></div>`;
+            break;
+          case 'archive':
+            badgeColorClass = 'border-purple-200 bg-purple-50/40 text-purple-900';
+            iconHtml = `<div class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="archive" class="w-3.5 h-3.5"></i></div>`;
+            break;
+          case 'diagram':
+            badgeColorClass = 'border-teal-200 bg-teal-50/40 text-teal-900';
+            iconHtml = `<div class="w-6 h-6 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="shapes" class="w-3.5 h-3.5"></i></div>`;
+            break;
+          case 'code':
+            badgeColorClass = 'border-slate-300 bg-slate-100 text-slate-800';
+            iconHtml = `<div class="w-6 h-6 rounded-md bg-slate-200 text-slate-800 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="file-code" class="w-3.5 h-3.5"></i></div>`;
+            break;
           default:
             iconHtml = `<div class="w-6 h-6 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0 shadow-2xs"><i data-lucide="file" class="w-3.5 h-3.5"></i></div>`;
         }
@@ -3155,8 +5004,10 @@
           closeTeamDropdown();
           closePrintNotesModal();
           closeAgreementModal();
+          closeAssetsModal();
           closeExampleLightbox();
           closePromptModal();
+          toggleSlideQuestionsDrawer(false);
           closeAttachmentImageModal();
           closeAttachmentHtmlModal();
           closeAttachmentPdfModal();
@@ -3350,6 +5201,466 @@
       }
 
       if (window.lucide) lucide.createIcons();
+    }
+
+    // ==========================================
+    // --- AI-ARM 全流程資產庫 (Prompt & 工具清單) ---
+    // ==========================================
+
+    const AI_ARM_PROMPTS_CATALOG = [
+      {
+        stage: "WHY: 商業目標與願景",
+        stageCode: "WHY",
+        color: "amber",
+        items: [
+          {
+            id: "prompt-1-vision",
+            code: "P1.1A",
+            name: "主管初步訪談與痛點萃取 Prompt",
+            status: "ready",
+            slideIndex: 11,
+            desc: "以敏捷需求訪談框架，提煉核心使用者、痛點、假說與驗收目標。"
+          },
+          {
+            id: "prompt-2-six-dimension",
+            code: "P1.1B",
+            name: "產品六大維度願景說明書 Prompt",
+            status: "ready",
+            slideIndex: 11,
+            desc: "以敏捷產品經理六大核心維度（Users, Needs, Scope, Features, Discriminator, Measurements）深度萃取願景說明書。"
+          },
+          {
+            id: "prompt-3-vision-poster",
+            code: "P1.1C",
+            name: "一頁式願景資訊海報 Prompt (NotebookLM 風格)",
+            status: "ready",
+            slideIndex: 11,
+            desc: "將六大維度願景轉譯為具備 5 大敘事原型的單頁資訊海報（Markdown / 自適應 HTML 雙模），凝聚團隊北極星共識。"
+          },
+          {
+            id: "prompt-1-2-context",
+            code: "P1.2",
+            name: "Context 系統邊界圖 (In/Out 邊界) Prompt",
+            status: "planned",
+            desc: "由願景範圍推導出系統邊界、外部相依與 In/Out 對照表，產出 Mermaid 系統邊界圖。"
+          }
+        ]
+      },
+      {
+        stage: "WHO: 行為者與權限",
+        stageCode: "WHO",
+        color: "blue",
+        items: [
+          {
+            id: "prompt-p24-interview-draft",
+            code: "P1.3A",
+            name: "專業角色訪綱設計 Prompt (初稿)",
+            status: "ready",
+            slideIndex: 24,
+            desc: "選定 BA/SA/SD/UR 視角，輸入專案背景或逐字稿，設計半結構化訪綱初稿與背景待補事項。"
+          },
+          {
+            id: "prompt-1-3-stakeholder",
+            code: "P1.3B",
+            name: "Stakeholder 角色輪廓與 RACI 權限矩陣 Prompt",
+            status: "planned",
+            desc: "盤點主要角色、業務職責、關鍵利害關係人與 RACI 權限矩陣，產出訪綱指引。"
+          }
+        ]
+      },
+      {
+        stage: "HOW: 4 大核心需求建模",
+        stageCode: "HOW",
+        color: "emerald",
+        items: [
+          {
+            id: "prompt-p27a-desk-research",
+            code: "P2.0A",
+            name: "桌上研究與背景整理 Prompt",
+            status: "ready",
+            slideIndex: 27,
+            desc: "先整理資料與來源，區分已知、缺口、矛盾與待驗證事項，產出研究整理與修訂交接包。"
+          },
+          {
+            id: "prompt-p27b-interview-revision",
+            code: "P2.0B",
+            name: "依研究結果修訂訪綱 Prompt",
+            status: "ready",
+            slideIndex: 27,
+            desc: "結合 P24 初稿與 P27A 研究結果，產出可追溯、可執行的完整修訂版訪談大綱。"
+          },
+          {
+            id: "prompt-2-1-process",
+            code: "P2.1",
+            name: "Process 流程模型 (泳道圖) Prompt",
+            status: "planned",
+            desc: "梳理使用者任務工作流、Happy Path、分支與例外事件，產出 Mermaid 泳道流程圖。"
+          },
+          {
+            id: "prompt-2-2-decision",
+            code: "P2.2",
+            name: "Decision 決策模型 (決策表) Prompt",
+            status: "planned",
+            desc: "將複雜商業規則與判斷條件化為二維標準決策表，進行無關標記化簡，沉澱核心業務規則。"
+          },
+          {
+            id: "prompt-2-3-data",
+            code: "P2.3",
+            name: "Data 資料模型 (資料字典約束) Prompt",
+            status: "planned",
+            desc: "萃取實體欄位、資料型別、長度限制與 Validation Rules，產出 SA/SD 共用語彙規格表。"
+          },
+          {
+            id: "prompt-2-4-state",
+            code: "P2.4",
+            name: "State 狀態模型 (狀態轉換矩陣 STM) Prompt",
+            status: "planned",
+            desc: "識別實體生命週期事件、定義合法狀態轉移與非法防禦阻擋，產出 STM 矩陣與狀態機圖。"
+          }
+        ]
+      },
+      {
+        stage: "WHAT: 原型、切片與任務拆解",
+        stageCode: "WHAT",
+        color: "rose",
+        items: [
+          {
+            id: "prompt-3-1-screenflow",
+            code: "P3.1",
+            name: "Screen Flow 畫面流動圖 Prompt",
+            status: "planned",
+            desc: "結合流程與狀態模型，轉化為系統頁面導航拓撲與操作動線。"
+          },
+          {
+            id: "prompt-3-2-interactionspec",
+            code: "P3.2",
+            name: "UI 互動規格書 (Interaction Spec) Prompt",
+            status: "planned",
+            desc: "結合欄位規則、按鈕事件、狀態判斷與 API Payload 預期之結構化 UI 規格書。"
+          },
+          {
+            id: "prompt-4-1-proto-brief",
+            code: "P4.1",
+            name: "Prototype Brief 原型設定包 Prompt",
+            status: "planned",
+            desc: "定義 Clickable 原型範圍、核心使用者旅程與假說驗證邊界。"
+          },
+          {
+            id: "prompt-4-2-vibe-coding",
+            code: "P4.2",
+            name: "Vibe Coding 原型代碼生成 Prompt",
+            status: "planned",
+            desc: "透過 AI 生成單一 HTML + Tailwind CSS + JS 互動式原型，進行黑箱走查與正確性驗收。"
+          },
+          {
+            id: "prompt-5-1-split",
+            code: "P5.1",
+            name: "SPLIT 增量垂直切片地圖 Prompt",
+            status: "planned",
+            desc: "以 4 大切片手法切出一個 Sprint 內可完成且具垂直商業價值的 MVP 切片地圖。"
+          },
+          {
+            id: "prompt-5-2-ready-story",
+            code: "P5.2",
+            name: "Ready User Story & Given-When-Then AC Prompt",
+            status: "planned",
+            desc: "將切片寫成符合 INVEST 原則的故事，並定義無爭議的 Given-When-Then 驗收準則。"
+          },
+          {
+            id: "prompt-6-1-task-list",
+            code: "P6.1",
+            name: "4 維度 Task List 任務拆解 Prompt",
+            status: "planned",
+            desc: "將 Ready Story 拆成 UI / Logic / Data / Test 四維度開發任務，銜接團隊分工與 SA/SD 協作。"
+          }
+        ]
+      }
+    ];
+
+    const AI_ARM_TOOLS_CATALOG = [
+      {
+        id: "tool-decision-table",
+        name: "決策表建模工具 (Decision Table)",
+        badge: "規則解耦",
+        badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
+        icon: "🔲",
+        url: "decision-table/decision-table.html",
+        target: "_blank",
+        desc: "多條件、多動作之商業規則視覺化解耦工具。支援無關標記化簡、衝突檢驗與測試案例反向生成，告別散文規格漏失。",
+        actionText: "開啟決策表 ↗"
+      },
+      {
+        id: "tool-stm",
+        name: "狀態轉換矩陣 (STM)",
+        badge: "生命週期防禦",
+        badgeColor: "bg-indigo-100 text-indigo-800 border-indigo-200",
+        icon: "🔄",
+        url: "status-transition-matrix/status-transition-matrix.html",
+        target: "_blank",
+        desc: "實體狀態生命週期二維矩陣。清楚定義每一事件在各狀態下的合法流轉與非法阻擋，杜絕狀態機邏輯漏洞。",
+        actionText: "開啟狀態矩陣 ↗"
+      },
+      {
+        id: "tool-event-stormer",
+        name: "Event Stormer 事件風暴白板",
+        badge: "流程主幹梳理",
+        badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
+        icon: "🧱",
+        url: "event-stormer/event-stormer.html",
+        target: "_blank",
+        desc: "以橘色領域事件（Domain Events）、藍色命令（Commands）與黃色角色（Actors）迅速梳理端到端業務主幹工作流。",
+        actionText: "開啟 Event Stormer ↗"
+      },
+      {
+        id: "tool-whiteboard",
+        name: "小組專屬共享線上白板 (Team Board)",
+        badge: "8000px 大畫布",
+        badgeColor: "bg-purple-100 text-purple-800 border-purple-200",
+        icon: "🎨",
+        customAction: "openTeamWhiteboard()",
+        desc: "專屬大畫布即時協作連線、雙向箭頭連接線、圖片卡片燈箱、3M 品牌配色便利貼，整門課程小組共創的核心實作場域。",
+        actionText: "進入本組白板 ↗"
+      },
+      {
+        id: "tool-slot-1",
+        isSlot: true,
+        name: "預留工具擴充槽 (Reserved Slot 1)",
+        badge: "可隨時掛載",
+        badgeColor: "bg-slate-100 text-slate-500 border-slate-200",
+        icon: "➕",
+        desc: "此處已為您後續提供的新工具預留標準插槽。可隨時掛載獨立 HTML 工具、外部驗證鏈結或資料輔助應用。",
+        actionText: "待掛載"
+      },
+      {
+        id: "tool-slot-2",
+        isSlot: true,
+        name: "預留工具擴充槽 (Reserved Slot 2)",
+        badge: "可隨時掛載",
+        badgeColor: "bg-slate-100 text-slate-500 border-slate-200",
+        icon: "➕",
+        desc: "支援後續由老師或團隊陸續開放的專屬輔助工具（如資料字典檢驗器、規格轉譯工具等）。",
+        actionText: "待掛載"
+      }
+    ];
+
+    let currentAssetsTab = 'prompts'; // 'prompts' or 'tools'
+
+    function isAssetsModalOpen() {
+      const modal = document.getElementById('assets-modal');
+      return modal && !modal.classList.contains('hidden');
+    }
+
+    function openAssetsModal(initialTab = 'prompts') {
+      const modal = document.getElementById('assets-modal');
+      if (!modal) return;
+      switchAssetsTab(initialTab);
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeAssetsModal() {
+      const modal = document.getElementById('assets-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function switchAssetsTab(tab) {
+      currentAssetsTab = tab;
+      const btnPrompts = document.getElementById('btn-assets-tab-prompts');
+      const btnTools = document.getElementById('btn-assets-tab-tools');
+      const viewPrompts = document.getElementById('assets-view-prompts');
+      const viewTools = document.getElementById('assets-view-tools');
+
+      if (tab === 'prompts') {
+        if (btnPrompts) btnPrompts.className = "px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-indigo-700 shadow-2xs";
+        if (btnTools) btnTools.className = "px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900";
+        if (viewPrompts) viewPrompts.classList.remove('hidden');
+        if (viewTools) viewTools.classList.add('hidden');
+        renderAssetsPrompts();
+      } else {
+        if (btnPrompts) btnPrompts.className = "px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900";
+        if (btnTools) btnTools.className = "px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-indigo-700 shadow-2xs";
+        if (viewPrompts) viewPrompts.classList.add('hidden');
+        if (viewTools) viewTools.classList.remove('hidden');
+        renderAssetsTools();
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderAssetsPrompts() {
+      const container = document.getElementById('assets-view-prompts');
+      if (!container) return;
+      container.innerHTML = '';
+
+      AI_ARM_PROMPTS_CATALOG.forEach(cat => {
+        const sec = document.createElement('div');
+        sec.className = 'bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden';
+
+        let headerColorClass = 'bg-slate-50 text-slate-800 border-slate-200';
+        if (cat.color === 'amber') headerColorClass = 'bg-amber-50/80 text-amber-950 border-amber-200/80';
+        if (cat.color === 'blue') headerColorClass = 'bg-sky-50/80 text-sky-950 border-sky-200/80';
+        if (cat.color === 'emerald') headerColorClass = 'bg-emerald-50/80 text-emerald-950 border-emerald-200/80';
+        if (cat.color === 'rose') headerColorClass = 'bg-rose-50/80 text-rose-950 border-rose-200/80';
+
+        let itemsHtml = '';
+        cat.items.forEach(item => {
+          const isReady = (item.status === 'ready');
+          
+          let actionButtons = '';
+          if (isReady && item.slideIndex) {
+            actionButtons = `
+              <div class="flex items-center gap-1.5 flex-shrink-0 mt-2 sm:mt-0">
+                <button onclick="copyCatalogPromptById('${item.id}', '${item.slideIndex}')" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold text-xs border border-indigo-200 flex items-center gap-1 transition-all cursor-pointer shadow-2xs" title="一鍵複製完整 Prompt">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  <span>複製</span>
+                </button>
+                <button onclick="viewCatalogPromptById('${item.id}', '${item.slideIndex}')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 flex items-center gap-1 transition-all cursor-pointer shadow-2xs" title="預覽 Prompt 全文">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  <span>預覽</span>
+                </button>
+                <button onclick="jumpToSlide(${item.slideIndex}); closeAssetsModal();" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-2xs" title="前往投影片實作">
+                  <span>直達 P${String(item.slideIndex).padStart(2,'0')}</span>
+                  <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                </button>
+              </div>
+            `;
+          } else {
+            actionButtons = `
+              <div class="flex items-center gap-1 flex-shrink-0 mt-2 sm:mt-0">
+                <span class="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 font-medium border border-slate-200">依進度解鎖</span>
+              </div>
+            `;
+          }
+
+          const statusBadge = isReady
+            ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>已就緒</span>`
+            : `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 border border-slate-200">規劃中</span>`;
+
+          itemsHtml += `
+            <div class="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70 transition-colors">
+              <div class="space-y-1 min-w-0 pr-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-mono text-xs font-black px-1.5 py-0.5 rounded bg-slate-900 text-white">${item.code}</span>
+                  <h4 class="font-bold text-slate-900 text-xs sm:text-sm truncate">${item.name}</h4>
+                  ${statusBadge}
+                </div>
+                <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed">${item.desc}</p>
+              </div>
+              ${actionButtons}
+            </div>
+          `;
+        });
+
+        sec.innerHTML = `
+          <div class="px-3.5 py-2 border-b ${headerColorClass} flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-xs font-black px-2 py-0.5 rounded bg-white/80 shadow-2xs">${cat.stageCode}</span>
+              <span class="font-bold text-xs sm:text-sm">${cat.stage}</span>
+            </div>
+            <span class="text-[11px] opacity-75 font-mono">${cat.items.length} 項目</span>
+          </div>
+          <div>${itemsHtml}</div>
+        `;
+        container.appendChild(sec);
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderAssetsTools() {
+      const container = document.getElementById('assets-view-tools');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const grid = document.createElement('div');
+      grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4';
+
+      AI_ARM_TOOLS_CATALOG.forEach(tool => {
+        const card = document.createElement('div');
+        if (tool.isSlot) {
+          card.className = 'rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/40 p-4 flex flex-col justify-between space-y-3';
+        } else {
+          card.className = 'rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-3';
+        }
+
+        let actionBtn = '';
+        if (tool.isSlot) {
+          actionBtn = `
+            <span class="text-xs text-slate-400 font-medium px-3 py-1.5 rounded-xl bg-slate-100 text-center block w-full">
+              待提供後續工具時掛載
+            </span>
+          `;
+        } else if (tool.customAction) {
+          actionBtn = `
+            <button onclick="${tool.customAction}; closeAssetsModal();" class="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+              <span>${tool.actionText}</span>
+            </button>
+          `;
+        } else {
+          actionBtn = `
+            <a href="${tool.url}" target="${tool.target || '_blank'}" class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+              <span>${tool.actionText}</span>
+            </a>
+          `;
+        }
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-2.5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-lg flex-shrink-0 shadow-2xs">
+                  ${tool.icon}
+                </div>
+                <div>
+                  <h4 class="font-bold text-slate-900 text-sm leading-tight">${tool.name}</h4>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${tool.badgeColor || 'bg-slate-100 text-slate-600 border-slate-200'} mt-1 inline-block">
+                    ${tool.badge}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">${tool.desc}</p>
+          </div>
+          <div class="pt-1">${actionBtn}</div>
+        `;
+        grid.appendChild(card);
+      });
+
+      container.appendChild(grid);
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function copyCatalogPromptById(promptId, slideIndex) {
+      const sIdx = parseInt(slideIndex, 10);
+      const slide = SLIDES_DATA[sIdx - 1];
+      if (!slide || !slide.prompts) return;
+      const p = slide.prompts.find(x => x.id === promptId);
+      if (!p) return;
+
+      const savedContent = getSavedPromptDraft(p.id);
+      const isCustom = (savedContent !== null && savedContent !== p.content);
+      const contentToCopy = (savedContent !== null) ? savedContent : p.content;
+
+      const handleSuccess = () => {
+        showToast("已成功複製「" + p.title + "」" + (isCustom ? ' (已自訂版)' : '') + "！");
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(contentToCopy).then(handleSuccess).catch(() => {
+          fallbackCopyText(contentToCopy, handleSuccess);
+        });
+      } else {
+        fallbackCopyText(contentToCopy, handleSuccess);
+      }
+    }
+
+    function viewCatalogPromptById(promptId, slideIndex) {
+      const sIdx = parseInt(slideIndex, 10);
+      const slide = SLIDES_DATA[sIdx - 1];
+      if (!slide || !slide.prompts) return;
+      const pIndex = slide.prompts.findIndex(x => x.id === promptId);
+      if (pIndex === -1) return;
+      
+      openPromptModal(pIndex, sIdx);
     }
 
     function toggleFullScreen() {
@@ -3651,6 +5962,7 @@
       setupKeyboardShortcuts();
       setupTouchGestures();
       checkExistingAuth();
+      updateTimerUI();
       lucide.createIcons();
     });
   </script>
