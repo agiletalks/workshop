@@ -40,7 +40,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
   <!-- Slides Data -->
-  <script src="slides-data.js"></script>
+  <script src="slides-data.js?v=20260911_v3"></script>
 
   <style>
     /* 3D 翻轉筆記板 */
@@ -1515,6 +1515,7 @@
             activeTeamId = currentUser.team;
             applyUserIdentityUI();
             closeLoginModal();
+            subscribeToFirestore();
             return true;
           }
         } catch (e) {}
@@ -1740,14 +1741,10 @@
       const isTaskOrTakeAway = !!(slide.isTeamTask || slide.isTakeAway);
       applyLayoutMode(isTaskOrTakeAway);
 
-      // 依據是否為 TEAM TASK 或 TAKE AWAY 控制附件上傳區
+      // 確保隨堂筆記展開時，小組實作附件區一律可用（支援所有練習頁與任務頁上傳）
       const attachSection = document.getElementById('team-attachments-section');
       if (attachSection) {
-        if (isTaskOrTakeAway) {
-          attachSection.classList.remove('hidden');
-        } else {
-          attachSection.classList.add('hidden');
-        }
+        attachSection.classList.remove('hidden');
       }
 
       // 更新輸入框情境提示詞
@@ -4355,14 +4352,22 @@
 
     function triggerAttachmentFileInput() {
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      // 若 currentUser 尚未初始化，自動補齊以當前組別的身分，確保本機隨時可測試
       if (!currentUser) {
-        currentUser = { name: '測試組員', team: activeTeamId, loggedInAt: Date.now() };
-      } else if (isLocalHost && activeTeamId !== currentUser.team) {
-        currentUser.team = activeTeamId;
-      } else if (activeTeamId !== currentUser.team) {
-        showToast('您目前處於觀摩模式，無法上傳附件！', 'amber');
-        return;
+        if (isLocalHost) {
+          currentUser = { name: '測試組員', team: activeTeamId, loggedInAt: Date.now() };
+        } else {
+          openLoginModal(true);
+          showToast('請先加入小組，即可上傳隨堂筆記附件！', 'amber');
+          return;
+        }
+      }
+      // 若當前處於觀摩其他組別狀態，自動切回自己組別再觸發上傳，絕不阻斷學生操作
+      if (activeTeamId !== currentUser.team) {
+        activeTeamId = currentUser.team;
+        renderTeamTabs();
+        updatePermissionUI();
+        subscribeToFirestore();
+        showToast(`已自動切回您的組別（${getTeamDisplayName(currentUser.team)}），請選取附件上傳`, 'sky');
       }
       const fileInput = document.getElementById('attachment-file-input');
       if (fileInput) {
@@ -4451,13 +4456,19 @@
     async function processAndUploadFiles(files) {
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       if (!currentUser) {
-        currentUser = { name: '測試組員', team: activeTeamId, loggedInAt: Date.now() };
-      } else if (isLocalHost && activeTeamId !== currentUser.team) {
-        currentUser.team = activeTeamId;
+        if (isLocalHost) {
+          currentUser = { name: '測試組員', team: activeTeamId, loggedInAt: Date.now() };
+        } else {
+          openLoginModal(true);
+          showToast('請先加入小組，即可上傳隨堂筆記附件！', 'amber');
+          return;
+        }
       }
       if (activeTeamId !== currentUser.team) {
-        showToast('唯讀觀摩模式：無法上傳附件', 'amber');
-        return;
+        activeTeamId = currentUser.team;
+        renderTeamTabs();
+        updatePermissionUI();
+        subscribeToFirestore();
       }
 
       const progressEl = document.getElementById('attachment-upload-progress');
@@ -4526,10 +4537,39 @@
               finalUrl = await snapshot.ref.getDownloadURL();
               uploadedToCloud = true;
             } catch (storageErr) {
-              console.error("雲端 Storage 上傳失敗:", storageErr);
-              showToast(`檔案「${file.name}」上傳失敗：${storageErr.message}`, 'rose');
-              continue; // 線上若失敗則中斷，絕不假裝成功存成本地 blob 導致同組其他人看不到
+              console.warn("雲端 Storage 上傳未成功，嘗試備用通道:", storageErr);
+              // 若為圖片或小型檔案（<= 2MB），自動降級轉為 Base64 Data URL 同步至 Firestore（保證學生一定能上傳且同組同步）
+              if (file.size <= 2 * 1024 * 1024) {
+                try {
+                  finalUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsDataURL(file);
+                  });
+                  uploadedToCloud = true;
+                } catch (b64Err) {
+                  showToast(`檔案「${file.name}」上傳失敗：${storageErr.message}`, 'rose');
+                  continue;
+                }
+              } else {
+                showToast(`檔案「${file.name}」上傳失敗：${storageErr.message}`, 'rose');
+                continue;
+              }
             }
+          }
+
+          // 若 Storage 不可用但為線上環境，針對 2MB 內檔案自動以 Base64 備用通道支援
+          if (!finalUrl && !isLocalHost && file.size <= 2 * 1024 * 1024) {
+            try {
+              finalUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsDataURL(file);
+              });
+              uploadedToCloud = true;
+            } catch (b64Err) {}
           }
 
           // 本機測試模式：採用 URL.createObjectURL(file) 模式（秒級瞬間完成）
@@ -6037,12 +6077,12 @@ function copyCatalogPromptById(promptId, slideIndex) {
 
     window.addEventListener('DOMContentLoaded', () => {
       initFirebase();
+      checkExistingAuth();
       renderSlide(1);
       setupMemoListeners();
       setupAttachmentDragAndPaste();
       setupKeyboardShortcuts();
       setupTouchGestures();
-      checkExistingAuth();
       updateTimerUI();
       lucide.createIcons();
     });
