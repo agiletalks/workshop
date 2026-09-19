@@ -530,6 +530,15 @@
 
       <!-- 狀態通知橫幅區 (唯讀觀摩 / 併發鎖定提示，平時隱藏) -->
       <div id="status-banner-container" class="flex-shrink-0">
+        <!-- 班級唯讀/停用模式提示 -->
+        <div id="class-readonly-banner" class="hidden bg-rose-500 text-white px-3 py-1.5 flex items-center justify-between text-xs shadow-md">
+          <div class="flex items-center gap-1.5 font-medium">
+            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+            <span id="class-readonly-banner-text">本班級處於停用/唯讀模式（僅供觀摩，無法編輯筆記或發布內容）</span>
+          </div>
+          <span class="text-[10px] font-bold px-1.5 py-0.5 bg-rose-700/60 rounded">唯讀</span>
+        </div>
+
         <!-- 唯讀觀摩提示 -->
         <div id="readonly-banner" class="hidden bg-sky-50 border-b border-sky-100 px-3 py-1.5 flex items-center justify-between text-xs text-sky-800">
           <div class="flex items-center gap-1.5">
@@ -1216,7 +1225,7 @@
             <button type="button" onclick="selectStickyColor('blue')" id="sticky-color-blue" class="w-5 h-5 rounded-full bg-sky-200 border-2 border-transparent hover:border-sky-400 cursor-pointer" title="清新藍"></button>
             <button type="button" onclick="selectStickyColor('green')" id="sticky-color-green" class="w-5 h-5 rounded-full bg-emerald-200 border-2 border-transparent hover:border-emerald-400 cursor-pointer" title="薄荷綠"></button>
           </div>
-          <button onclick="postSlideQuestion()" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black text-xs flex items-center gap-1 shadow-xs cursor-pointer transition-all">
+          <button id="btn-post-question" onclick="postSlideQuestion()" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black text-xs flex items-center gap-1 shadow-xs cursor-pointer transition-all">
             <i data-lucide="send" class="w-3.5 h-3.5"></i>
             <span>張貼便利貼</span>
           </button>
@@ -1447,6 +1456,16 @@
     let APP_STORAGE_KEY = (currentClassId === 'default') ? "ai_arm_auth_user" : `ai_arm_auth_user_${currentClassId}`;
     const NOTES_COLLECTION = 'aigile_boards';
     const CLASSES_COLLECTION = 'ai_arm_classes';
+    let isClassReadOnly = false;
+    let classConfigUnsubscribe = null;
+    let lastKnownClearedAt = parseInt(localStorage.getItem(`ai_arm_${currentClassId}_cleared_at`) || '0', 10);
+
+    // 提問便利貼本地快取 Key (嚴格隔離班級)
+    function getQuestionsStorageKey(slideIndex) {
+      return (currentClassId === 'default')
+        ? `ai_arm_slide_questions_p${slideIndex}`
+        : `ai_arm_${currentClassId}_slide_questions_p${slideIndex}`;
+    }
 
     let currentSlideIndex = 1; // 1-based (P01 ~ P40)
     let activeTeamId = 'team-1';
@@ -1503,46 +1522,78 @@
       }
     }
 
-    // --- 班級設定與生命週期載入 ---
-    async function initClassConfig() {
+    // --- 班級設定與生命週期即時監聽 ---
+    function initClassConfig() {
       if (!db) return;
+      if (classConfigUnsubscribe) {
+        classConfigUnsubscribe();
+        classConfigUnsubscribe = null;
+      }
       try {
         const docRef = db.collection(CLASSES_COLLECTION).doc(currentClassId);
-        const docSnap = await docRef.get();
-        if (docSnap.exists) {
-          currentClassData = docSnap.data();
-          TOTAL_TEAMS = parseInt(currentClassData.teamCount, 10) || 6;
-          COURSE_PASSWORD = currentClassData.coursePassword || "agile-2026";
+        classConfigUnsubscribe = docRef.onSnapshot(docSnap => {
+          if (docSnap.exists) {
+            currentClassData = docSnap.data();
+            TOTAL_TEAMS = parseInt(currentClassData.teamCount, 10) || 6;
+            COURSE_PASSWORD = currentClassData.coursePassword || "agile-2026";
 
-          const classBadge = document.getElementById('header-class-badge');
-          if (classBadge) {
-            classBadge.innerText = currentClassData.name || currentClassId;
-            classBadge.classList.remove('hidden');
-          }
+            const classBadge = document.getElementById('header-class-badge');
+            if (classBadge) {
+              classBadge.innerText = currentClassData.name || currentClassId;
+              classBadge.classList.remove('hidden');
+            }
 
-          if (currentClassData.status === 'inactive') {
-            showClassInactiveOverlay(currentClassData.name || currentClassId);
-          }
-        } else {
-          if (currentClassId === 'default') {
-            currentClassData = {
-              id: 'default',
-              name: 'AI-ARM 示範班（預設）',
-              status: 'active',
-              teamCount: 6,
-              coursePassword: 'agile-2026',
-              createdAt: Date.now()
-            };
-            await docRef.set(currentClassData).catch(() => {});
+            // 檢查是否被講師端執行過「清空演練資料」
+            if (currentClassData.clearedAt && currentClassData.clearedAt > lastKnownClearedAt) {
+              lastKnownClearedAt = currentClassData.clearedAt;
+              try {
+                localStorage.setItem(`ai_arm_${currentClassId}_cleared_at`, String(lastKnownClearedAt));
+                for (let p = 1; p <= 50; p++) {
+                  localStorage.removeItem(getQuestionsStorageKey(p));
+                }
+              } catch (e) {}
+              loadSlideQuestions(currentSlideIndex);
+              subscribeToFirestore();
+              showToast("講師已重設/清空本班演練資料", "amber");
+            }
+
+            if (currentClassData.status === 'inactive') {
+              isClassReadOnly = true;
+              showClassInactiveOverlay(currentClassData.name || currentClassId);
+            } else {
+              isClassReadOnly = false;
+              dismissInactiveOverlay(false);
+            }
           } else {
-            console.warn(`班級【${currentClassId}】不存在於資料庫，以預設模式載入`);
+            if (currentClassId === 'default') {
+              currentClassData = {
+                id: 'default',
+                name: 'AI-ARM 示範班（預設）',
+                status: 'active',
+                teamCount: 6,
+                coursePassword: 'agile-2026',
+                createdAt: Date.now()
+              };
+              isClassReadOnly = false;
+              docRef.set(currentClassData).catch(() => {});
+            } else {
+              console.warn(`班級【${currentClassId}】不存在於資料庫，以唯讀模式載入`);
+              isClassReadOnly = true;
+              showClassInactiveOverlay(currentClassId);
+            }
           }
-        }
+          renderLoginTeamOptions();
+          renderTeamTabs();
+          updatePermissionUI();
+        }, err => {
+          console.warn("班級配置即時監聽異常:", err);
+        });
       } catch (err) {
         console.warn("無法取得班級配置，使用預設值:", err);
+        renderLoginTeamOptions();
+        renderTeamTabs();
+        updatePermissionUI();
       }
-      renderLoginTeamOptions();
-      renderTeamTabs();
     }
 
     function showClassInactiveOverlay(className) {
@@ -1556,9 +1607,11 @@
     function dismissInactiveOverlay(readOnly = false) {
       const overlay = document.getElementById('class-inactive-overlay');
       if (overlay) overlay.classList.add('hidden');
-      if (readOnly) {
-        showToast("已進入唯讀觀摩模式", "slate");
+      if (readOnly || (currentClassData && currentClassData.status === 'inactive')) {
+        isClassReadOnly = true;
+        showToast("已進入唯讀觀摩模式（僅可瀏覽，無法編輯或發布內容）", "slate");
       }
+      updatePermissionUI();
     }
 
     function updateSyncStatus(status, text) {
@@ -2398,7 +2451,8 @@
     }
 
     // --- 多分頁與跨裝置極速同步頻道 (BroadcastChannel + LocalStorage + Firestore) ---
-    const workshopSyncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('ai_arm_workshop_sync') : null;
+    const syncChannelName = (currentClassId === 'default') ? 'ai_arm_workshop_sync' : `ai_arm_workshop_sync_${currentClassId}`;
+    const workshopSyncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel(syncChannelName) : null;
     if (workshopSyncChannel) {
       workshopSyncChannel.onmessage = (event) => {
         const data = event.data;
@@ -2832,7 +2886,7 @@
 
     // 跨視窗 LocalStorage 事件監聽 (備用相容)
     window.addEventListener('storage', (e) => {
-      if (e.key === `ai_arm_slide_questions_p${currentSlideIndex}`) {
+      if (e.key === getQuestionsStorageKey(currentSlideIndex)) {
         try {
           const list = JSON.parse(e.newValue);
           if (Array.isArray(list)) {
@@ -2997,6 +3051,10 @@
     }
 
     function postSlideQuestion() {
+      if (isClassReadOnly) {
+        showToast('本班級目前處於停用/唯讀模式，無法發布提問便利貼', 'amber');
+        return;
+      }
       const input = document.getElementById('slide-question-input');
       if (!input) return;
       const text = input.value.trim();
@@ -3042,6 +3100,10 @@
     }
 
     function syncQuestionsToFirestore(slideIndex, action, newQ) {
+      if (isClassReadOnly) {
+        console.warn("班級唯讀中，略過提問雲端同步");
+        return;
+      }
       if (db && typeof db.collection === 'function') {
         try {
           db.collection(NOTES_COLLECTION).doc(getQuestionsDocKey(slideIndex)).set({
@@ -3064,8 +3126,8 @@
         slideQuestionsUnsubscribe = null;
       }
 
-      // 1. 先讀取本地暫存，確保 0 秒無感切換
-      const localData = localStorage.getItem(`ai_arm_slide_questions_p${slideIndex}`);
+      // 1. 先讀取本地暫存，確保 0 秒無感切換 (班級代碼嚴格隔離)
+      const localData = localStorage.getItem(getQuestionsStorageKey(slideIndex));
       if (localData) {
         try {
           currentSlideQuestions = JSON.parse(localData);
@@ -3097,6 +3159,12 @@
               saveLocalSlideQuestions(slideIndex, currentSlideQuestions);
               renderSlideQuestions();
               updateSlideQuestionsBadge();
+            } else {
+              // 雲端若為空（新開班級或講師執行了清空），必須徹底清空本地快取與畫面！
+              currentSlideQuestions = [];
+              saveLocalSlideQuestions(slideIndex, []);
+              renderSlideQuestions();
+              updateSlideQuestionsBadge();
             }
           }, err => {
             console.warn("Firestore questions subscription warning:", err);
@@ -3107,7 +3175,7 @@
 
     function saveLocalSlideQuestions(slideIndex, list) {
       try {
-        localStorage.setItem(`ai_arm_slide_questions_p${slideIndex}`, JSON.stringify(list));
+        localStorage.setItem(getQuestionsStorageKey(slideIndex), JSON.stringify(list));
       } catch (e) {}
     }
 
@@ -3199,6 +3267,25 @@
     }
 
     function renderSlideQuestions() {
+      const input = document.getElementById('slide-question-input');
+      const btnPost = document.getElementById('btn-post-question');
+      if (input) {
+        if (isClassReadOnly) {
+          input.disabled = true;
+          input.placeholder = "班級處於停用/唯讀模式，無法發布提問便利貼";
+        } else {
+          input.disabled = false;
+          input.placeholder = "在此輸入問題、疑問或心得便利貼...";
+        }
+      }
+      if (btnPost) {
+        if (isClassReadOnly) {
+          btnPost.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+          btnPost.classList.remove('opacity-50', 'pointer-events-none');
+        }
+      }
+
       const container = document.getElementById('slide-questions-list');
       if (!container) return;
 
@@ -3246,6 +3333,7 @@
               <span class="text-[10px] px-1.5 py-0.2 rounded bg-black/5 font-bold">${escapeHtml(getTeamDisplayName(q.team || 'team-1'))}</span>
               ${q.resolved ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i>已解答</span>' : ''}
             </div>
+            ${!isClassReadOnly ? `
             <div class="flex items-center gap-1 flex-shrink-0">
               <button onclick="toggleResolveSlideQuestion('${q.id}')" class="px-2 py-1 rounded-lg hover:bg-black/5 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 ${q.resolved ? 'text-slate-600 hover:text-slate-900' : 'text-emerald-700 hover:text-emerald-800'}" title="${q.resolved ? '恢復為待解答' : '標記為已解答'}">
                 <i data-lucide="${q.resolved ? 'rotate-ccw' : 'check-circle-2'}" class="w-3.5 h-3.5"></i>
@@ -3255,13 +3343,14 @@
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
+            ` : ''}
           </div>
 
           <p class="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed select-text font-sans font-medium ${q.resolved ? 'line-through text-slate-400' : ''}">${escapeHtml(q.text)}</p>
 
           <div class="flex items-center justify-between pt-1.5 border-t border-black/5 text-[11px] text-slate-500">
             <span class="font-mono text-[10px]">${formatTime(q.createdAt)}</span>
-            <button onclick="likeSlideQuestion('${q.id}')" class="px-2.5 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 active:scale-95 flex items-center gap-1 transition-all cursor-pointer font-bold ${isLiked ? 'text-rose-600 bg-rose-50 border border-rose-200' : 'text-slate-600'}">
+            <button onclick="likeSlideQuestion('${q.id}')" ${isClassReadOnly ? 'disabled' : ''} class="px-2.5 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 active:scale-95 flex items-center gap-1 transition-all cursor-pointer font-bold ${isLiked ? 'text-rose-600 bg-rose-50 border border-rose-200' : 'text-slate-600'} ${isClassReadOnly ? 'opacity-60 cursor-not-allowed' : ''}">
               <i data-lucide="thumbs-up" class="w-3 h-3 ${isLiked ? 'fill-rose-600' : ''}"></i>
               <span>${q.likes || 0}</span>
             </button>
@@ -3274,6 +3363,10 @@
     }
 
     function likeSlideQuestion(qId) {
+      if (isClassReadOnly) {
+        showToast('本班級目前處於停用/唯讀模式，無法點讚便利貼', 'amber');
+        return;
+      }
       const q = currentSlideQuestions.find(x => x.id === qId);
       if (!q) return;
       const myName = currentUser ? currentUser.name : '學員';
@@ -3301,6 +3394,10 @@
     }
 
     function toggleResolveSlideQuestion(qId) {
+      if (isClassReadOnly) {
+        showToast('本班級目前處於停用/唯讀模式，無法修改便利貼解答狀態', 'amber');
+        return;
+      }
       const q = currentSlideQuestions.find(x => x.id === qId);
       if (!q) return;
       q.resolved = !q.resolved;
@@ -3321,6 +3418,10 @@
     }
 
     function deleteSlideQuestion(qId) {
+      if (isClassReadOnly) {
+        showToast('本班級目前處於停用/唯讀模式，無法刪除便利貼', 'amber');
+        return;
+      }
       currentSlideQuestions = currentSlideQuestions.filter(x => x.id !== qId);
       saveLocalSlideQuestions(currentSlideIndex, currentSlideQuestions);
       renderSlideQuestions();
@@ -3966,41 +4067,52 @@
       const isMyTeam = currentUser && (activeTeamId === currentUser.team);
       const isLockedByOther = currentTeamData.lock && currentTeamData.lock.isLocked && currentTeamData.lock.lockedBy !== (currentUser ? currentUser.name : '');
 
+      const classReadonlyBanner = document.getElementById('class-readonly-banner');
       const readonlyBanner = document.getElementById('readonly-banner');
       const lockBanner = document.getElementById('lock-banner');
       const memoInput = document.getElementById('team-memo-input');
 
-      // 唯讀觀摩橫幅
-      if (!isMyTeam) {
+      // 班級唯讀模式橫幅
+      if (classReadonlyBanner) {
+        if (isClassReadOnly) {
+          classReadonlyBanner.classList.remove('hidden');
+          if (window.lucide) lucide.createIcons({ scope: classReadonlyBanner });
+        } else {
+          classReadonlyBanner.classList.add('hidden');
+        }
+      }
+
+      // 唯讀觀摩橫幅 (非本組且非班級全域唯讀時顯示)
+      if (!isMyTeam && !isClassReadOnly) {
         readonlyBanner.classList.remove('hidden');
         document.getElementById('readonly-team-name').innerText = getTeamDisplayName(activeTeamId);
       } else {
         readonlyBanner.classList.add('hidden');
       }
 
-      // 併發鎖定橫幅
-      if (isMyTeam && isLockedByOther) {
+      // 併發鎖定橫幅 (非班級全域唯讀時顯示)
+      if (isMyTeam && isLockedByOther && !isClassReadOnly) {
         lockBanner.classList.remove('hidden');
         document.getElementById('lock-username').innerText = currentTeamData.lock.lockedBy || '其他組員';
       } else {
         lockBanner.classList.add('hidden');
       }
 
-      // 輸入權限
-      const canEdit = isMyTeam && !isLockedByOther;
+      // 輸入權限 (必須是本組、未被隊友鎖定、且非班級唯讀)
+      const canEdit = isMyTeam && !isLockedByOther && !isClassReadOnly;
       memoInput.disabled = !canEdit;
       const memoWrapper = document.getElementById('memo-input-wrapper');
       if (memoWrapper) {
-        if (!isMyTeam) {
-          memoWrapper.classList.add('cursor-not-allowed');
-        } else if (isLockedByOther) {
+        if (!canEdit) {
           memoWrapper.classList.add('cursor-not-allowed');
         } else {
           memoWrapper.classList.remove('cursor-not-allowed');
         }
       }
 
-      if (!isMyTeam) {
+      if (isClassReadOnly) {
+        memoInput.placeholder = "🔒 班級已停用/唯讀模式：目前僅供瀏覽，無法編輯隨堂筆記。";
+      } else if (!isMyTeam) {
         memoInput.placeholder = "唯讀觀摩模式：此為該組同學的討論紀錄。";
       } else if (isLockedByOther) {
         memoInput.placeholder = `🔒 ${currentTeamData.lock.lockedBy} 正在編輯中，請稍候...`;
@@ -4011,7 +4123,7 @@
       // 附件操作權限控制
       const btnAddAttachment = document.getElementById('btn-add-attachment');
       if (btnAddAttachment) {
-        if (!isMyTeam) {
+        if (!isMyTeam || isClassReadOnly) {
           btnAddAttachment.classList.add('hidden');
         } else {
           btnAddAttachment.classList.remove('hidden');
@@ -4021,6 +4133,10 @@
     }
 
     function handleMemoWrapperClick(event) {
+      if (isClassReadOnly) {
+        showToast("🔒 本班級目前處於停用/唯讀模式，無法編輯隨堂筆記", "amber");
+        return;
+      }
       const isMyTeam = currentUser && (activeTeamId === currentUser.team);
       const isLockedByOther = currentTeamData.lock && currentTeamData.lock.isLocked && currentTeamData.lock.lockedBy !== (currentUser ? currentUser.name : '');
       
@@ -4085,10 +4201,9 @@
         return;
       }
 
-      let query = db.collection(PRESENCE_COLLECTION);
-      if (currentClassId !== 'default') {
-        query = query.where('classId', '==', currentClassId);
-      }
+      // 始終明確限定 classId (含 default 班級)，徹底隔絕他班同組學員！
+      let query = db.collection(PRESENCE_COLLECTION)
+        .where('classId', '==', currentClassId);
 
       presenceUnsubscribe = query
         .where('team', '==', activeTeamId)
@@ -4258,6 +4373,7 @@
     }
 
     function acquireLock() {
+      if (isClassReadOnly) return;
       if (!currentUser || activeTeamId !== currentUser.team || isHoldingLock) return;
       
       isHoldingLock = true;
@@ -4314,6 +4430,10 @@
     }
 
     function saveMemoToCloud() {
+      if (isClassReadOnly) {
+        console.warn("班級唯讀中，略過儲存隨堂筆記");
+        return;
+      }
       const docKey = getDocKey();
       try {
         localStorage.setItem(`cache_${docKey}`, JSON.stringify(currentTeamData));
@@ -4739,6 +4859,10 @@
     }
 
     function triggerAttachmentFileInput() {
+      if (isClassReadOnly) {
+        showToast('本班級目前處於停用/唯讀模式，無法上傳附件', 'amber');
+        return;
+      }
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       if (!currentUser) {
         if (isLocalHost) {
@@ -4842,6 +4966,10 @@
     }
 
     async function processAndUploadFiles(files) {
+      if (isClassReadOnly) {
+        showToast('本班級目前處於停用/唯讀模式，無法上傳附件', 'amber');
+        return;
+      }
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       if (!currentUser) {
         if (isLocalHost) {
@@ -5026,6 +5154,10 @@
     }
 
     function deleteAttachment(attachmentId) {
+      if (isClassReadOnly) {
+        showToast('本班級目前處於停用/唯讀模式，無法刪除附件', 'amber');
+        return;
+      }
       if (!currentUser || activeTeamId !== currentUser.team) {
         showToast('唯讀觀摩模式：無法刪除其他組別的附件', 'amber');
         return;
@@ -5201,7 +5333,7 @@
             <button onclick="downloadAttachment('${att.id}')" class="p-1 rounded-lg hover:bg-white/80 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" title="下載此檔案">
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
             </button>
-            ${isMyTeam ? `
+            ${(isMyTeam && !isClassReadOnly) ? `
               <button onclick="deleteAttachment('${att.id}')" class="p-1 rounded-lg hover:bg-rose-100 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer" title="刪除此附件">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>

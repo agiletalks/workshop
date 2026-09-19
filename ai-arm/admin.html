@@ -810,29 +810,56 @@
 
       try {
         const cId = targetClearClassId;
-        // 清理該班筆記與提問 (所有前綴為 ai_arm_{cId}_ 的文件)
         const batchPromises = [];
 
-        // 1. 投影片筆記 p01 ~ p46, team-1 ~ team-12
-        for (let p = 1; p <= 46; p++) {
+        // 1. 投影片筆記 p01 ~ p50, team-1 ~ team-12
+        for (let p = 1; p <= 50; p++) {
           const pageStr = `p${String(p).padStart(2, '0')}`;
           for (let t = 1; t <= 12; t++) {
             const key = (cId === 'default') ? `ai_arm_note_${pageStr}_team-${t}` : `ai_arm_${cId}_note_${pageStr}_team-${t}`;
-            batchPromises.push(db.collection(NOTES_COLLECTION).doc(key).delete().catch(() => {}));
+            batchPromises.push(db.collection(NOTES_COLLECTION).doc(key).delete());
           }
           // 提問便利貼
           const qKey = (cId === 'default') ? `ai_arm_questions_p${p}` : `ai_arm_${cId}_questions_p${p}`;
-          batchPromises.push(db.collection(NOTES_COLLECTION).doc(qKey).delete().catch(() => {}));
+          batchPromises.push(db.collection(NOTES_COLLECTION).doc(qKey).delete());
         }
 
         // 2. 白板房間 ai-arm-{cId}-team-*
         for (let t = 1; t <= 12; t++) {
           const bRoom = (cId === 'default') ? `ai-arm-team-${t}` : `ai-arm-${cId}-team-${t}`;
-          batchPromises.push(db.collection(NOTES_COLLECTION).doc(bRoom).delete().catch(() => {}));
+          batchPromises.push(db.collection(NOTES_COLLECTION).doc(bRoom).delete());
         }
 
-        await Promise.all(batchPromises);
-        showToast(`班級【${cId}】所有演練測試資料已徹底清空！`, "emerald");
+        // 3. 在線學員狀態 Presence
+        try {
+          const presSnaps = await db.collection('ai_arm_presence').where('classId', '==', cId).get();
+          presSnaps.forEach(doc => {
+            batchPromises.push(doc.ref.delete());
+          });
+        } catch (pErr) {
+          console.warn("清理 Presence 警告:", pErr);
+        }
+
+        // 4. 更新班級 clearedAt 時間戳，通知所有在線學員端客戶端自動重整/清空本機快取
+        batchPromises.push(db.collection(CLASSES_COLLECTION).doc(cId).update({
+          clearedAt: Date.now(),
+          updatedAt: Date.now()
+        }));
+
+        const results = await Promise.allSettled(batchPromises);
+        let successCount = 0;
+        let failCount = 0;
+        results.forEach(res => {
+          if (res.status === 'fulfilled') successCount++;
+          else failCount++;
+        });
+
+        if (failCount > 0) {
+          console.warn(`清空部分項目失敗 (失敗 ${failCount} 項，成功 ${successCount} 項)`);
+          showToast(`班級【${cId}】清空完成：成功 ${successCount} 項，${failCount} 項失敗（請檢查網路或權限）`, "rose");
+        } else {
+          showToast(`班級【${cId}】所有演練測試資料已徹底清空！(共 ${successCount} 項)`, "emerald");
+        }
         closeClearModal();
       } catch (err) {
         console.error("清空資料失敗:", err);
