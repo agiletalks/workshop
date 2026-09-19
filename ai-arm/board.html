@@ -253,7 +253,7 @@
 
 
   <!-- 頂部高質感玻璃帷幕工具列 (抽屜式可隱藏與釘住) -->
-  <header id="main-toolbar" class="fixed top-2 left-2 right-2 md:top-4 md:left-4 md:right-4 h-16 bg-white/80 backdrop-blur-md border border-white/40 shadow-lg rounded-2xl z-40 flex items-center justify-between px-3 md:px-6 transition-all duration-300 transform -translate-y-28 opacity-0">
+  <header id="main-toolbar" class="fixed top-2 left-2 right-2 md:top-4 md:left-4 md:right-4 h-16 bg-white/80 backdrop-blur-md border border-white/40 shadow-lg rounded-2xl z-50 flex items-center justify-between px-3 md:px-6 transition-all duration-300 transform -translate-y-28 opacity-0">
     <!-- 左側 小組專屬白板品牌區 -->
     <div class="flex items-center space-x-2.5 sm:space-x-3">
       <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md flex-shrink-0">
@@ -311,13 +311,13 @@
       <div class="h-6 w-[1px] bg-slate-300/60 mx-0.5 sm:mx-1"></div>
 
       <!-- 新增便利貼 -->
-      <button id="btn-add-note" onclick="openNoteModal('create')" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="新增便利貼 (快捷鍵: N)">
-        <i data-lucide="plus-circle" class="w-4 h-4"></i> <span class="hidden lg:inline">新增便利貼</span>
+      <button id="btn-add-note" onclick="openNoteModal('create')" class="relative z-10 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="新增便利貼 (快捷鍵: N)">
+        <i data-lucide="plus-circle" class="w-4 h-4 pointer-events-none"></i> <span class="hidden sm:inline pointer-events-none">新增便利貼</span>
       </button>
 
       <!-- 上傳圖片 (自動轉為 220x220 標準卡片) -->
-      <button id="btn-upload-image" onclick="triggerImageUpload()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="上傳圖片 (亦支援直接 Ctrl+V 貼上截圖或拖入白板)">
-        <i data-lucide="image" class="w-4 h-4"></i> <span class="hidden lg:inline">上傳圖片</span>
+      <button id="btn-upload-image" onclick="triggerImageUpload()" class="relative z-10 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="上傳圖片 (亦支援直接 Ctrl+V 貼上截圖或拖入白板)">
+        <i data-lucide="image" class="w-4 h-4 pointer-events-none"></i> <span class="hidden sm:inline pointer-events-none">上傳圖片</span>
       </button>
       <input type="file" id="board-image-file-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple class="hidden" onchange="handleImageFileInputChange(event)">
 
@@ -1061,7 +1061,12 @@
       toolbar.classList.remove('-translate-y-28', 'opacity-0', 'pointer-events-none');
       toolbar.classList.add('translate-y-0', 'opacity-100');
       
-      handle.classList.add('translate-y-[-100%]', 'opacity-0');
+      if (handle) {
+        handle.classList.add('-translate-y-full', 'opacity-0', 'pointer-events-none');
+        handle.classList.remove('pointer-events-auto');
+        handle.style.display = 'none';
+        handle.style.pointerEvents = 'none';
+      }
     }
 
     function hideToolbar() {
@@ -1072,7 +1077,12 @@
       toolbar.classList.remove('translate-y-0', 'opacity-100');
       toolbar.classList.add('-translate-y-28', 'opacity-0', 'pointer-events-none');
       
-      handle.classList.remove('translate-y-[-100%]', 'opacity-0');
+      if (handle) {
+        handle.style.display = 'flex';
+        handle.classList.remove('-translate-y-full', 'opacity-0', 'pointer-events-none');
+        handle.classList.add('pointer-events-auto');
+        handle.style.pointerEvents = 'auto';
+      }
     }
 
     function scheduleHideToolbar() {
@@ -1118,9 +1128,9 @@
       const handle = document.getElementById('toolbar-handle');
       
       const savedPin = localStorage.getItem('aigile-board-toolbar-pinned');
-      // 如果是窄螢幕（行動裝置，寬度小於 768px），則強制不釘住工具列以確保畫布操作空間
+      // 如果是窄螢幕（行動裝置，寬度小於 768px），則強制不釘住工具列以確保畫布操作空間；桌機版預設釘住以確保按鈕可見
       const isNarrowScreen = window.innerWidth < 768;
-      isToolbarPinned = isNarrowScreen ? false : (savedPin === 'true');
+      isToolbarPinned = isNarrowScreen ? (savedPin === 'true') : (savedPin !== 'false');
       
       updatePinButtonUI();
       
@@ -1227,18 +1237,17 @@
     // 更新連線與同步狀態 UI
     function setSyncStatus(status, message) {
       const badge = document.getElementById('sync-status-badge');
-      const text = document.getElementById('sync-status-text');
-      if (!badge || !text) return;
+      if (!badge) return;
 
       if (status === 'synced') {
-        badge.className = 'inline-flex items-center gap-1 font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200';
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span>${message || '已即時同步'}</span>`;
+        badge.className = 'inline-flex items-center gap-1 font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]';
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span id="sync-status-text">${message || '已即時同步'}</span>`;
       } else if (status === 'saving') {
-        badge.className = 'inline-flex items-center gap-1 font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200';
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span><span>${message || '雲端同步中...'}</span>`;
+        badge.className = 'inline-flex items-center gap-1 font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[11px]';
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span><span id="sync-status-text">${message || '雲端同步中...'}</span>`;
       } else if (status === 'offline' || status === 'error') {
-        badge.className = 'inline-flex items-center gap-1 font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200';
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span>${message || '離線 / 本機模式'}</span>`;
+        badge.className = 'inline-flex items-center gap-1 font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 text-[11px]';
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span id="sync-status-text">${message || '離線 / 本機模式'}</span>`;
       }
     }
 
