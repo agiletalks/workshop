@@ -1138,10 +1138,12 @@
       let team = params.get('team');
       let user = params.get('user');
       let room = params.get('room');
+      let classId = params.get('c') || params.get('class') || '';
 
       if (!team || !user) {
         try {
-          const saved = localStorage.getItem('ai_arm_auth_user');
+          const storageKey = classId ? `ai_arm_auth_user_${classId}` : 'ai_arm_auth_user';
+          const saved = localStorage.getItem(storageKey) || localStorage.getItem('ai_arm_auth_user');
           if (saved) {
             const parsed = JSON.parse(saved);
             if (!team && parsed.team) team = parsed.team;
@@ -1155,12 +1157,15 @@
       const teamNum = team.replace('team-', '');
       const teamDisplayName = `第 ${teamNum} 組`;
 
+      let defaultRoom = (classId && classId !== 'default') ? `ai-arm-${classId}-${team}` : `ai-arm-${team}`;
+
       return {
         teamId: team,
         teamNum: teamNum,
         teamDisplayName: teamDisplayName,
         userName: user,
-        roomId: room || `ai-arm-${team}`
+        classId: classId,
+        roomId: room || defaultRoom
       };
     }
 
@@ -1449,16 +1454,22 @@
       if (!newTeam || newTeam === TEAM_INFO.teamId) return;
       const url = new URL(window.location.href);
       url.searchParams.set('team', newTeam);
-      url.searchParams.set('room', `ai-arm-${newTeam}`);
+      const classId = TEAM_INFO.classId;
+      const roomName = (classId && classId !== 'default') ? `ai-arm-${classId}-${newTeam}` : `ai-arm-${newTeam}`;
+      url.searchParams.set('room', roomName);
+      if (classId) {
+        url.searchParams.set('c', classId);
+      }
       if (TEAM_INFO.userName) {
         url.searchParams.set('user', TEAM_INFO.userName);
       }
       try {
-        const saved = localStorage.getItem('ai_arm_auth_user');
+        const storageKey = classId ? `ai_arm_auth_user_${classId}` : 'ai_arm_auth_user';
+        const saved = localStorage.getItem(storageKey);
         if (saved) {
           const parsed = JSON.parse(saved);
           parsed.team = newTeam;
-          localStorage.setItem('ai_arm_auth_user', JSON.stringify(parsed));
+          localStorage.setItem(storageKey, JSON.stringify(parsed));
         }
       } catch(e) {}
       window.location.href = url.toString();
@@ -1467,28 +1478,46 @@
     // 動態載入各組便利貼數量至選單
     function fetchTeamNotesCounts() {
       if (!db) return;
-      const teams = ['team-1', 'team-2', 'team-3', 'team-4', 'team-5', 'team-6'];
-      teams.forEach(tId => {
-        db.collection('aigile_boards').doc(`ai-arm-${tId}`).get().then(doc => {
+      const classId = TEAM_INFO.classId;
+      const selectEl = document.getElementById('team-board-select');
+      const teamCount = (selectEl && selectEl.options.length) ? selectEl.options.length : 6;
+      for (let i = 1; i <= teamCount; i++) {
+        const tId = `team-${i}`;
+        const roomDocKey = (classId && classId !== 'default') ? `ai-arm-${classId}-${tId}` : `ai-arm-${tId}`;
+        db.collection('aigile_boards').doc(roomDocKey).get().then(doc => {
           if (doc.exists) {
             const data = doc.data();
             const notes = Array.isArray(data.notes) ? data.notes : [];
-            const selectEl = document.getElementById('team-board-select');
             if (selectEl) {
               const opt = selectEl.querySelector(`option[value="${tId}"]`);
               if (opt) {
-                const teamNum = tId.replace('team-', '');
-                opt.textContent = `第 ${teamNum} 組白板 (${notes.length} 張)`;
+                opt.textContent = `第 ${i} 組白板 (${notes.length} 張)`;
               }
             }
           }
         }).catch(() => {});
-      });
+      }
     }
 
     // --- 小組專屬白板 UI 與身分綁定 ---
-    function updateRoomUI() {
+    async function updateRoomUI() {
       const selectEl = document.getElementById('team-board-select');
+      if (selectEl && TEAM_INFO.classId && TEAM_INFO.classId !== 'default' && db) {
+        try {
+          const classDoc = await db.collection('ai_arm_classes').doc(TEAM_INFO.classId).get();
+          if (classDoc.exists) {
+            const count = classDoc.data().teamCount || 6;
+            selectEl.innerHTML = '';
+            for (let i = 1; i <= count; i++) {
+              const opt = document.createElement('option');
+              opt.value = `team-${i}`;
+              opt.textContent = `第 ${i} 組白板`;
+              selectEl.appendChild(opt);
+            }
+          }
+        } catch(e) {}
+      }
+
       if (selectEl) {
         selectEl.value = TEAM_INFO.teamId;
       }

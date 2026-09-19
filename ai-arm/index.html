@@ -187,6 +187,27 @@
 <body class="h-full bg-slate-100 text-slate-800 flex flex-col font-sans overflow-hidden">
 
   <!-- ==================== 頂部主導覽列 (自適應投影機與筆電，確保所有按鈕與身分完整呈現) ==================== -->
+  <!-- ==================== 班級已停用/未開放提示遮罩 ==================== -->
+  <div id="class-inactive-overlay" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full text-center">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4">
+        <i data-lucide="pause-circle" class="w-8 h-8"></i>
+      </div>
+      <h2 id="inactive-class-title" class="text-lg font-bold text-white mb-2">本班級課程尚未開放或已停用</h2>
+      <p class="text-xs text-slate-300 leading-relaxed mb-6">
+        此班級目前處於停用或已封存狀態。若您是本班學員，請聯繫講師確認上課時段；若您需要複習，可切換為唯讀模式。
+      </p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
+        <button onclick="dismissInactiveOverlay(true)" class="w-full sm:w-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors cursor-pointer">
+          以唯讀模式瀏覽講義
+        </button>
+        <a href="admin.html" target="_blank" class="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl transition-all shadow-md shadow-amber-500/20">
+          前往管理後台
+        </a>
+      </div>
+    </div>
+  </div>
+
   <header class="h-13 bg-white border-b border-slate-200 px-2 sm:px-3 flex items-center justify-between shadow-2xs z-30 flex-shrink-0 gap-1 overflow-x-auto scrollbar-none">
     <!-- 左側：漢堡包目錄按鈕 ＋ 標題與章節主題 -->
     <div class="flex items-center gap-1.5 flex-shrink-0 min-w-0">
@@ -201,6 +222,7 @@
         <div class="hidden lg:block">
           <h1 class="text-xs font-bold text-slate-900 leading-tight">AI 需求建模</h1>
         </div>
+        <span id="header-class-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 truncate max-w-[130px] sm:max-w-[190px]"></span>
       </div>
 
       <div class="h-4 w-[1px] bg-slate-200 hidden xl:block"></div>
@@ -288,6 +310,11 @@
       <button onclick="openLoginModal(true)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors flex-shrink-0" title="更換組別或姓名">
         <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
       </button>
+
+      <!-- 班級管理後台 -->
+      <a href="admin.html" target="_blank" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition-colors flex-shrink-0" title="開啟 AI-ARM 班級管理後台">
+        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+      </a>
 
       <!-- 全螢幕切換 -->
       <button onclick="toggleFullScreen()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors hidden sm:block flex-shrink-0" title="切換全螢幕">
@@ -1412,10 +1439,14 @@
 
   <!-- ==================== 核心邏輯 Javascript ==================== -->
   <script>
-    const COURSE_PASSWORD = "agile-2026";
-    const TOTAL_TEAMS = 6;
-    const APP_STORAGE_KEY = "ai_arm_auth_user";
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentClassId = urlParams.get('c') || urlParams.get('class') || 'default';
+    let currentClassData = null;
+    let COURSE_PASSWORD = "agile-2026";
+    let TOTAL_TEAMS = 6;
+    let APP_STORAGE_KEY = (currentClassId === 'default') ? "ai_arm_auth_user" : `ai_arm_auth_user_${currentClassId}`;
     const NOTES_COLLECTION = 'aigile_boards';
+    const CLASSES_COLLECTION = 'ai_arm_classes';
 
     let currentSlideIndex = 1; // 1-based (P01 ~ P40)
     let activeTeamId = 'team-1';
@@ -1469,6 +1500,64 @@
       } catch (err) {
         console.warn("Firebase 初始化異常:", err);
         updateSyncStatus('offline', '本地離線模式');
+      }
+    }
+
+    // --- 班級設定與生命週期載入 ---
+    async function initClassConfig() {
+      if (!db) return;
+      try {
+        const docRef = db.collection(CLASSES_COLLECTION).doc(currentClassId);
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+          currentClassData = docSnap.data();
+          TOTAL_TEAMS = parseInt(currentClassData.teamCount, 10) || 6;
+          COURSE_PASSWORD = currentClassData.coursePassword || "agile-2026";
+
+          const classBadge = document.getElementById('header-class-badge');
+          if (classBadge) {
+            classBadge.innerText = currentClassData.name || currentClassId;
+            classBadge.classList.remove('hidden');
+          }
+
+          if (currentClassData.status === 'inactive') {
+            showClassInactiveOverlay(currentClassData.name || currentClassId);
+          }
+        } else {
+          if (currentClassId === 'default') {
+            currentClassData = {
+              id: 'default',
+              name: 'AI-ARM 示範班（預設）',
+              status: 'active',
+              teamCount: 6,
+              coursePassword: 'agile-2026',
+              createdAt: Date.now()
+            };
+            await docRef.set(currentClassData).catch(() => {});
+          } else {
+            console.warn(`班級【${currentClassId}】不存在於資料庫，以預設模式載入`);
+          }
+        }
+      } catch (err) {
+        console.warn("無法取得班級配置，使用預設值:", err);
+      }
+      renderLoginTeamOptions();
+      renderTeamTabs();
+    }
+
+    function showClassInactiveOverlay(className) {
+      const overlay = document.getElementById('class-inactive-overlay');
+      const title = document.getElementById('inactive-class-title');
+      if (title) title.innerText = `【${className}】尚未開放或已停用`;
+      if (overlay) overlay.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons({ scope: overlay });
+    }
+
+    function dismissInactiveOverlay(readOnly = false) {
+      const overlay = document.getElementById('class-inactive-overlay');
+      if (overlay) overlay.classList.add('hidden');
+      if (readOnly) {
+        showToast("已進入唯讀觀摩模式", "slate");
       }
     }
 
@@ -1772,7 +1861,9 @@
 
     function getPromptStorageKey(promptId) {
       const team = (currentUser && currentUser.team) ? currentUser.team : (activeTeamId || 'team-1');
-      return "ai_arm_custom_prompt_" + promptId + "_" + team;
+      return (currentClassId === 'default')
+        ? `ai_arm_custom_prompt_${promptId}_${team}`
+        : `ai_arm_${currentClassId}_custom_prompt_${promptId}_${team}`;
     }
 
     function getSavedPromptDraft(promptId) {
@@ -2763,6 +2854,10 @@
       mindblown: '🤯'
     };
 
+    function getReactionDocKey() {
+      return (currentClassId === 'default') ? 'ai_arm_reaction_latest' : `ai_arm_${currentClassId}_reaction_latest`;
+    }
+
     function sendSlideReaction(type, event) {
       const emoji = REACTION_EMOJIS[type] || '❤️';
       let originX = window.innerWidth / 2;
@@ -2790,7 +2885,7 @@
       // 3. 雲端同步 (跨裝置學生送出的反應)
       try {
         if (db && typeof db.collection === 'function') {
-          db.collection(NOTES_COLLECTION).doc('ai_arm_reaction_latest').set({
+          db.collection(NOTES_COLLECTION).doc(getReactionDocKey()).set({
             type: type,
             emoji: emoji,
             slideIndex: currentSlideIndex,
@@ -2842,7 +2937,7 @@
       if (reactionStreamUnsubscribe) return;
       if (db && typeof db.collection === 'function') {
         try {
-          reactionStreamUnsubscribe = db.collection(NOTES_COLLECTION).doc('ai_arm_reaction_latest')
+          reactionStreamUnsubscribe = db.collection(NOTES_COLLECTION).doc(getReactionDocKey())
             .onSnapshot(doc => {
               if (doc.exists) {
                 const data = doc.data();
@@ -2864,7 +2959,7 @@
     let reactionStreamUnsubscribe = null;
 
     function getQuestionsDocKey(slideIndex) {
-      return `ai_arm_questions_p${slideIndex}`;
+      return (currentClassId === 'default') ? `ai_arm_questions_p${slideIndex}` : `ai_arm_${currentClassId}_questions_p${slideIndex}`;
     }
 
     function toggleSlideQuestionsDrawer(forceOpen) {
@@ -3583,7 +3678,9 @@
       }
       const myTeam = (typeof activeTeamId !== 'undefined' && activeTeamId) ? activeTeamId : (currentUser.team || 'team-1');
       const userName = currentUser.name || '學員';
-      const boardUrl = `board.html?room=ai-arm-${myTeam}&team=${myTeam}&user=${encodeURIComponent(userName)}`;
+      const roomPrefix = (currentClassId === 'default') ? `ai-arm-${myTeam}` : `ai-arm-${currentClassId}-${myTeam}`;
+      const classParam = (currentClassId === 'default') ? '' : `&c=${encodeURIComponent(currentClassId)}`;
+      const boardUrl = `board.html?room=${roomPrefix}&team=${myTeam}&user=${encodeURIComponent(userName)}${classParam}`;
       window.open(boardUrl, '_blank');
     }
 
@@ -3963,8 +4060,11 @@
 
     function sendPresenceHeartbeat(isOnline = true) {
       if (!db || !currentUser || !currentUser.name || !currentUser.team) return;
-      const docId = `${currentUser.team}_${encodeURIComponent(currentUser.name)}`;
+      const docId = (currentClassId === 'default')
+        ? `${currentUser.team}_${encodeURIComponent(currentUser.name)}`
+        : `${currentClassId}_${currentUser.team}_${encodeURIComponent(currentUser.name)}`;
       db.collection(PRESENCE_COLLECTION).doc(docId).set({
+        classId: currentClassId,
         team: currentUser.team,
         name: currentUser.name,
         lastSeen: Date.now(),
@@ -3985,7 +4085,12 @@
         return;
       }
 
-      presenceUnsubscribe = db.collection(PRESENCE_COLLECTION)
+      let query = db.collection(PRESENCE_COLLECTION);
+      if (currentClassId !== 'default') {
+        query = query.where('classId', '==', currentClassId);
+      }
+
+      presenceUnsubscribe = query
         .where('team', '==', activeTeamId)
         .onSnapshot(snapshot => {
           const members = [];
@@ -4079,7 +4184,10 @@
     // --- Firebase 逐頁綁定與鎖定 (一頁一筆記) ---
     function getDocKey() {
       const slide = SLIDES_DATA[currentSlideIndex - 1];
-      return `ai_arm_note_${slide.id}_${activeTeamId}`;
+      if (!currentClassId || currentClassId === 'default') {
+        return `ai_arm_note_${slide.id}_${activeTeamId}`;
+      }
+      return `ai_arm_${currentClassId}_note_${slide.id}_${activeTeamId}`;
     }
 
     function subscribeToFirestore() {
@@ -4357,13 +4465,21 @@
     // 1. 將實體檔案分塊寫入 Firestore 獨立文件（完全繞過 1MB 限制並保證穿透任何內網防火牆）
     const CHUNK_SIZE_CHARS = 500000; // 每塊約 375KB (Base64)，遠低於 1MB 限制
 
+    function getPayloadDocKey(uniqueId) {
+      return (currentClassId === 'default') ? ('att_payload_' + uniqueId) : (`att_payload_${currentClassId}_` + uniqueId);
+    }
+    function getChunkDocKey(uniqueId, idx) {
+      return (currentClassId === 'default') ? (`att_chunk_${uniqueId}_${idx}`) : (`att_chunk_${currentClassId}_${uniqueId}_${idx}`);
+    }
+
     async function saveFilePayloadToFirestore(uniqueId, file, dataUrl) {
       if (!db || !dataUrl) return false;
       try {
         const totalLen = dataUrl.length;
         if (totalLen <= CHUNK_SIZE_CHARS) {
-          await db.collection(NOTES_COLLECTION).doc('att_payload_' + uniqueId).set({
+          await db.collection(NOTES_COLLECTION).doc(getPayloadDocKey(uniqueId)).set({
             id: uniqueId,
+            classId: currentClassId,
             name: file.name,
             size: file.size,
             mime: file.type || 'application/octet-stream',
@@ -4376,8 +4492,9 @@
           for (let i = 0; i < totalLen; i += CHUNK_SIZE_CHARS) {
             chunks.push(dataUrl.slice(i, i + CHUNK_SIZE_CHARS));
           }
-          await db.collection(NOTES_COLLECTION).doc('att_payload_' + uniqueId).set({
+          await db.collection(NOTES_COLLECTION).doc(getPayloadDocKey(uniqueId)).set({
             id: uniqueId,
+            classId: currentClassId,
             name: file.name,
             size: file.size,
             mime: file.type || 'application/octet-stream',
@@ -4386,8 +4503,9 @@
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
           });
           const chunkWrites = chunks.map((chunkStr, idx) => {
-            return db.collection(NOTES_COLLECTION).doc(`att_chunk_${uniqueId}_${idx}`).set({
+            return db.collection(NOTES_COLLECTION).doc(getChunkDocKey(uniqueId, idx)).set({
               id: uniqueId,
+              classId: currentClassId,
               chunkIndex: idx,
               data: chunkStr
             });
@@ -4405,7 +4523,7 @@
     async function loadFilePayloadFromFirestore(uniqueId) {
       if (!db) return null;
       try {
-        const docRef = db.collection(NOTES_COLLECTION).doc('att_payload_' + uniqueId);
+        const docRef = db.collection(NOTES_COLLECTION).doc(getPayloadDocKey(uniqueId));
         const doc = await docRef.get();
         if (!doc.exists) return null;
         const data = doc.data();
@@ -4415,7 +4533,7 @@
         const count = data.chunksCount || 0;
         const chunkPromises = [];
         for (let i = 0; i < count; i++) {
-          chunkPromises.push(db.collection(NOTES_COLLECTION).doc(`att_chunk_${uniqueId}_${i}`).get());
+          chunkPromises.push(db.collection(NOTES_COLLECTION).doc(getChunkDocKey(uniqueId, i)).get());
         }
         const chunkDocs = await Promise.all(chunkPromises);
         const parts = [];
@@ -4436,13 +4554,13 @@
     async function deleteFilePayloadFromFirestore(uniqueId) {
       if (!db) return;
       try {
-        const docRef = db.collection(NOTES_COLLECTION).doc('att_payload_' + uniqueId);
+        const docRef = db.collection(NOTES_COLLECTION).doc(getPayloadDocKey(uniqueId));
         const doc = await docRef.get();
         if (doc.exists) {
           const data = doc.data();
           if (data.isChunked && data.chunksCount) {
             for (let i = 0; i < data.chunksCount; i++) {
-              db.collection(NOTES_COLLECTION).doc(`att_chunk_${uniqueId}_${i}`).delete().catch(() => {});
+              db.collection(NOTES_COLLECTION).doc(getChunkDocKey(uniqueId, i)).delete().catch(() => {});
             }
           }
           await docRef.delete();
@@ -6354,8 +6472,9 @@ function copyCatalogPromptById(promptId, slideIndex) {
       releaseLock();
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       initFirebase();
+      await initClassConfig();
       checkExistingAuth();
       renderSlide(1);
       setupMemoListeners();
