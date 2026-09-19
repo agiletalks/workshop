@@ -173,10 +173,57 @@
           <p id="lock-error-msg" style="color: #EF4444; font-size: 0.85rem; margin-top: 12px; display: none; font-weight: 500; margin-bottom: 0;">❌ 密碼錯誤，請重新輸入！</p>
       </div>
   </div>
+
+  <!-- 班級已停用/未開放提示遮罩 -->
+  <div id="board-inactive-overlay" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full text-center">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4">
+        <i data-lucide="pause-circle" class="w-8 h-8"></i>
+      </div>
+      <h2 id="board-inactive-title" class="text-lg font-bold text-white mb-2">本班級課程白板尚未開放或已停用</h2>
+      <p class="text-xs text-slate-300 leading-relaxed mb-6">
+        此班級目前處於停用或已封存狀態。若您是本班學員，請聯繫講師確認上課時段；若您需要複習，可切換為唯讀模式檢視白板。
+      </p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
+        <button onclick="dismissBoardInactiveOverlay(true)" class="w-full sm:w-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors cursor-pointer">
+          以唯讀模式瀏覽白板
+        </button>
+        <a href="admin.html" target="_blank" class="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl transition-all shadow-md shadow-amber-500/20">
+          前往管理後台
+        </a>
+      </div>
+    </div>
+  </div>
+
   <script>
       (function() {
           const correctHash = "agile-2026";
-          if (sessionStorage.getItem('read_courseware_authorized') === 'true' || localStorage.getItem('ai_arm_auth_user')) {
+          let isAuthorized = false;
+          try {
+              if (sessionStorage.getItem('read_courseware_authorized') === 'true') {
+                  isAuthorized = true;
+              } else if (localStorage.getItem('ai_arm_auth_user')) {
+                  isAuthorized = true;
+              } else {
+                  const params = new URLSearchParams(window.location.search);
+                  const cId = params.get('c') || params.get('class');
+                  if (cId && localStorage.getItem(`ai_arm_auth_user_${cId}`)) {
+                      isAuthorized = true;
+                  } else if (params.has('user') && params.get('user')) {
+                      isAuthorized = true;
+                  } else {
+                      for (let i = 0; i < localStorage.length; i++) {
+                          const k = localStorage.key(i);
+                          if (k && k.startsWith('ai_arm_auth_user')) {
+                              isAuthorized = true;
+                              break;
+                          }
+                      }
+                  }
+              }
+          } catch(e) {}
+
+          if (isAuthorized) {
               document.write('<style>#password-lock-screen { display: none !important; }</style>');
               return;
           }
@@ -225,6 +272,9 @@
             <i data-lucide="user" class="w-3 h-3 text-slate-400"></i>
             <span id="user-display-name">學員</span>
           </span>
+          <span id="board-readonly-badge" class="hidden inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 text-[11px]">
+            <i data-lucide="eye" class="w-3 h-3 text-amber-600"></i>唯讀觀摩中
+          </span>
         </div>
       </div>
     </div>
@@ -261,12 +311,12 @@
       <div class="h-6 w-[1px] bg-slate-300/60 mx-0.5 sm:mx-1"></div>
 
       <!-- 新增便利貼 -->
-      <button onclick="openNoteModal('create')" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="新增便利貼 (快捷鍵: N)">
+      <button id="btn-add-note" onclick="openNoteModal('create')" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="新增便利貼 (快捷鍵: N)">
         <i data-lucide="plus-circle" class="w-4 h-4"></i> <span class="hidden lg:inline">新增便利貼</span>
       </button>
 
       <!-- 上傳圖片 (自動轉為 220x220 標準卡片) -->
-      <button onclick="triggerImageUpload()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="上傳圖片 (亦支援直接 Ctrl+V 貼上截圖或拖入白板)">
+      <button id="btn-upload-image" onclick="triggerImageUpload()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-medium shadow-md flex items-center justify-center gap-1.5 transition-all text-sm cursor-pointer" title="上傳圖片 (亦支援直接 Ctrl+V 貼上截圖或拖入白板)">
         <i data-lucide="image" class="w-4 h-4"></i> <span class="hidden lg:inline">上傳圖片</span>
       </button>
       <input type="file" id="board-image-file-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple class="hidden" onchange="handleImageFileInputChange(event)">
@@ -311,7 +361,7 @@
       </div>
 
       <!-- 匯入按鈕 (在行動裝置小螢幕上隱藏以節省空間) -->
-      <button onclick="openImportModal()" class="hidden sm:flex bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-sm font-medium items-center justify-center gap-1.5 transition-all" title="批量匯入">
+      <button id="btn-import-template" onclick="openImportModal()" class="hidden sm:flex bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-sm font-medium items-center justify-center gap-1.5 transition-all" title="批量匯入">
         <i data-lucide="file-down" class="w-4 h-4"></i> <span class="hidden lg:inline">批量匯入</span>
       </button>
 
@@ -1131,6 +1181,8 @@
     let isUserDraggingNote = false;
     let firestoreDebounceTimer = null;
     let lastLocalWriteTimestamp = 0;
+    let isBoardReadOnly = false;
+    let classConfigUnsubscribe = null;
 
     // 取得小組與學員身分資訊 (專屬白板房間)
     function getTeamInfo() {
@@ -1315,7 +1367,7 @@
         roomDocRef = db.collection('aigile_boards').doc(CURRENT_ROOM_ID);
         isFirestoreInitialized = true;
         setSyncStatus('saving', '連線中...');
-        fetchTeamNotesCounts();
+        initBoardClassConfig();
 
         roomDocRef.onSnapshot((doc) => {
           if (!doc.exists) {
@@ -1325,7 +1377,11 @@
             renderNotes();
             renderConnections();
             updateStickyNotesCount();
-            saveState(true);
+            if (!isBoardReadOnly) {
+              saveState(true);
+            } else {
+              setSyncStatus('synced', '唯讀觀摩模式');
+            }
             return;
           }
 
@@ -1359,7 +1415,11 @@
           updateStickyNotesCount();
           updateMinimap();
 
-          setSyncStatus('synced', '已即時同步');
+          if (isBoardReadOnly) {
+            setSyncStatus('synced', '唯讀觀摩模式');
+          } else {
+            setSyncStatus('synced', '已即時同步');
+          }
         }, (error) => {
           console.error("[Firestore] Snapshot Error:", error);
           setSyncStatus('error', '雲端連線失敗，使用本機模式');
@@ -1374,6 +1434,10 @@
     // 狀態存檔：包含雲端 Firestore 即時寫入與本機 LocalStorage 快取備份
     function saveState(immediate = false) {
       saveLocalViewportOnly();
+      if (isBoardReadOnly) {
+        setSyncStatus('synced', '唯讀觀摩模式');
+        return;
+      }
       boardState.updatedAt = new Date().toISOString();
       lastLocalWriteTimestamp = Date.now();
 
@@ -1499,25 +1563,120 @@
       }
     }
 
+    // --- 班級配置即時監聽與權限控制 ---
+    function initBoardClassConfig() {
+      if (!db) return;
+      const classId = TEAM_INFO.classId || 'default';
+      try {
+        if (classConfigUnsubscribe) {
+          classConfigUnsubscribe();
+          classConfigUnsubscribe = null;
+        }
+        const docRef = db.collection('ai_arm_classes').doc(classId);
+        classConfigUnsubscribe = docRef.onSnapshot((docSnap) => {
+          let teamCount = 6;
+          let isInactive = false;
+          let className = classId;
+
+          if (docSnap.exists) {
+            const data = docSnap.data() || {};
+            className = data.name || classId;
+            teamCount = data.teamCount || 6;
+            if (data.status === 'inactive') {
+              isInactive = true;
+            }
+          } else {
+            if (classId === 'default') {
+              const defaultData = {
+                id: 'default',
+                name: 'AI-ARM 示範班（預設）',
+                status: 'active',
+                teamCount: 6,
+                coursePassword: 'agile-2026',
+                createdAt: Date.now()
+              };
+              docRef.set(defaultData).catch(() => {});
+            } else {
+              isInactive = true;
+            }
+          }
+
+          updateBoardTeamSelect(teamCount);
+
+          if (isInactive) {
+            isBoardReadOnly = true;
+            showBoardInactiveOverlay(className);
+          } else {
+            isBoardReadOnly = false;
+            dismissBoardInactiveOverlay(false);
+          }
+          updateBoardPermissionsUI();
+        }, (err) => {
+          console.warn("[Firestore] 監聽班級配置異常:", err);
+          updateBoardTeamSelect(6);
+        });
+      } catch (err) {
+        console.warn("[Firestore] 班級配置訂閱失敗:", err);
+        updateBoardTeamSelect(6);
+      }
+    }
+
+    function updateBoardTeamSelect(count) {
+      const selectEl = document.getElementById('team-board-select');
+      if (!selectEl) return;
+      selectEl.innerHTML = '';
+      for (let i = 1; i <= count; i++) {
+        const opt = document.createElement('option');
+        opt.value = `team-${i}`;
+        opt.textContent = `第 ${i} 組白板`;
+        selectEl.appendChild(opt);
+      }
+      selectEl.value = TEAM_INFO.teamId;
+      fetchTeamNotesCounts();
+    }
+
+    function showBoardInactiveOverlay(className) {
+      const overlay = document.getElementById('board-inactive-overlay');
+      const title = document.getElementById('board-inactive-title');
+      if (title) title.innerText = `【${className}】白板尚未開放或已停用`;
+      if (overlay) overlay.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons({ scope: overlay });
+    }
+
+    function dismissBoardInactiveOverlay(readOnly = false) {
+      const overlay = document.getElementById('board-inactive-overlay');
+      if (overlay) overlay.classList.add('hidden');
+      if (readOnly || isBoardReadOnly) {
+        isBoardReadOnly = true;
+        showToast("已進入白板唯讀觀摩模式（僅供瀏覽，無法編輯）", "slate");
+      }
+      updateBoardPermissionsUI();
+    }
+
+    function updateBoardPermissionsUI() {
+      const addBtn = document.getElementById('btn-add-note');
+      const uploadBtn = document.getElementById('btn-upload-image');
+      const importBtn = document.getElementById('btn-import-template');
+      const readOnlyBadge = document.getElementById('board-readonly-badge');
+
+      if (isBoardReadOnly) {
+        if (addBtn) addBtn.classList.add('opacity-50', 'pointer-events-none');
+        if (uploadBtn) uploadBtn.classList.add('opacity-50', 'pointer-events-none');
+        if (importBtn) importBtn.classList.add('opacity-50', 'pointer-events-none');
+        if (readOnlyBadge) readOnlyBadge.classList.remove('hidden');
+        setSyncStatus('synced', '唯讀觀摩模式');
+      } else {
+        if (addBtn) addBtn.classList.remove('opacity-50', 'pointer-events-none');
+        if (uploadBtn) uploadBtn.classList.remove('opacity-50', 'pointer-events-none');
+        if (importBtn) importBtn.classList.remove('opacity-50', 'pointer-events-none');
+        if (readOnlyBadge) readOnlyBadge.classList.add('hidden');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
     // --- 小組專屬白板 UI 與身分綁定 ---
     async function updateRoomUI() {
       const selectEl = document.getElementById('team-board-select');
-      if (selectEl && TEAM_INFO.classId && TEAM_INFO.classId !== 'default' && db) {
-        try {
-          const classDoc = await db.collection('ai_arm_classes').doc(TEAM_INFO.classId).get();
-          if (classDoc.exists) {
-            const count = classDoc.data().teamCount || 6;
-            selectEl.innerHTML = '';
-            for (let i = 1; i <= count; i++) {
-              const opt = document.createElement('option');
-              opt.value = `team-${i}`;
-              opt.textContent = `第 ${i} 組白板`;
-              selectEl.appendChild(opt);
-            }
-          }
-        } catch(e) {}
-      }
-
       if (selectEl) {
         selectEl.value = TEAM_INFO.teamId;
       }
@@ -2413,6 +2572,10 @@
 
     // --- 白板底色背景設定 ---
     function changeBackground(type, customHex = null) {
+      if (isBoardReadOnly) {
+        showToast("班級處於唯讀模式，無法變更白板底色", "warning");
+        return;
+      }
       boardState.background.type = type;
       if (customHex) {
         boardState.background.color = customHex;
@@ -3379,6 +3542,10 @@
     }
 
     function triggerImageUpload() {
+      if (isBoardReadOnly) {
+        showToast("班級處於唯讀模式，無法上傳圖片", "warning");
+        return;
+      }
       const input = document.getElementById('board-image-file-input');
       if (input) {
         input.value = '';
@@ -3387,6 +3554,10 @@
     }
 
     function handleImageFileInputChange(event) {
+      if (isBoardReadOnly) {
+        showToast("班級處於唯讀模式，無法上傳圖片", "warning");
+        return;
+      }
       const files = event.target.files;
       if (!files || files.length === 0) return;
       Array.from(files).forEach((file, idx) => {
@@ -3585,6 +3756,10 @@
           const items = Array.from(e.clipboardData.items);
           const imageItem = items.find(item => item.type && item.type.startsWith('image/'));
           if (imageItem) {
+            if (isBoardReadOnly) {
+              showToast("班級處於唯讀模式，無法貼上圖片", "warning");
+              return;
+            }
             const file = imageItem.getAsFile();
             if (file) {
               e.preventDefault();
@@ -3609,6 +3784,11 @@
       });
 
       container.addEventListener('drop', function(e) {
+        if (isBoardReadOnly) {
+          e.preventDefault();
+          showToast("班級處於唯讀模式，無法拖入圖片", "warning");
+          return;
+        }
         if (isUserDraggingNote) {
           e.preventDefault();
           return;
@@ -4210,6 +4390,10 @@
     }
 
     function alignSelectedNotes(direction) {
+      if (isBoardReadOnly) {
+        showToast("班級處於唯讀模式，無法變更排版", "warning");
+        return;
+      }
       if (selectedNoteIds.size < 2) return;
       
       const notesToAlign = boardState.notes.filter(n => selectedNoteIds.has(n.id) && !isNoteLockedByOther(n));
@@ -4269,6 +4453,10 @@
     }
 
     function deleteSelectedNotes() {
+      if (isBoardReadOnly) {
+        showToast("班級處於唯讀模式，無法刪除卡片", "warning");
+        return;
+      }
       if (selectedNoteIds.size === 0) return;
       const lockedByOthers = boardState.notes.filter(n => selectedNoteIds.has(n.id) && isNoteLockedByOther(n));
       if (lockedByOthers.length > 0) {
@@ -4294,6 +4482,10 @@
 
 
     function updateNoteColorDirectly(noteId, newHex) {
+      if (isBoardReadOnly) {
+        showToast("班級處於唯讀模式，無法修改卡片色彩", "warning");
+        return;
+      }
       const note = boardState.notes.find(n => n.id === noteId);
       if (note) {
         if (isNoteLockedByOther(note)) {
@@ -4380,6 +4572,10 @@
 
     // --- Modal 對話框控制與資料儲存 ---
     function openNoteModal(mode, spawnCoordinates = null) {
+      if (isBoardReadOnly && mode === 'create') {
+        showToast("班級處於唯讀模式，無法新增便利貼", "warning");
+        return;
+      }
       activeModalMode = mode;
       
       const modal = document.getElementById('note-modal');
@@ -4387,6 +4583,32 @@
       const acInput = document.getElementById('modal-note-ac');
       const title = document.getElementById('modal-title');
       const deleteBtn = document.getElementById('modal-delete-btn');
+      const submitBtn = document.getElementById('modal-submit-btn');
+
+      if (isBoardReadOnly && mode === 'edit') {
+        const noteId = spawnCoordinates;
+        const note = boardState.notes.find(n => n.id === noteId);
+        if (!note) return;
+        activeEditingNoteId = noteId;
+        title.innerHTML = `<i data-lucide="eye" class="text-amber-600 w-5 h-5"></i> 檢視卡片與 AC (唯讀觀摩)`;
+        textInput.value = note.text;
+        textInput.readOnly = true;
+        acInput.value = note.ac || '';
+        acInput.readOnly = true;
+        deleteBtn.classList.add('hidden');
+        if (submitBtn) submitBtn.classList.add('hidden');
+        selectModalColor(note.color || '#FFFFFF');
+        modalSelectedTextColor = note.textColor || 'auto';
+        updateModalTextColorUI();
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.add('opacity-100'), 10);
+        lucide.createIcons({ scope: modal });
+        return;
+      }
+
+      textInput.readOnly = false;
+      acInput.readOnly = false;
+      if (submitBtn) submitBtn.classList.remove('hidden');
 
       if (mode === 'create') {
         title.innerHTML = `<i data-lucide="plus-circle" class="text-emerald-600 w-5 h-5"></i> 新增敏捷卡片`;
@@ -4458,7 +4680,14 @@
     }
 
     function closeNoteModal() {
-      if (activeModalMode === 'edit' && activeEditingNoteId && typeof activeEditingNoteId === 'string') {
+      const textInput = document.getElementById('modal-note-text');
+      const acInput = document.getElementById('modal-note-ac');
+      const submitBtn = document.getElementById('modal-submit-btn');
+      if (textInput) textInput.readOnly = false;
+      if (acInput) acInput.readOnly = false;
+      if (submitBtn) submitBtn.classList.remove('hidden');
+
+      if (activeModalMode === 'edit' && activeEditingNoteId && typeof activeEditingNoteId === 'string' && !isBoardReadOnly) {
         const note = boardState.notes.find(n => n.id === activeEditingNoteId);
         const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '組員';
         if (note && note.lock && note.lock.lockedBy === myName) {
@@ -4476,6 +4705,10 @@
     }
 
     function saveNoteModal() {
+      if (isBoardReadOnly) {
+        showToast("班級處於唯讀模式，無法儲存變更", "warning");
+        return;
+      }
       const textInput = document.getElementById('modal-note-text');
       const acInput = document.getElementById('modal-note-ac');
       const text = textInput ? textInput.value.trim() : '';
@@ -4561,6 +4794,10 @@
     }
 
     function deleteNoteFromModal() {
+      if (isBoardReadOnly) {
+        showToast("班級處於唯讀模式，無法刪除卡片", "warning");
+        return;
+      }
       if (activeModalMode === 'edit' && activeEditingNoteId) {
         showCustomConfirm("刪除確認", "確定要永久刪除此敏捷卡片嗎？", function() {
           pushHistory();
@@ -4598,6 +4835,10 @@
     let selectedImportJsonContent = null;
 
     function openImportModal() {
+      if (isBoardReadOnly) {
+        showToast("班級處於唯讀模式，無法匯入範本", "warning");
+        return;
+      }
       const modal = document.getElementById('import-modal');
       modal.classList.remove('hidden');
       setTimeout(() => modal.classList.add('opacity-100'), 10);

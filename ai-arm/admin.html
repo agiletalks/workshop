@@ -838,6 +838,7 @@
           });
         } catch (pErr) {
           console.warn("清理 Presence 警告:", pErr);
+          batchPromises.push(Promise.reject(pErr));
         }
 
         // 4. 更新班級 clearedAt 時間戳，通知所有在線學員端客戶端自動重整/清空本機快取

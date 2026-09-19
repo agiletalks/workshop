@@ -735,7 +735,7 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">選擇您所屬的組別 (共 6 組)</label>
+          <label id="login-team-label" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">選擇您所屬的組別 (共 6 組)</label>
           <div class="grid grid-cols-3 gap-2" id="login-team-selector">
             <button type="button" id="login-opt-team-1" onclick="selectLoginTeam('team-1')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-amber-500 text-white border-amber-500 shadow-sm">第 1 組</button>
             <button type="button" id="login-opt-team-2" onclick="selectLoginTeam('team-2')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 2 組</button>
@@ -1688,6 +1688,10 @@
     }
 
     function renderLoginTeamOptions() {
+      const label = document.getElementById('login-team-label');
+      if (label) {
+        label.innerText = `選擇您所屬的組別 (共 ${TOTAL_TEAMS} 組)`;
+      }
       const container = document.getElementById('login-team-selector');
       container.innerHTML = '';
       for (let i = 1; i <= TOTAL_TEAMS; i++) {
