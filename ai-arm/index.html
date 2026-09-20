@@ -1544,7 +1544,9 @@
       : '';
     let currentClassData = null;
     let COURSE_PASSWORD = "agile-2026";
-    let TOTAL_TEAMS = 6;
+    let TOTAL_TEAMS = (currentClassId && localStorage.getItem(`ai_arm_class_teams_${currentClassId}`))
+      ? (parseInt(localStorage.getItem(`ai_arm_class_teams_${currentClassId}`), 10) || 6)
+      : 6;
     let APP_STORAGE_KEY = currentClassId ? `ai_arm_auth_user_${currentClassId}` : "ai_arm_auth_user";
     const NOTES_COLLECTION = 'aigile_boards';
     const CLASSES_COLLECTION = 'ai_arm_classes';
@@ -1980,24 +1982,54 @@
     }
 
     // --- 班級設定與生命週期即時監聽 ---
+    let isClassConfigReady = false;
+    let classConfigPromise = null;
+    let classConfigResolve = null;
+
+    function renderPrintTeamOptions() {
+      const selectEl = document.getElementById('print-team-select');
+      if (!selectEl) return;
+      const targetTeam = (typeof printSelectedTeam !== 'undefined' && printSelectedTeam) 
+        ? printSelectedTeam 
+        : (activeTeamId || (currentUser ? currentUser.team : 'team-1'));
+      selectEl.innerHTML = '';
+      for (let i = 1; i <= TOTAL_TEAMS; i++) {
+        const opt = document.createElement('option');
+        opt.value = `team-${i}`;
+        opt.innerText = `第 ${i} 組`;
+        selectEl.appendChild(opt);
+      }
+      const targetNum = parseInt(targetTeam.replace('team-', ''), 10) || 1;
+      if (targetNum <= TOTAL_TEAMS && targetNum >= 1) {
+        selectEl.value = targetTeam;
+      } else {
+        selectEl.value = 'team-1';
+      }
+    }
+
     function initClassConfig() {
       // 若沒有指定班級代碼，顯示門禁報到畫面，隱藏講義與報到彈窗，防止迷路
       if (!currentClassId) {
         showGatekeeperOverlay();
         const loginModal = document.getElementById('login-modal');
         if (loginModal) loginModal.classList.add('hidden');
-        return;
+        return Promise.resolve(null);
       }
       if (currentUser) {
         hideGatekeeperOverlay();
         closeLoginModal();
       }
 
-      if (!db) return;
+      if (!db) return Promise.resolve(null);
       if (classConfigUnsubscribe) {
         classConfigUnsubscribe();
         classConfigUnsubscribe = null;
       }
+
+      classConfigPromise = new Promise(resolve => {
+        classConfigResolve = resolve;
+      });
+
       try {
         const docRef = db.collection(CLASSES_COLLECTION).doc(currentClassId);
         classConfigUnsubscribe = docRef.onSnapshot(docSnap => {
@@ -2005,6 +2037,9 @@
             currentClassData = docSnap.data();
             TOTAL_TEAMS = parseInt(currentClassData.teamCount, 10) || 6;
             COURSE_PASSWORD = currentClassData.coursePassword || "agile-2026";
+            try {
+              localStorage.setItem(`ai_arm_class_teams_${currentClassId}`, String(TOTAL_TEAMS));
+            } catch (e) {}
 
             const classBadge = document.getElementById('header-class-badge');
             if (classBadge) {
@@ -2064,18 +2099,36 @@
             const codeInput = document.getElementById('gatekeeper-code-input');
             if (codeInput) codeInput.value = currentClassId;
           }
+          isClassConfigReady = true;
+          if (classConfigResolve) {
+            classConfigResolve(currentClassData);
+            classConfigResolve = null;
+          }
           renderLoginTeamOptions();
           renderTeamTabs();
+          renderPrintTeamOptions();
           updatePermissionUI();
         }, err => {
           console.warn("班級配置即時監聽異常:", err);
+          isClassConfigReady = true;
+          if (classConfigResolve) {
+            classConfigResolve(null);
+            classConfigResolve = null;
+          }
         });
       } catch (err) {
         console.warn("無法取得班級配置，使用預設值:", err);
+        isClassConfigReady = true;
+        if (classConfigResolve) {
+          classConfigResolve(null);
+          classConfigResolve = null;
+        }
         renderLoginTeamOptions();
         renderTeamTabs();
+        renderPrintTeamOptions();
         updatePermissionUI();
       }
+      return classConfigPromise;
     }
 
     function showClassInactiveOverlay(className) {
@@ -6963,18 +7016,16 @@ function copyCatalogPromptById(promptId, slideIndex) {
       if (!modal) return;
       modal.classList.remove('hidden');
 
-      printSelectedTeam = activeTeamId || (currentUser ? currentUser.team : 'team-1');
-      const selectEl = document.getElementById('print-team-select');
-      if (selectEl) {
-        selectEl.innerHTML = '';
-        for (let i = 1; i <= TOTAL_TEAMS; i++) {
-          const opt = document.createElement('option');
-          opt.value = `team-${i}`;
-          opt.innerText = `第 ${i} 組`;
-          selectEl.appendChild(opt);
-        }
-        selectEl.value = printSelectedTeam;
+      // 若班級設定正在非同步載入 (例如剛重整頁面立刻點開列印)，等待設定就緒，最多等 1.5 秒
+      if (currentClassId && classConfigPromise && !isClassConfigReady) {
+        await Promise.race([
+          classConfigPromise,
+          new Promise(r => setTimeout(r, 1500))
+        ]);
       }
+
+      printSelectedTeam = activeTeamId || (currentUser ? currentUser.team : 'team-1');
+      renderPrintTeamOptions();
 
       await loadAllNotesForPrint(printSelectedTeam);
       renderPrintNotesUI();
