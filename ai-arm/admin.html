@@ -156,7 +156,7 @@
     </div>
 
     <!-- 班級列表標題與過濾 -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pt-2">
       <div>
         <h2 class="text-lg font-bold text-white flex items-center gap-2">
           <span>班級清單與專屬入口</span>
@@ -165,8 +165,21 @@
         <p class="text-xs text-slate-400">每一班擁有獨立命名空間，學員筆記、白板與提問完全隔離</p>
       </div>
 
-      <div class="flex items-center gap-2 w-full sm:w-auto">
-        <div class="relative flex-1 sm:w-64">
+      <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <!-- 複製網址前綴切換 -->
+        <div class="flex items-center bg-slate-800/90 border border-slate-700/80 rounded-xl p-0.5 text-xs shadow-xs">
+          <span class="text-slate-400 text-[11px] px-2 font-medium flex items-center gap-1 hidden sm:flex">
+            <i data-lucide="globe" class="w-3.5 h-3.5 text-amber-400"></i> 網址前綴:
+          </span>
+          <button type="button" id="url-mode-prod-btn" onclick="setUrlBaseMode('production')" class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer bg-amber-500 text-slate-950 shadow-xs" title="使用 Google Cloud 線上正式網域 (https://aigile.tw)">
+            線上正式 (aigile.tw)
+          </button>
+          <button type="button" id="url-mode-auto-btn" onclick="setUrlBaseMode('auto')" class="px-2.5 py-1 rounded-lg font-medium text-[11px] text-slate-400 hover:text-white transition-all cursor-pointer" title="使用當前瀏覽器所在網址 (localhost)">
+            本機 / 自動偵測
+          </button>
+        </div>
+
+        <div class="relative flex-1 sm:w-52">
           <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
           <input type="text" id="class-search-input" oninput="filterClasses()" placeholder="搜尋班級名稱或代碼..."
             class="w-full pl-9 pr-3 py-1.5 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors" />
@@ -554,12 +567,16 @@
               
               <!-- 專屬網址列 (支援一鍵點擊複製) -->
               <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-                <span class="text-[10px] text-slate-500 font-mono px-1">URL:</span>
+                <span class="text-[10px] text-slate-500 font-mono px-1">講義:</span>
                 <input type="text" readonly value="${classUrl}" 
                   class="bg-transparent text-[11px] font-mono text-amber-300 flex-1 truncate focus:outline-none select-all" />
-                <button onclick="copyClassUrl('${c.id}')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1" title="複製此班專屬網址">
+                <button onclick="copyClassUrl('${c.id}')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1" title="複製此班專屬講義網址">
                   <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                  <span>複製</span>
+                  <span>複製講義</span>
+                </button>
+                <button onclick="copyBoardUrl('${c.id}')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1" title="複製此班第 1 組白板專屬網址">
+                  <i data-lucide="layout" class="w-3.5 h-3.5"></i>
+                  <span>複製白板</span>
                 </button>
               </div>
 
@@ -603,21 +620,81 @@
       renderClasses();
     }
 
-    // --- 取得專屬網址 ---
-    function getClassUrl(classId) {
+    // --- 網址前綴模式管理 (正式網域 https://aigile.tw vs 當前自動網域) ---
+    const PROD_BASE_URL = 'https://aigile.tw/workshop/ai-arm/';
+
+    function getUrlBaseMode() {
+      return localStorage.getItem('ai_arm_url_base_mode') || 'production';
+    }
+
+    function setUrlBaseMode(mode) {
+      localStorage.setItem('ai_arm_url_base_mode', mode);
+      updateUrlModeUI();
+      renderClasses();
+      const activeModeName = mode === 'production' ? '線上正式網域 (https://aigile.tw)' : '本機 / 自動偵測網域';
+      showToast(`網址前綴已切換為：${activeModeName}`, 'amber');
+    }
+
+    function updateUrlModeUI() {
+      const mode = getUrlBaseMode();
+      const prodBtn = document.getElementById('url-mode-prod-btn');
+      const autoBtn = document.getElementById('url-mode-auto-btn');
+      if (prodBtn && autoBtn) {
+        if (mode === 'production') {
+          prodBtn.className = 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer bg-amber-500 text-slate-950 shadow-xs';
+          autoBtn.className = 'px-2.5 py-1 rounded-lg font-medium text-[11px] text-slate-400 hover:text-white transition-all cursor-pointer';
+        } else {
+          autoBtn.className = 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer bg-indigo-600 text-white shadow-xs';
+          prodBtn.className = 'px-2.5 py-1 rounded-lg font-medium text-[11px] text-slate-400 hover:text-white transition-all cursor-pointer';
+        }
+      }
+    }
+
+    function getBaseUrl() {
+      const mode = getUrlBaseMode();
+      if (mode === 'production') {
+        return PROD_BASE_URL;
+      }
       const loc = window.location;
-      const base = loc.origin + loc.pathname.replace(/admin\.html$/, '');
+      return loc.origin + loc.pathname.replace(/admin\.html$/, '');
+    }
+
+    // --- 取得專屬講義網址 ---
+    function getClassUrl(classId) {
+      const base = getBaseUrl();
       if (!classId || classId === 'default') {
         return base;
       }
       return `${base}?c=${encodeURIComponent(classId)}`;
     }
 
-    // --- 一鍵複製專屬網址 ---
+    // --- 取得專屬小組白板網址 ---
+    function getBoardUrl(classId, teamId = 'team-1') {
+      const base = getBaseUrl();
+      const boardBase = base.endsWith('/') ? `${base}board.html` : `${base}/board.html`;
+      if (!classId || classId === 'default') {
+        return `${boardBase}?team=${teamId}`;
+      }
+      return `${boardBase}?c=${encodeURIComponent(classId)}&team=${teamId}`;
+    }
+
+    // --- 一鍵複製專屬講義網址 ---
     function copyClassUrl(classId) {
       const url = getClassUrl(classId);
+      const isProd = getUrlBaseMode() === 'production';
       navigator.clipboard.writeText(url).then(() => {
-        showToast("已複製專屬上課網址至剪貼簿！", "emerald");
+        showToast(isProd ? "已複製正式講義網址 (aigile.tw)！" : "已複製講義網址至剪貼簿！", "emerald");
+      }).catch(() => {
+        showToast("複製失敗，請手動複製", "rose");
+      });
+    }
+
+    // --- 一鍵複製專屬白板網址 ---
+    function copyBoardUrl(classId) {
+      const url = getBoardUrl(classId, 'team-1');
+      const isProd = getUrlBaseMode() === 'production';
+      navigator.clipboard.writeText(url).then(() => {
+        showToast(isProd ? "已複製正式第 1 組白板網址 (aigile.tw)！" : "已複製第 1 組白板網址至剪貼簿！", "emerald");
       }).catch(() => {
         showToast("複製失敗，請手動複製", "rose");
       });
@@ -916,6 +993,7 @@
     window.addEventListener("DOMContentLoaded", () => {
       initFirebase();
       checkAdminAuth();
+      updateUrlModeUI();
       lucide.createIcons();
     });
   </script>
