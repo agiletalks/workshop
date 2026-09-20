@@ -701,31 +701,96 @@
     </aside>
   </main>
 
+  <!-- ==================== 根網址防迷路：班級代碼簽到與引導門禁頁 ==================== -->
+  <div id="gatekeeper-overlay" class="hidden fixed inset-0 bg-slate-950 z-[999] flex flex-col items-center justify-between p-4 sm:p-8 overflow-y-auto">
+    <!-- 頂部品牌標誌 -->
+    <div class="w-full max-w-lg flex items-center justify-between pt-2">
+      <div class="flex items-center gap-2">
+        <span class="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-md">ARM</span>
+        <span class="text-xs font-mono font-bold text-slate-400 tracking-wider">AgileTalks Workshops</span>
+      </div>
+      <a href="admin.html" class="text-xs text-slate-400 hover:text-amber-400 flex items-center gap-1 transition-colors">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+        <span>講師後台</span>
+      </a>
+    </div>
+
+    <!-- 中央核心輸入卡片 -->
+    <div class="w-full max-w-md my-auto py-8">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative text-center">
+        <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-4 shadow-inner">
+          <i data-lucide="door-closed" class="w-7 h-7"></i>
+        </div>
+
+        <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">AI-ARM 課程專屬報到處</h2>
+        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+          本工作坊採專屬分組空間演練。<br>
+          為確保您的隨堂筆記與小組白板與隊友同步，<br>
+          <strong class="text-amber-400">請輸入講師提供的專屬班級代碼</strong>。
+        </p>
+
+        <!-- 班級代碼快速輸入 Form -->
+        <form onsubmit="handleGatekeeperSubmit(event)" class="mt-6 space-y-3.5 text-left">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>班級專屬代碼 (Class Code)</span>
+              <span class="text-[11px] text-slate-500 font-normal">例：2026-cathay</span>
+            </label>
+            <div class="relative">
+              <input type="text" id="gatekeeper-code-input" autofocus autocomplete="off" placeholder="請輸入班級代碼 (例如 2026-cathay)" 
+                class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-amber-300 font-mono text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all placeholder:text-slate-600 placeholder:font-sans" />
+              <i data-lucide="hash" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5"></i>
+            </div>
+            <p id="gatekeeper-error-msg" class="hidden text-xs text-rose-400 mt-1.5 font-medium flex items-center gap-1">
+              <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>
+              <span id="gatekeeper-error-text">查無此班級代碼，請確認後重新輸入</span>
+            </p>
+          </div>
+
+          <button type="submit" id="btn-gatekeeper-submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 rounded-xl font-bold text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <span>進入專屬課程講義</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </form>
+
+        <!-- 友善引導資訊 -->
+        <div class="mt-6 pt-5 border-t border-slate-800/80 text-xs text-slate-500 space-y-2">
+          <p class="flex items-center justify-center gap-1.5">
+            <i data-lucide="qr-code" class="w-3.5 h-3.5 text-slate-400"></i>
+            <span>亦可直接掃描現場投影大螢幕的 QR Code</span>
+          </p>
+          <p class="text-[11px] text-slate-600">
+            支援貼上完整網址或代碼，系統將自動解析為您導航
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部版權 -->
+    <div class="text-[11px] text-slate-600 pb-2">
+      © 2026 AgileTalks Workshops Portal
+    </div>
+  </div>
+
   <!-- ==================== 登入與身分門禁 Modal ==================== -->
-  <div id="login-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+  <div id="login-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative">
       <button id="btn-close-login" onclick="closeLoginModal()" class="hidden absolute top-5 right-5 text-slate-400 hover:text-slate-600 rounded-full p-1.5 hover:bg-slate-100 transition-colors">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <div class="text-center space-y-2">
-        <div class="w-14 h-14 rounded-2xl bg-amber-500 text-white font-black text-2xl mx-auto flex items-center justify-center shadow-lg shadow-amber-500/30">
-          AI
+      <div class="text-center space-y-1.5">
+        <div class="w-14 h-14 rounded-2xl bg-amber-500 text-slate-950 font-black text-2xl mx-auto flex items-center justify-center shadow-lg shadow-amber-500/30">
+          ARM
         </div>
-        <h2 class="text-xl font-black text-slate-900">AI 賦能敏捷：跨部門溝通</h2>
-        <p class="text-xs text-slate-500">請輸入課程通行密碼並完成身分報到以加入即時共筆</p>
+        <h2 id="login-modal-class-name" class="text-lg sm:text-xl font-black text-slate-900 leading-snug">專屬學員身分報到</h2>
+        <div id="login-modal-class-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 text-xs font-mono font-bold">
+          班級代碼: #...
+        </div>
+        <p class="text-xs text-slate-500 pt-1">完成報到後即可加入小組即時共筆並進入第 1 頁講義</p>
       </div>
 
-      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="mt-6 space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">課程通行密碼</label>
-          <div class="relative">
-            <input type="password" id="input-password" required placeholder="請輸入密碼 (agile-2026)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm outline-none transition-all pl-9" />
-            <i data-lucide="key-round" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
-          </div>
-          <p id="password-error" class="hidden text-xs text-rose-500 mt-1 font-medium">密碼不正確，請洽詢講師！</p>
-        </div>
-
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="mt-5 space-y-3.5">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">學員姓名 / 稱呼</label>
           <div class="relative">
@@ -747,8 +812,17 @@
           <input type="hidden" id="input-team-val" value="team-1" />
         </div>
 
-        <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 active:scale-98 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 mt-2">
-          <span>進入課程工作坊</span>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">課程通行密碼</label>
+          <div class="relative">
+            <input type="password" id="input-password" required placeholder="請輸入密碼 (agile-2026)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm outline-none transition-all pl-9" />
+            <i data-lucide="key-round" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+          </div>
+          <p id="password-error" class="hidden text-xs text-rose-500 mt-1 font-medium">密碼不正確，請洽詢講師！</p>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 active:scale-98 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer">
+          <span>完成報到，進入第 1 頁講義</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
       </form>
@@ -1449,22 +1523,120 @@
   <!-- ==================== 核心邏輯 Javascript ==================== -->
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let currentClassId = urlParams.get('c') || urlParams.get('class') || 'default';
+    const rawClassParam = urlParams.get('c') || urlParams.get('class');
+    // 若未帶 ?c= 或 ?class= 參數，設為空字串，強制啟動門禁報到畫面，防範迷路
+    let currentClassId = (rawClassParam && rawClassParam.trim()) 
+      ? rawClassParam.trim().toLowerCase() 
+      : '';
     let currentClassData = null;
     let COURSE_PASSWORD = "agile-2026";
     let TOTAL_TEAMS = 6;
-    let APP_STORAGE_KEY = (currentClassId === 'default') ? "ai_arm_auth_user" : `ai_arm_auth_user_${currentClassId}`;
+    let APP_STORAGE_KEY = currentClassId ? `ai_arm_auth_user_${currentClassId}` : "ai_arm_auth_user";
     const NOTES_COLLECTION = 'aigile_boards';
     const CLASSES_COLLECTION = 'ai_arm_classes';
     let isClassReadOnly = false;
     let classConfigUnsubscribe = null;
-    let lastKnownClearedAt = parseInt(localStorage.getItem(`ai_arm_${currentClassId}_cleared_at`) || '0', 10);
+    let lastKnownClearedAt = parseInt(localStorage.getItem(`ai_arm_${currentClassId || 'default'}_cleared_at`) || '0', 10);
+
+    // --- 智能班級代碼解析器 (超強容錯) ---
+    function parseClassCode(input) {
+      if (!input) return '';
+      let str = input.trim();
+      // 1. 去除首尾引號與多餘空白
+      str = str.replace(/^['"]+|['"]+$/g, '').trim();
+      
+      // 2. 若貼上完整 URL (例：https://aigile.tw/workshop/ai-arm/?c=2026-cathay 或 ?c=xxx)
+      try {
+        if (str.includes('?') || str.startsWith('http://') || str.startsWith('https://')) {
+          const dummyBase = 'http://localhost/';
+          const urlObj = new URL(str, dummyBase);
+          const c = urlObj.searchParams.get('c') || urlObj.searchParams.get('class');
+          if (c) return c.trim().toLowerCase();
+        }
+      } catch (e) {}
+
+      // 3. 去除常見前綴 "?c=", "c=", "?class=", "class=" 或 "#"
+      str = str.replace(/^\??c=/i, '');
+      str = str.replace(/^\??class=/i, '');
+      str = str.replace(/^#+/, '');
+
+      // 4. 去除多餘引號字符並轉小寫
+      str = str.replace(/['"]/g, '').trim().toLowerCase();
+      return str;
+    }
+
+    function showGatekeeperOverlay() {
+      const overlay = document.getElementById('gatekeeper-overlay');
+      if (overlay) {
+        overlay.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons({ scope: overlay });
+        setTimeout(() => {
+          document.getElementById('gatekeeper-code-input')?.focus();
+        }, 150);
+      }
+    }
+
+    function hideGatekeeperOverlay() {
+      const overlay = document.getElementById('gatekeeper-overlay');
+      if (overlay) overlay.classList.add('hidden');
+    }
+
+    async function handleGatekeeperSubmit(e) {
+      if (e) e.preventDefault();
+      const inputEl = document.getElementById('gatekeeper-code-input');
+      const errorEl = document.getElementById('gatekeeper-error-msg');
+      const errorTextEl = document.getElementById('gatekeeper-error-text');
+      const submitBtn = document.getElementById('btn-gatekeeper-submit');
+
+      const raw = inputEl ? inputEl.value : '';
+      const code = parseClassCode(raw);
+
+      if (!code) {
+        if (errorEl && errorTextEl) {
+          errorTextEl.innerText = "請輸入班級代碼（例如：2026-cathay）";
+          errorEl.classList.remove('hidden');
+        }
+        inputEl?.focus();
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span>驗證班級代碼中...</span>`;
+      }
+      if (errorEl) errorEl.classList.add('hidden');
+
+      try {
+        if (!db && typeof firebase !== 'undefined') {
+          initFirebase();
+        }
+        if (db) {
+          const docSnap = await db.collection(CLASSES_COLLECTION).doc(code).get();
+          if (!docSnap.exists) {
+            if (errorEl && errorTextEl) {
+              errorTextEl.innerText = `查無班級代碼【${code}】，請確認後重新輸入`;
+              errorEl.classList.remove('hidden');
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = `<span>進入專屬課程講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+              if (window.lucide) lucide.createIcons({ scope: submitBtn });
+            }
+            return;
+          }
+        }
+        window.location.href = `?c=${encodeURIComponent(code)}`;
+      } catch (err) {
+        console.warn("驗證班級代碼失敗，直接導向:", err);
+        window.location.href = `?c=${encodeURIComponent(code)}`;
+      }
+    }
 
     // 提問便利貼本地快取 Key (嚴格隔離班級)
     function getQuestionsStorageKey(slideIndex) {
-      return (currentClassId === 'default')
-        ? `ai_arm_slide_questions_p${slideIndex}`
-        : `ai_arm_${currentClassId}_slide_questions_p${slideIndex}`;
+      return currentClassId
+        ? `ai_arm_${currentClassId}_slide_questions_p${slideIndex}`
+        : `ai_arm_slide_questions_p${slideIndex}`;
     }
 
     let currentSlideIndex = 1; // 1-based (P01 ~ P40)
@@ -1524,6 +1696,15 @@
 
     // --- 班級設定與生命週期即時監聽 ---
     function initClassConfig() {
+      // 若沒有指定班級代碼，顯示門禁報到畫面，隱藏講義與報到彈窗，防止迷路
+      if (!currentClassId) {
+        showGatekeeperOverlay();
+        const loginModal = document.getElementById('login-modal');
+        if (loginModal) loginModal.classList.add('hidden');
+        return;
+      }
+      hideGatekeeperOverlay();
+
       if (!db) return;
       if (classConfigUnsubscribe) {
         classConfigUnsubscribe();
@@ -1541,6 +1722,16 @@
             if (classBadge) {
               classBadge.innerText = currentClassData.name || currentClassId;
               classBadge.classList.remove('hidden');
+            }
+
+            // 更新報到視窗標題與代碼標籤
+            const modalClassName = document.getElementById('login-modal-class-name');
+            if (modalClassName) {
+              modalClassName.innerText = currentClassData.name || currentClassId;
+            }
+            const modalClassBadge = document.getElementById('login-modal-class-badge');
+            if (modalClassBadge) {
+              modalClassBadge.innerText = `班級代碼: #${currentClassId}`;
             }
 
             // 檢查是否被講師端執行過「清空演練資料」
@@ -1565,22 +1756,16 @@
               dismissInactiveOverlay(false);
             }
           } else {
-            if (currentClassId === 'default') {
-              currentClassData = {
-                id: 'default',
-                name: 'AI-ARM 示範班（預設）',
-                status: 'active',
-                teamCount: 6,
-                coursePassword: 'agile-2026',
-                createdAt: Date.now()
-              };
-              isClassReadOnly = false;
-              docRef.set(currentClassData).catch(() => {});
-            } else {
-              console.warn(`班級【${currentClassId}】不存在於資料庫，以唯讀模式載入`);
-              isClassReadOnly = true;
-              showClassInactiveOverlay(currentClassId);
+            console.warn(`班級【${currentClassId}】不存在於資料庫，引導至報到處`);
+            showGatekeeperOverlay();
+            const errText = document.getElementById('gatekeeper-error-text');
+            const errMsg = document.getElementById('gatekeeper-error-msg');
+            if (errText && errMsg) {
+              errText.innerText = `查無班級代碼【${currentClassId}】，請確認後重新輸入`;
+              errMsg.classList.remove('hidden');
             }
+            const codeInput = document.getElementById('gatekeeper-code-input');
+            if (codeInput) codeInput.value = currentClassId;
           }
           renderLoginTeamOptions();
           renderTeamTabs();
@@ -1648,6 +1833,9 @@
 
     // --- 身分驗證 ---
     function checkExistingAuth() {
+      // 若尚未選擇班級（在門禁頁），不處理登入報到
+      if (!currentClassId) return false;
+
       const saved = localStorage.getItem(APP_STORAGE_KEY);
       if (saved) {
         try {
@@ -1666,6 +1854,7 @@
     }
 
     function openLoginModal(canClose = true) {
+      if (!currentClassId) return; // 門禁狀態下不打開登入彈窗
       const modal = document.getElementById('login-modal');
       const closeBtn = document.getElementById('btn-close-login');
       modal.classList.remove('hidden');
@@ -1684,6 +1873,8 @@
     }
 
     function closeLoginModal() {
+      // 未完成身分報到前，絕對禁止關閉，確保講義不被未報到學員翻閱
+      if (!currentUser && currentClassId) return;
       document.getElementById('login-modal').classList.add('hidden');
     }
 
@@ -1751,6 +1942,9 @@
       applyUserIdentityUI();
       closeLoginModal();
       subscribeToFirestore();
+      renderSlide(1);
+      const teamDisplayName = getTeamDisplayName(currentUser.team);
+      showToast(`【${currentClassData?.name || currentClassId}】報到完成！歡迎 ${name}（${teamDisplayName}）`, "emerald");
     }
 
     function applyUserIdentityUI() {
@@ -5595,6 +5789,9 @@
         // 一般翻頁與快捷鍵才過濾輸入中的 input/textarea
         if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
+        // 若尚未完成身分報到，或在門禁畫面中，禁止一切講義快捷鍵與翻頁，防止偷看講義
+        if (!currentUser || !currentClassId) return;
+
         if (isExampleLightboxOpen()) {
           if (e.key === 'ArrowLeft') {
             e.preventDefault();
@@ -6610,8 +6807,12 @@ function copyCatalogPromptById(promptId, slideIndex) {
 
     window.addEventListener('DOMContentLoaded', async () => {
       initFirebase();
-      await initClassConfig();
-      checkExistingAuth();
+      if (!currentClassId) {
+        showGatekeeperOverlay();
+      } else {
+        await initClassConfig();
+        checkExistingAuth();
+      }
       renderSlide(1);
       setupMemoListeners();
       setupAttachmentDragAndPaste();
