@@ -863,13 +863,8 @@
           <!-- 組別切換選擇器 -->
           <div class="flex items-center gap-1.5 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1">
             <span class="text-slate-500 font-medium">組別：</span>
-            <select id="print-team-select" onchange="changePrintTeam(this.value)" class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
-              <option value="team-1">第 1 組</option>
-              <option value="team-2">第 2 組</option>
-              <option value="team-3">第 3 組</option>
-              <option value="team-4">第 4 組</option>
-              <option value="team-5">第 5 組</option>
-              <option value="team-6">第 6 組</option>
+            <select id="print-team-select" onchange="changePrintTeam(this.value)" disabled class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-wait">
+              <option value="">載入班級組別中...</option>
             </select>
           </div>
 
@@ -2004,7 +1999,7 @@
     let classConfigPromise = null;
     let classConfigResolve = null;
 
-    function renderPrintTeamOptions() {
+    function renderPrintTeamOptions(forceEnabled = true) {
       const selectEl = document.getElementById('print-team-select');
       if (!selectEl) return;
       const targetTeam = (typeof printSelectedTeam !== 'undefined' && printSelectedTeam) 
@@ -2021,7 +2016,10 @@
       if (targetNum <= TOTAL_TEAMS && targetNum >= 1) {
         selectEl.value = targetTeam;
       } else {
-        selectEl.value = 'team-1';
+        selectEl.value = `team-${TOTAL_TEAMS}`;
+      }
+      if (forceEnabled) {
+        selectEl.disabled = false;
       }
     }
 
@@ -7038,14 +7036,24 @@ function copyCatalogPromptById(promptId, slideIndex) {
     async function openPrintNotesModal() {
       const modal = document.getElementById('print-modal');
       if (!modal) return;
-      modal.classList.remove('hidden');
 
       const loader = document.getElementById('print-loading');
       const area = document.getElementById('printable-notes-area');
+      const selectEl = document.getElementById('print-team-select');
+
+      // 1. 馬上用已就緒的本地同步身分與組數渲染選單，並在載入期間禁用，杜絕任何預設 6 組閃爍
+      printSelectedTeam = activeTeamId || (currentUser ? currentUser.team : 'team-1');
+      if (selectEl) {
+        renderPrintTeamOptions(false);
+        selectEl.disabled = true;
+      }
+
+      // 2. 顯示遮罩與專屬載入動畫
+      modal.classList.remove('hidden');
       if (loader) loader.classList.remove('hidden');
       if (area) area.classList.add('hidden');
 
-      // 若全局應用尚未初始化完成 (包含班級設定 + 身分恢復)，等待初始化就緒 (最多等待 2 秒)
+      // 3. 等待全局應用初始化完成 (包含班級設定 + 身分恢復)
       if (typeof appInitPromise !== 'undefined' && appInitPromise) {
         await Promise.race([
           appInitPromise,
@@ -7058,9 +7066,11 @@ function copyCatalogPromptById(promptId, slideIndex) {
         ]);
       }
 
+      // 4. 初始化完成，解鎖選單並確認選中值
       printSelectedTeam = activeTeamId || (currentUser ? currentUser.team : 'team-1');
-      renderPrintTeamOptions();
+      renderPrintTeamOptions(true);
 
+      // 5. 載入筆記並呈現
       await loadAllNotesForPrint(printSelectedTeam);
       renderPrintNotesUI();
       if (window.lucide) lucide.createIcons({ scope: modal });
