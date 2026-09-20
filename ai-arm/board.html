@@ -206,7 +206,7 @@
                   isAuthorized = true;
               } else {
                   const params = new URLSearchParams(window.location.search);
-                  const cId = params.get('c') || params.get('class');
+                  const cId = params.get('c') || params.get('class') || params.get('classId');
                   if (cId && localStorage.getItem(`ai_arm_auth_user_${cId}`)) {
                       isAuthorized = true;
                   } else if (params.has('user') && params.get('user')) {
@@ -1200,7 +1200,7 @@
       let team = params.get('team');
       let user = params.get('user');
       let room = params.get('room');
-      let classId = params.get('c') || params.get('class') || '';
+      let classId = params.get('c') || params.get('class') || params.get('classId') || '';
 
       if (!team || !user) {
         try {
@@ -1214,7 +1214,14 @@
         } catch (e) {}
       }
 
-      team = (team && team.trim()) ? team.trim().toLowerCase() : 'team-1';
+      if (team && team.trim()) {
+        team = team.trim().toLowerCase();
+        if (!team.startsWith('team-')) {
+          team = 'team-' + team;
+        }
+      } else {
+        team = 'team-1';
+      }
       user = (user && user.trim()) ? user.trim() : '學員';
       const teamNum = team.replace('team-', '');
       const teamDisplayName = `第 ${teamNum} 組`;
