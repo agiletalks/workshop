@@ -1548,6 +1548,12 @@
       ? (parseInt(localStorage.getItem(`ai_arm_class_teams_${currentClassId}`), 10) || 6)
       : 6;
     let APP_STORAGE_KEY = currentClassId ? `ai_arm_auth_user_${currentClassId}` : "ai_arm_auth_user";
+
+    // 應用全局非同步初始化 Promise (確保班級設定與身分完全就緒)
+    let appInitResolve = null;
+    const appInitPromise = new Promise(resolve => {
+      appInitResolve = resolve;
+    });
     const NOTES_COLLECTION = 'aigile_boards';
     const CLASSES_COLLECTION = 'ai_arm_classes';
     let isClassReadOnly = false;
@@ -1929,6 +1935,18 @@
     let currentSlideIndex = 1; // 1-based (P01 ~ P40)
     let activeTeamId = 'team-1';
     let currentUser = null; // { name: '', team: 'team-1', loggedInAt: 0 }
+    try {
+      if (currentClassId) {
+        const savedAuth = localStorage.getItem(APP_STORAGE_KEY);
+        if (savedAuth) {
+          const parsed = JSON.parse(savedAuth);
+          if (parsed && parsed.name && parsed.team) {
+            currentUser = parsed;
+            activeTeamId = parsed.team;
+          }
+        }
+      }
+    } catch (e) {}
     let isExampleFlipped = false;
 
     // 當前頁面與當前組別的資料狀態 (一頁一筆記)
@@ -2107,6 +2125,12 @@
           renderLoginTeamOptions();
           renderTeamTabs();
           renderPrintTeamOptions();
+          const printModal = document.getElementById('print-modal');
+          if (printModal && !printModal.classList.contains('hidden')) {
+            printSelectedTeam = activeTeamId || (currentUser ? currentUser.team : 'team-1');
+            renderPrintTeamOptions();
+            loadAllNotesForPrint(printSelectedTeam).then(() => renderPrintNotesUI());
+          }
           updatePermissionUI();
         }, err => {
           console.warn("班級配置即時監聽異常:", err);
@@ -7016,8 +7040,18 @@ function copyCatalogPromptById(promptId, slideIndex) {
       if (!modal) return;
       modal.classList.remove('hidden');
 
-      // 若班級設定正在非同步載入 (例如剛重整頁面立刻點開列印)，等待設定就緒，最多等 1.5 秒
-      if (currentClassId && classConfigPromise && !isClassConfigReady) {
+      const loader = document.getElementById('print-loading');
+      const area = document.getElementById('printable-notes-area');
+      if (loader) loader.classList.remove('hidden');
+      if (area) area.classList.add('hidden');
+
+      // 若全局應用尚未初始化完成 (包含班級設定 + 身分恢復)，等待初始化就緒 (最多等待 2 秒)
+      if (typeof appInitPromise !== 'undefined' && appInitPromise) {
+        await Promise.race([
+          appInitPromise,
+          new Promise(r => setTimeout(r, 2000))
+        ]);
+      } else if (currentClassId && classConfigPromise && !isClassConfigReady) {
         await Promise.race([
           classConfigPromise,
           new Promise(r => setTimeout(r, 1500))
@@ -7267,6 +7301,10 @@ function copyCatalogPromptById(promptId, slideIndex) {
       setupGatekeeperListeners();
       if (!currentClassId) {
         showGatekeeperOverlay();
+        if (appInitResolve) {
+          appInitResolve();
+          appInitResolve = null;
+        }
       } else {
         await initClassConfig();
         const hasAuth = checkExistingAuth();
@@ -7275,6 +7313,10 @@ function copyCatalogPromptById(promptId, slideIndex) {
         } else {
           hideGatekeeperOverlay();
           closeLoginModal();
+        }
+        if (appInitResolve) {
+          appInitResolve();
+          appInitResolve = null;
         }
       }
       renderSlide(1);
