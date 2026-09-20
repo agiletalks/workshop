@@ -1579,10 +1579,135 @@
       return str;
     }
 
+    let gatekeeperInspectTimeout = null;
+    let lastInspectedCode = '';
+
+    async function inspectGatekeeperClassCode(immediate = false, onBlur = false) {
+      if (gatekeeperInspectTimeout) {
+        clearTimeout(gatekeeperInspectTimeout);
+        gatekeeperInspectTimeout = null;
+      }
+
+      const runInspection = async () => {
+        const codeInput = document.getElementById('gatekeeper-code-input');
+        const badge = document.getElementById('gatekeeper-class-badge');
+        const badgeText = document.getElementById('gatekeeper-class-badge-text');
+        const errorEl = document.getElementById('gatekeeper-error-msg');
+        const errorTextEl = document.getElementById('gatekeeper-error-text');
+        const submitBtn = document.getElementById('btn-gatekeeper-submit');
+
+        if (!codeInput) return null;
+        const rawCode = codeInput.value;
+        const code = parseClassCode(rawCode);
+
+        if (!code) {
+          lastInspectedCode = '';
+          if (badge) badge.classList.add('hidden');
+          if (errorEl) errorEl.classList.add('hidden');
+          renderGatekeeperTeamOptions(6);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          }
+          return null;
+        }
+
+        if (code === lastInspectedCode && !immediate && !onBlur && currentClassData && currentClassData.id === code) {
+          return currentClassData;
+        }
+
+        lastInspectedCode = code;
+
+        try {
+          if (!db && typeof firebase !== 'undefined') {
+            initFirebase();
+          }
+          if (!db) return null;
+
+          const docSnap = await db.collection(CLASSES_COLLECTION).doc(code).get();
+          if (docSnap.exists) {
+            const data = docSnap.data();
+            currentClassData = data;
+            const classTeamCount = parseInt(data.teamCount, 10) || 6;
+            TOTAL_TEAMS = classTeamCount;
+
+            if (data.status === 'inactive') {
+              if (errorEl && errorTextEl) {
+                errorTextEl.innerText = `班級【${data.name || code}】目前已停用或未開放報到，請聯繫講師`;
+                errorEl.classList.remove('hidden');
+              }
+              if (badge && badgeText) {
+                badgeText.innerText = `${data.name || code} (已停用)`;
+                badge.classList.remove('hidden');
+              }
+              renderGatekeeperTeamOptions(TOTAL_TEAMS);
+              if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+              }
+              return data;
+            }
+
+            if (errorEl) errorEl.classList.add('hidden');
+            if (badge && badgeText) {
+              badgeText.innerText = data.name ? `${data.name} (#${code})` : `#${code}`;
+              badge.classList.remove('hidden');
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            renderGatekeeperTeamOptions(TOTAL_TEAMS);
+            return data;
+          } else {
+            currentClassData = null;
+            if (onBlur) {
+              if (errorEl && errorTextEl) {
+                errorTextEl.innerText = `查無班級代碼【${code}】，請確認後重新輸入`;
+                errorEl.classList.remove('hidden');
+              }
+            }
+            if (badge) badge.classList.add('hidden');
+            renderGatekeeperTeamOptions(6);
+            return null;
+          }
+        } catch (err) {
+          console.warn("檢查班級代碼失敗:", err);
+          return null;
+        }
+      };
+
+      if (immediate) {
+        return await runInspection();
+      } else {
+        gatekeeperInspectTimeout = setTimeout(runInspection, 250);
+      }
+    }
+
+    function setupGatekeeperListeners() {
+      const codeInput = document.getElementById('gatekeeper-code-input');
+      if (!codeInput || codeInput.dataset.listenerAttached) return;
+      codeInput.dataset.listenerAttached = 'true';
+
+      codeInput.addEventListener('input', () => {
+        inspectGatekeeperClassCode(false, false);
+      });
+      codeInput.addEventListener('change', () => {
+        inspectGatekeeperClassCode(true, true);
+      });
+      codeInput.addEventListener('blur', () => {
+        inspectGatekeeperClassCode(true, true);
+      });
+      codeInput.addEventListener('paste', () => {
+        setTimeout(() => inspectGatekeeperClassCode(true, true), 30);
+      });
+    }
+
     function showGatekeeperOverlay(prefillClassId = '') {
       const overlay = document.getElementById('gatekeeper-overlay');
       if (!overlay) return;
       overlay.classList.remove('hidden');
+      setupGatekeeperListeners();
 
       const targetCode = prefillClassId || currentClassId;
       const codeInput = document.getElementById('gatekeeper-code-input');
@@ -1591,16 +1716,11 @@
 
       if (targetCode) {
         if (codeInput) codeInput.value = targetCode;
-        if (badge && badgeText) {
-          badgeText.innerText = (currentClassData && currentClassData.name) ? `${currentClassData.name} (#${targetCode})` : `#${targetCode}`;
-          badge.classList.remove('hidden');
-        }
+        inspectGatekeeperClassCode(true, true);
       } else {
         if (badge) badge.classList.add('hidden');
+        renderGatekeeperTeamOptions(TOTAL_TEAMS || 6);
       }
-
-      const teamCount = (currentClassData && currentClassData.teamCount) ? currentClassData.teamCount : TOTAL_TEAMS;
-      renderGatekeeperTeamOptions(teamCount);
 
       if (window.lucide) lucide.createIcons({ scope: overlay });
       setTimeout(() => {
@@ -1621,8 +1741,15 @@
       const container = document.getElementById('gatekeeper-team-selector');
       if (!container) return;
       const count = parseInt(teamCount, 10) || 6;
-      const currentSelected = document.getElementById('gatekeeper-team-val')?.value || 'team-1';
+      let currentSelected = document.getElementById('gatekeeper-team-val')?.value || 'team-1';
+      const selNum = parseInt(currentSelected.replace('team-', ''), 10) || 1;
+      if (selNum > count || selNum < 1) {
+        currentSelected = 'team-1';
+        const valInput = document.getElementById('gatekeeper-team-val');
+        if (valInput) valInput.value = 'team-1';
+      }
       container.innerHTML = '';
+      container.className = count > 6 ? 'grid grid-cols-4 gap-1.5' : (count <= 4 ? 'grid grid-cols-2 sm:grid-cols-4 gap-1.5' : 'grid grid-cols-3 gap-1.5');
       const label = document.getElementById('gatekeeper-team-label');
       if (label) {
         label.innerHTML = `<span>3. 選擇所屬組別 (共 ${count} 組)</span> <span class="text-rose-400">*</span>`;
@@ -1643,7 +1770,7 @@
     function selectGatekeeperTeam(teamId, teamCount = 6) {
       const valInput = document.getElementById('gatekeeper-team-val');
       if (valInput) valInput.value = teamId;
-      const count = parseInt(teamCount, 10) || 6;
+      const count = parseInt(teamCount, 10) || TOTAL_TEAMS || 6;
       for (let i = 1; i <= count; i++) {
         const tId = `team-${i}`;
         const btn = document.getElementById(`gatekeeper-opt-${tId}`);
@@ -1661,7 +1788,6 @@
       if (e) e.preventDefault();
       const inputCodeEl = document.getElementById('gatekeeper-code-input');
       const inputNameEl = document.getElementById('gatekeeper-name-input');
-      const teamVal = document.getElementById('gatekeeper-team-val')?.value || 'team-1';
       const errorEl = document.getElementById('gatekeeper-error-msg');
       const errorTextEl = document.getElementById('gatekeeper-error-text');
       const submitBtn = document.getElementById('btn-gatekeeper-submit');
@@ -1715,7 +1841,31 @@
             return;
           }
           classDocData = docSnap.data();
+          if (classDocData.status === 'inactive') {
+            if (errorEl && errorTextEl) {
+              errorTextEl.innerText = `班級【${classDocData.name || code}】目前已停用或未開放報到，請聯繫講師`;
+              errorEl.classList.remove('hidden');
+            }
+            if (submitBtn) {
+              submitBtn.disabled = true;
+              submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+              submitBtn.innerHTML = `<span>🚀 完成報到，進入第 1 頁講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+              if (window.lucide) lucide.createIcons({ scope: submitBtn });
+            }
+            return;
+          }
         }
+
+        const classTeamCount = parseInt(classDocData?.teamCount, 10) || 6;
+        TOTAL_TEAMS = classTeamCount;
+
+        // 驗證組別是否在有效範圍內 (防越界提交)
+        let rawTeamVal = document.getElementById('gatekeeper-team-val')?.value || 'team-1';
+        const rawTeamNum = parseInt(rawTeamVal.replace('team-', ''), 10) || 1;
+        if (rawTeamNum < 1 || rawTeamNum > classTeamCount) {
+          rawTeamVal = 'team-1';
+        }
+        const teamVal = rawTeamVal;
 
         // 設置當前班級資料與身分
         currentClassId = code;
@@ -7063,6 +7213,7 @@ function copyCatalogPromptById(promptId, slideIndex) {
     window.addEventListener('DOMContentLoaded', async () => {
       initFirebase();
       closeLoginModal();
+      setupGatekeeperListeners();
       if (!currentClassId) {
         showGatekeeperOverlay();
       } else {
