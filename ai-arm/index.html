@@ -499,7 +499,7 @@
             <div id="team-dropdown-menu" class="hidden absolute top-full mt-1.5 left-0 w-52 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50">
               <div class="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider flex items-center justify-between">
                 <span>切換檢視組別</span>
-                <span class="text-[9px] text-slate-400 font-normal">共 6 組</span>
+                <span id="team-dropdown-total-label" class="text-[9px] text-slate-400 font-normal">共 6 組</span>
               </div>
               <div id="team-dropdown-items" class="space-y-0.5 mt-0.5"></div>
             </div>
@@ -801,7 +801,7 @@
   </div>
 
   <!-- ==================== 登入與身分門禁 Modal ==================== -->
-  <div id="login-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+  <div id="login-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative">
       <button id="btn-close-login" onclick="closeLoginModal()" class="hidden absolute top-5 right-5 text-slate-400 hover:text-slate-600 rounded-full p-1.5 hover:bg-slate-100 transition-colors">
         <i data-lucide="x" class="w-5 h-5"></i>
@@ -1743,6 +1743,10 @@
         // 套用 UI 與進入課程
         applyUserIdentityUI();
         hideGatekeeperOverlay();
+        closeLoginModal();
+        const usernameInput = document.getElementById('input-username');
+        if (usernameInput) usernameInput.value = name;
+        selectLoginTeam(teamVal);
         initClassConfig();
         subscribeToFirestore();
         renderSlide(1);
@@ -1836,6 +1840,7 @@
       }
       if (currentUser) {
         hideGatekeeperOverlay();
+        closeLoginModal();
       }
 
       if (!db) return;
@@ -4306,7 +4311,13 @@
         }
       }
 
-      // 生成下拉選單 1~6 組項目
+      // 更新下拉選單總組數標籤 (例如：共 2 組 / 共 3 組 / 共 8 組)
+      const totalLabel = document.getElementById('team-dropdown-total-label');
+      if (totalLabel) {
+        totalLabel.innerText = `共 ${TOTAL_TEAMS} 組`;
+      }
+
+      // 生成下拉選單 1~TOTAL_TEAMS 組項目
       if (itemsContainer) {
         itemsContainer.innerHTML = '';
         for (let i = 1; i <= TOTAL_TEAMS; i++) {
@@ -6804,7 +6815,16 @@ function copyCatalogPromptById(promptId, slideIndex) {
 
       printSelectedTeam = activeTeamId || (currentUser ? currentUser.team : 'team-1');
       const selectEl = document.getElementById('print-team-select');
-      if (selectEl) selectEl.value = printSelectedTeam;
+      if (selectEl) {
+        selectEl.innerHTML = '';
+        for (let i = 1; i <= TOTAL_TEAMS; i++) {
+          const opt = document.createElement('option');
+          opt.value = `team-${i}`;
+          opt.innerText = `第 ${i} 組`;
+          selectEl.appendChild(opt);
+        }
+        selectEl.value = printSelectedTeam;
+      }
 
       await loadAllNotesForPrint(printSelectedTeam);
       renderPrintNotesUI();
@@ -7042,6 +7062,7 @@ function copyCatalogPromptById(promptId, slideIndex) {
 
     window.addEventListener('DOMContentLoaded', async () => {
       initFirebase();
+      closeLoginModal();
       if (!currentClassId) {
         showGatekeeperOverlay();
       } else {
@@ -7049,6 +7070,9 @@ function copyCatalogPromptById(promptId, slideIndex) {
         const hasAuth = checkExistingAuth();
         if (!hasAuth) {
           showGatekeeperOverlay(currentClassId);
+        } else {
+          hideGatekeeperOverlay();
+          closeLoginModal();
         }
       }
       renderSlide(1);
