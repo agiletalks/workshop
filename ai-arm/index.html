@@ -716,30 +716,34 @@
     </div>
 
     <!-- 中央核心輸入卡片 -->
-    <div class="w-full max-w-md my-auto py-8">
+    <div class="w-full max-w-md my-auto py-6">
       <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative text-center">
-        <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-4 shadow-inner">
-          <i data-lucide="door-closed" class="w-7 h-7"></i>
+        <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3 shadow-inner">
+          <i data-lucide="sparkles" class="w-7 h-7"></i>
         </div>
 
         <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">AI-ARM 課程專屬報到處</h2>
-        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-          本工作坊採專屬分組空間演練。<br>
-          為確保您的隨堂筆記與小組白板與隊友同步，<br>
-          <strong class="text-amber-400">請輸入講師提供的專屬班級代碼</strong>。
+        <div id="gatekeeper-class-badge" class="hidden inline-flex items-center gap-1.5 px-3 py-1 mt-2 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold">
+          <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span id="gatekeeper-class-badge-text">班級名稱</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-2 leading-relaxed" id="gatekeeper-desc">
+          本工作坊採專屬分組空間實戰演練。<br>
+          請輸入<strong class="text-amber-400">班級代碼</strong>、<strong class="text-white">您的姓名</strong>與<strong class="text-white">所屬組別</strong>以進入講義。
         </p>
 
-        <!-- 班級代碼快速輸入 Form -->
-        <form onsubmit="handleGatekeeperSubmit(event)" class="mt-6 space-y-3.5 text-left">
-          <div>
+        <!-- 一體化報到 Form (代碼 + 姓名 + 選組) -->
+        <form onsubmit="handleGatekeeperSubmit(event)" class="mt-5 space-y-3.5 text-left">
+          <!-- 1. 班級專屬代碼 -->
+          <div id="gatekeeper-code-group">
             <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>班級專屬代碼 (Class Code)</span>
-              <span class="text-[11px] text-slate-500 font-normal">例：2026-cathay</span>
+              <span>1. 班級專屬代碼 (Class Code) <span class="text-rose-400">*</span></span>
+              <span class="text-[11px] text-slate-500 font-normal font-mono">例：2026-cathay</span>
             </label>
             <div class="relative">
               <input type="text" id="gatekeeper-code-input" autofocus autocomplete="off" placeholder="請輸入班級代碼 (例如 2026-cathay)" 
-                class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-amber-300 font-mono text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all placeholder:text-slate-600 placeholder:font-sans" />
-              <i data-lucide="hash" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5"></i>
+                class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-amber-300 font-mono text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all placeholder:text-slate-600 placeholder:font-sans" />
+              <i data-lucide="hash" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3"></i>
             </div>
             <p id="gatekeeper-error-msg" class="hidden text-xs text-rose-400 mt-1.5 font-medium flex items-center gap-1">
               <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>
@@ -747,20 +751,44 @@
             </p>
           </div>
 
-          <button type="submit" id="btn-gatekeeper-submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 rounded-xl font-bold text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <span>進入專屬課程講義</span>
+          <!-- 2. 學員姓名 / 稱呼 -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              <span>2. 學員姓名 / 稱呼 <span class="text-rose-400">*</span></span>
+            </label>
+            <div class="relative">
+              <input type="text" id="gatekeeper-name-input" required autocomplete="name" placeholder="例如：王小明、Alex、小美" 
+                class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all placeholder:text-slate-600" />
+              <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3"></i>
+            </div>
+          </div>
+
+          <!-- 3. 所屬組別 -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span id="gatekeeper-team-label">3. 選擇所屬組別 (共 6 組) <span class="text-rose-400">*</span></span>
+            </label>
+            <div class="grid grid-cols-3 gap-1.5" id="gatekeeper-team-selector">
+              <!-- 由 JS renderGatekeeperTeamOptions() 動態填入 -->
+            </div>
+            <input type="hidden" id="gatekeeper-team-val" value="team-1" />
+          </div>
+
+          <!-- 提交按鈕 -->
+          <button type="submit" id="btn-gatekeeper-submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 rounded-xl font-bold text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2">
+            <span>🚀 完成報到，進入第 1 頁講義</span>
             <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </button>
         </form>
 
         <!-- 友善引導資訊 -->
-        <div class="mt-6 pt-5 border-t border-slate-800/80 text-xs text-slate-500 space-y-2">
-          <p class="flex items-center justify-center gap-1.5">
-            <i data-lucide="qr-code" class="w-3.5 h-3.5 text-slate-400"></i>
-            <span>亦可直接掃描現場投影大螢幕的 QR Code</span>
+        <div class="mt-5 pt-4 border-t border-slate-800/80 text-xs text-slate-500 space-y-1.5">
+          <p class="flex items-center justify-center gap-1.5 text-slate-400">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>免切換頁面 · 報到完成直接進入講義開課</span>
           </p>
           <p class="text-[11px] text-slate-600">
-            支援貼上完整網址或代碼，系統將自動解析為您導航
+            班級代碼由講師現場公布 (例如投影大螢幕或白板)
           </p>
         </div>
       </div>
@@ -780,17 +808,17 @@
       </button>
 
       <div class="text-center space-y-1.5">
-        <div class="w-14 h-14 rounded-2xl bg-amber-500 text-slate-950 font-black text-2xl mx-auto flex items-center justify-center shadow-lg shadow-amber-500/30">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500 text-slate-950 font-black text-xl mx-auto flex items-center justify-center shadow-lg shadow-amber-500/30">
           ARM
         </div>
-        <h2 id="login-modal-class-name" class="text-lg sm:text-xl font-black text-slate-900 leading-snug">專屬學員身分報到</h2>
+        <h2 id="login-modal-class-name" class="text-lg font-black text-slate-900 leading-snug">學員資訊與組別調整</h2>
         <div id="login-modal-class-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 text-xs font-mono font-bold">
           班級代碼: #...
         </div>
-        <p class="text-xs text-slate-500 pt-1">完成報到後即可加入小組即時共筆並進入第 1 頁講義</p>
+        <p class="text-xs text-slate-500 pt-0.5">隨時切換組別或更新稱呼，小組共筆與白板將即時同步</p>
       </div>
 
-      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="mt-5 space-y-3.5">
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="mt-4 space-y-3.5">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">學員姓名 / 稱呼</label>
           <div class="relative">
@@ -802,28 +830,14 @@
         <div>
           <label id="login-team-label" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">選擇您所屬的組別 (共 6 組)</label>
           <div class="grid grid-cols-3 gap-2" id="login-team-selector">
-            <button type="button" id="login-opt-team-1" onclick="selectLoginTeam('team-1')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-amber-500 text-white border-amber-500 shadow-sm">第 1 組</button>
-            <button type="button" id="login-opt-team-2" onclick="selectLoginTeam('team-2')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 2 組</button>
-            <button type="button" id="login-opt-team-3" onclick="selectLoginTeam('team-3')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 3 組</button>
-            <button type="button" id="login-opt-team-4" onclick="selectLoginTeam('team-4')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 4 組</button>
-            <button type="button" id="login-opt-team-5" onclick="selectLoginTeam('team-5')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 5 組</button>
-            <button type="button" id="login-opt-team-6" onclick="selectLoginTeam('team-6')" class="py-2 rounded-xl text-xs font-bold border transition-all bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">第 6 組</button>
+            <!-- Dynamically populated -->
           </div>
           <input type="hidden" id="input-team-val" value="team-1" />
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">課程通行密碼</label>
-          <div class="relative">
-            <input type="password" id="input-password" required placeholder="請輸入密碼 (agile-2026)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm outline-none transition-all pl-9" />
-            <i data-lucide="key-round" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
-          </div>
-          <p id="password-error" class="hidden text-xs text-rose-500 mt-1 font-medium">密碼不正確，請洽詢講師！</p>
-        </div>
-
-        <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 active:scale-98 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer">
-          <span>完成報到，進入第 1 頁講義</span>
-          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 active:scale-98 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 mt-3 cursor-pointer">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>確認儲存變更</span>
         </button>
       </form>
     </div>
@@ -1565,15 +1579,37 @@
       return str;
     }
 
-    function showGatekeeperOverlay() {
+    function showGatekeeperOverlay(prefillClassId = '') {
       const overlay = document.getElementById('gatekeeper-overlay');
-      if (overlay) {
-        overlay.classList.remove('hidden');
-        if (window.lucide) lucide.createIcons({ scope: overlay });
-        setTimeout(() => {
-          document.getElementById('gatekeeper-code-input')?.focus();
-        }, 150);
+      if (!overlay) return;
+      overlay.classList.remove('hidden');
+
+      const targetCode = prefillClassId || currentClassId;
+      const codeInput = document.getElementById('gatekeeper-code-input');
+      const badge = document.getElementById('gatekeeper-class-badge');
+      const badgeText = document.getElementById('gatekeeper-class-badge-text');
+
+      if (targetCode) {
+        if (codeInput) codeInput.value = targetCode;
+        if (badge && badgeText) {
+          badgeText.innerText = (currentClassData && currentClassData.name) ? `${currentClassData.name} (#${targetCode})` : `#${targetCode}`;
+          badge.classList.remove('hidden');
+        }
+      } else {
+        if (badge) badge.classList.add('hidden');
       }
+
+      const teamCount = (currentClassData && currentClassData.teamCount) ? currentClassData.teamCount : TOTAL_TEAMS;
+      renderGatekeeperTeamOptions(teamCount);
+
+      if (window.lucide) lucide.createIcons({ scope: overlay });
+      setTimeout(() => {
+        if (targetCode) {
+          document.getElementById('gatekeeper-name-input')?.focus();
+        } else {
+          document.getElementById('gatekeeper-code-input')?.focus();
+        }
+      }, 150);
     }
 
     function hideGatekeeperOverlay() {
@@ -1581,28 +1617,80 @@
       if (overlay) overlay.classList.add('hidden');
     }
 
+    function renderGatekeeperTeamOptions(teamCount = 6) {
+      const container = document.getElementById('gatekeeper-team-selector');
+      if (!container) return;
+      const count = parseInt(teamCount, 10) || 6;
+      const currentSelected = document.getElementById('gatekeeper-team-val')?.value || 'team-1';
+      container.innerHTML = '';
+      const label = document.getElementById('gatekeeper-team-label');
+      if (label) {
+        label.innerHTML = `<span>3. 選擇所屬組別 (共 ${count} 組)</span> <span class="text-rose-400">*</span>`;
+      }
+      for (let i = 1; i <= count; i++) {
+        const tId = `team-${i}`;
+        const isSel = (tId === currentSelected);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = `gatekeeper-opt-${tId}`;
+        btn.onclick = () => selectGatekeeperTeam(tId, count);
+        btn.className = `py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${isSel ? 'bg-amber-500 text-slate-950 border-amber-500 font-black shadow-xs' : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'}`;
+        btn.innerText = `第 ${i} 組`;
+        container.appendChild(btn);
+      }
+    }
+
+    function selectGatekeeperTeam(teamId, teamCount = 6) {
+      const valInput = document.getElementById('gatekeeper-team-val');
+      if (valInput) valInput.value = teamId;
+      const count = parseInt(teamCount, 10) || 6;
+      for (let i = 1; i <= count; i++) {
+        const tId = `team-${i}`;
+        const btn = document.getElementById(`gatekeeper-opt-${tId}`);
+        if (btn) {
+          if (tId === teamId) {
+            btn.className = 'py-2 rounded-xl text-xs font-bold border bg-amber-500 text-slate-950 border-amber-500 font-black shadow-xs cursor-pointer';
+          } else {
+            btn.className = 'py-2 rounded-xl text-xs font-bold border bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500 cursor-pointer';
+          }
+        }
+      }
+    }
+
     async function handleGatekeeperSubmit(e) {
       if (e) e.preventDefault();
-      const inputEl = document.getElementById('gatekeeper-code-input');
+      const inputCodeEl = document.getElementById('gatekeeper-code-input');
+      const inputNameEl = document.getElementById('gatekeeper-name-input');
+      const teamVal = document.getElementById('gatekeeper-team-val')?.value || 'team-1';
       const errorEl = document.getElementById('gatekeeper-error-msg');
       const errorTextEl = document.getElementById('gatekeeper-error-text');
       const submitBtn = document.getElementById('btn-gatekeeper-submit');
 
-      const raw = inputEl ? inputEl.value : '';
-      const code = parseClassCode(raw);
+      const rawCode = inputCodeEl ? inputCodeEl.value : '';
+      const code = parseClassCode(rawCode);
+      const name = inputNameEl ? inputNameEl.value.trim() : '';
 
       if (!code) {
         if (errorEl && errorTextEl) {
           errorTextEl.innerText = "請輸入班級代碼（例如：2026-cathay）";
           errorEl.classList.remove('hidden');
         }
-        inputEl?.focus();
+        inputCodeEl?.focus();
+        return;
+      }
+
+      if (!name) {
+        if (errorEl && errorTextEl) {
+          errorTextEl.innerText = "請輸入您的姓名或稱呼";
+          errorEl.classList.remove('hidden');
+        }
+        inputNameEl?.focus();
         return;
       }
 
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = `<span>驗證班級代碼中...</span>`;
+        submitBtn.innerHTML = `<span>報到驗證中...</span>`;
       }
       if (errorEl) errorEl.classList.add('hidden');
 
@@ -1610,6 +1698,7 @@
         if (!db && typeof firebase !== 'undefined') {
           initFirebase();
         }
+        let classDocData = null;
         if (db) {
           const docSnap = await db.collection(CLASSES_COLLECTION).doc(code).get();
           if (!docSnap.exists) {
@@ -1619,16 +1708,58 @@
             }
             if (submitBtn) {
               submitBtn.disabled = false;
-              submitBtn.innerHTML = `<span>進入專屬課程講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+              submitBtn.innerHTML = `<span>🚀 完成報到，進入第 1 頁講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
               if (window.lucide) lucide.createIcons({ scope: submitBtn });
             }
+            inputCodeEl?.focus();
             return;
           }
+          classDocData = docSnap.data();
         }
-        window.location.href = `?c=${encodeURIComponent(code)}`;
+
+        // 設置當前班級資料與身分
+        currentClassId = code;
+        currentClassData = classDocData || { id: code, name: code };
+        APP_STORAGE_KEY = `ai_arm_auth_user_${code}`;
+
+        currentUser = {
+          name: name,
+          team: teamVal,
+          loggedInAt: Date.now()
+        };
+        localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
+
+        // 同步獨立 HTML 工具 session keys
+        const teamNum = teamVal.replace('team-', '');
+        localStorage.setItem('ai_arm_team', `Team ${teamNum}`);
+        localStorage.setItem('ai_arm_team_id', teamVal);
+        localStorage.setItem('ai_arm_nickname', name);
+        activeTeamId = teamVal;
+
+        // 平滑更新瀏覽器網址 (帶入 ?c=代碼)，不刷新頁面
+        const newUrl = `${window.location.origin}${window.location.pathname}?c=${encodeURIComponent(code)}`;
+        window.history.replaceState({ classId: code }, '', newUrl);
+
+        // 套用 UI 與進入課程
+        applyUserIdentityUI();
+        hideGatekeeperOverlay();
+        initClassConfig();
+        subscribeToFirestore();
+        renderSlide(1);
+
+        const teamDisplayName = getTeamDisplayName(teamVal);
+        showToast(`【${currentClassData?.name || code}】報到完成！歡迎 ${name}（${teamDisplayName}）`, "emerald");
       } catch (err) {
-        console.warn("驗證班級代碼失敗，直接導向:", err);
-        window.location.href = `?c=${encodeURIComponent(code)}`;
+        console.error("報到驗證異常:", err);
+        if (errorEl && errorTextEl) {
+          errorTextEl.innerText = `驗證失敗：${err.message || '請確認網路連線'}`;
+          errorEl.classList.remove('hidden');
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span>🚀 完成報到，進入第 1 頁講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+          if (window.lucide) lucide.createIcons({ scope: submitBtn });
+        }
       }
     }
 
@@ -1703,7 +1834,9 @@
         if (loginModal) loginModal.classList.add('hidden');
         return;
       }
-      hideGatekeeperOverlay();
+      if (currentUser) {
+        hideGatekeeperOverlay();
+      }
 
       if (!db) return;
       if (classConfigUnsubscribe) {
@@ -1724,7 +1857,16 @@
               classBadge.classList.remove('hidden');
             }
 
-            // 更新報到視窗標題與代碼標籤
+            // 更新門禁報到徽章與組數 (若學員尚未完成報到)
+            const gateBadge = document.getElementById('gatekeeper-class-badge');
+            const gateBadgeText = document.getElementById('gatekeeper-class-badge-text');
+            if (gateBadge && gateBadgeText) {
+              gateBadgeText.innerText = `${currentClassData.name || currentClassId} (#${currentClassId})`;
+              gateBadge.classList.remove('hidden');
+            }
+            renderGatekeeperTeamOptions(TOTAL_TEAMS);
+
+            // 更新身分調整視窗標題與代碼標籤
             const modalClassName = document.getElementById('login-modal-class-name');
             if (modalClassName) {
               modalClassName.innerText = currentClassData.name || currentClassId;
@@ -1844,17 +1986,17 @@
             activeTeamId = currentUser.team;
             applyUserIdentityUI();
             closeLoginModal();
+            hideGatekeeperOverlay();
             subscribeToFirestore();
             return true;
           }
         } catch (e) {}
       }
-      openLoginModal(false);
       return false;
     }
 
     function openLoginModal(canClose = true) {
-      if (!currentClassId) return; // 門禁狀態下不打開登入彈窗
+      if (!currentClassId) return; // 門禁狀態下不打開身分調整彈窗
       const modal = document.getElementById('login-modal');
       const closeBtn = document.getElementById('btn-close-login');
       modal.classList.remove('hidden');
@@ -1873,8 +2015,6 @@
     }
 
     function closeLoginModal() {
-      // 未完成身分報到前，絕對禁止關閉，確保講義不被未報到學員翻閱
-      if (!currentUser && currentClassId) return;
       document.getElementById('login-modal').classList.add('hidden');
     }
 
@@ -1892,7 +2032,7 @@
         btn.type = 'button';
         btn.id = `login-opt-${tId}`;
         btn.onclick = () => selectLoginTeam(tId);
-        btn.className = `py-2 rounded-xl text-xs font-bold border transition-all ${isSel ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`;
+        btn.className = `py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${isSel ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`;
         btn.innerText = `第 ${i} 組`;
         container.appendChild(btn);
       }
@@ -1905,9 +2045,9 @@
         const btn = document.getElementById(`login-opt-${tId}`);
         if (btn) {
           if (tId === teamId) {
-            btn.className = 'py-2 rounded-xl text-xs font-bold border bg-amber-500 text-white border-amber-500 shadow-sm';
+            btn.className = 'py-2 rounded-xl text-xs font-bold border bg-amber-500 text-white border-amber-500 shadow-sm cursor-pointer';
           } else {
-            btn.className = 'py-2 rounded-xl text-xs font-bold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+            btn.className = 'py-2 rounded-xl text-xs font-bold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 cursor-pointer';
           }
         }
       }
@@ -1915,21 +2055,15 @@
 
     function handleLoginSubmit(e) {
       e.preventDefault();
-      const pwd = document.getElementById('input-password').value.trim();
       const name = document.getElementById('input-username').value.trim();
       const team = document.getElementById('input-team-val').value;
-      const errEl = document.getElementById('password-error');
 
-      if (pwd !== COURSE_PASSWORD) {
-        errEl.classList.remove('hidden');
-        return;
-      }
-      errEl.classList.add('hidden');
+      if (!name) return;
 
       currentUser = {
         name: name,
         team: team,
-        loggedInAt: Date.now()
+        loggedInAt: currentUser?.loggedInAt || Date.now()
       };
       localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
       // 同步獨立 HTML 工具 (decision-table 與 status-transition-matrix) 所需之 session key
@@ -1942,9 +2076,9 @@
       applyUserIdentityUI();
       closeLoginModal();
       subscribeToFirestore();
-      renderSlide(1);
+      renderTeamTabs();
       const teamDisplayName = getTeamDisplayName(currentUser.team);
-      showToast(`【${currentClassData?.name || currentClassId}】報到完成！歡迎 ${name}（${teamDisplayName}）`, "emerald");
+      showToast(`身分已更新！歡迎 ${name}（${teamDisplayName}）`, "emerald");
     }
 
     function applyUserIdentityUI() {
@@ -6811,7 +6945,10 @@ function copyCatalogPromptById(promptId, slideIndex) {
         showGatekeeperOverlay();
       } else {
         await initClassConfig();
-        checkExistingAuth();
+        const hasAuth = checkExistingAuth();
+        if (!hasAuth) {
+          showGatekeeperOverlay(currentClassId);
+        }
       }
       renderSlide(1);
       setupMemoListeners();
