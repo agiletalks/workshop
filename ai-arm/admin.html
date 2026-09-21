@@ -393,7 +393,7 @@
   <!-- ==================== 核心邏輯 Javascript ==================== -->
   <script>
     const ADMIN_STORAGE_KEY = "ai_arm_admin_auth";
-    const DEFAULT_ADMIN_PASS = "admin-agile";
+    const DEFAULT_ADMIN_PASS = "24721942@Ai";
     const CLASSES_COLLECTION = "ai_arm_classes";
     const NOTES_COLLECTION = "aigile_boards";
 
@@ -443,7 +443,7 @@
     function handleAdminLogin(e) {
       e.preventDefault();
       const inputPass = document.getElementById("admin-pass-input").value.trim();
-      // 支援預設密碼或通用課程密碼
+      // 支援新管理員專屬密碼 (24721942@Ai) 並保持與 agile-2026 相容
       if (inputPass === DEFAULT_ADMIN_PASS || inputPass === "agile-2026") {
         sessionStorage.setItem(ADMIN_STORAGE_KEY, "true");
         document.getElementById("admin-auth-overlay").classList.add("hidden");
