@@ -2573,24 +2573,24 @@
 
       if (activeMode === 'workstation') {
         if (section) {
-          section.classList.remove('w-full', 'md:w-full', 'hidden');
+          section.classList.remove('w-full', 'md:w-full', 'hidden', 'md:hidden');
           section.classList.add('w-full', 'md:w-1/2', 'flex');
         }
         if (aside) {
-          aside.classList.remove('hidden');
-          aside.classList.add('flex');
+          aside.classList.remove('hidden', 'md:hidden');
+          aside.classList.add('flex', 'md:flex');
         }
         if (btnIcon) btnIcon.setAttribute('data-lucide', 'maximize-2');
         if (btnText) btnText.innerText = '劇院模式';
         if (btn) btn.title = '切換為劇院滿版大圖模式';
       } else {
         if (section) {
-          section.classList.remove('md:w-1/2');
+          section.classList.remove('md:w-1/2', 'hidden', 'md:hidden');
           section.classList.add('w-full', 'md:w-full', 'flex');
         }
         if (aside) {
-          aside.classList.add('hidden');
-          aside.classList.remove('flex');
+          aside.classList.remove('flex', 'md:flex');
+          aside.classList.add('hidden', 'md:hidden');
         }
         if (btnIcon) btnIcon.setAttribute('data-lucide', 'layout-panel-left');
         if (btnText) btnText.innerText = '雙欄筆記';
