@@ -402,6 +402,14 @@
 
     <!-- 右側視角控制、手機選單與協助 -->
     <div class="flex items-center space-x-1.5 sm:space-x-2">
+      <!-- 在線成員與視角跟隨 (Presence Avatar Bar) -->
+      <div id="board-presence-container" class="flex items-center gap-1 sm:gap-1.5" title="在線成員：點擊頭像即可跟隨該成員視角">
+        <div id="board-presence-avatars" class="flex items-center -space-x-1.5 sm:-space-x-2 overflow-visible">
+          <!-- 由 JS renderBoardPresenceAvatars() 動態渲染 -->
+        </div>
+      </div>
+      <div class="h-6 w-[1px] bg-slate-300/60 mx-0.5 sm:mx-1"></div>
+
       <button onclick="resetViewport()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer" title="視角置中">
         <i data-lucide="maximize" class="w-4 h-4"></i>
       </button>
@@ -470,6 +478,24 @@
   <div id="toolbar-handle" onclick="showToolbar()" class="fixed top-0 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border-x border-b border-slate-200/80 shadow-md px-5 py-1.5 rounded-b-2xl z-50 cursor-pointer flex items-center gap-1.5 text-slate-500 hover:text-emerald-600 hover:shadow-lg transition-all transform duration-300">
     <i id="toolbar-handle-icon" data-lucide="chevron-down" class="w-4 h-4 animate-bounce"></i>
     <span class="text-[10px] font-extrabold tracking-wider uppercase">工具列</span>
+  </div>
+
+  <!-- Miro 級視角跟隨邊框呼吸光暈 (Following Vignette) -->
+  <div id="follow-indicator-vignette" class="fixed inset-0 pointer-events-none z-40 transition-all duration-300 border-4 border-transparent hidden shadow-[inset_0_0_28px_rgba(99,102,241,0.55)]"></div>
+
+  <!-- 頂部視角跟隨懸浮膠囊 (Following Pill Banner) -->
+  <div id="following-banner" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden items-center gap-2.5 px-4 py-2 bg-slate-900/95 backdrop-blur-md text-white border border-indigo-500/50 rounded-full shadow-2xl transition-all duration-300">
+    <div class="flex items-center gap-2">
+      <span class="relative flex h-2.5 w-2.5">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+      </span>
+      <span class="text-xs font-medium text-slate-200">正在跟隨 <strong id="following-target-name" class="text-indigo-300 font-bold">--</strong> 的視角</span>
+    </div>
+    <button onclick="stopFollowing('button_click')" class="ml-1 px-2.5 py-0.5 bg-indigo-600 hover:bg-indigo-500 text-[11px] font-bold text-white rounded-full transition-colors cursor-pointer flex items-center gap-1 shadow-xs" title="停止跟隨視角 (快捷鍵: Esc)">
+      <span>停止跟隨</span>
+      <kbd class="text-[9px] bg-indigo-800/80 px-1 py-0.2 rounded text-indigo-200">Esc</kbd>
+    </button>
   </div>
 
   <!-- 左下角漂浮畫布控制面板 (桌面版專屬) -->
@@ -1459,24 +1485,37 @@
     let isBoardReadOnly = false;
     let classConfigUnsubscribe = null;
 
-    // 取得小組與學員身分資訊 (專屬白板房間)
+    // 取得小組與學員身分資訊 (專屬白板房間與跨組權限判定)
     function getTeamInfo() {
       const params = new URLSearchParams(window.location.search);
       let team = params.get('team');
       let user = params.get('user');
       let room = params.get('room');
       let classId = params.get('c') || params.get('class') || params.get('classId') || '';
+      let userAssignedTeam = '';
+      let isInstructor = false;
+      let registeredName = '';
 
-      if (!team || !user) {
-        try {
-          const storageKey = classId ? `ai_arm_auth_user_${classId}` : 'ai_arm_auth_user';
-          const saved = localStorage.getItem(storageKey) || localStorage.getItem('ai_arm_auth_user');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (!team && parsed.team) team = parsed.team;
-            if (!user && parsed.name) user = parsed.name;
-          }
-        } catch (e) {}
+      try {
+        const storageKey = classId ? `ai_arm_auth_user_${classId}` : 'ai_arm_auth_user';
+        const saved = localStorage.getItem(storageKey) || localStorage.getItem('ai_arm_auth_user');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (!team && (parsed.viewingTeam || parsed.team)) team = parsed.viewingTeam || parsed.team;
+          registeredName = parsed.name || '';
+          userAssignedTeam = parsed.assignedTeam || parsed.team || '';
+          if (parsed.isInstructor || parsed.role === 'instructor') isInstructor = true;
+        }
+      } catch (e) {}
+
+      // 本地身分錨定與防冒名提權 (BUG-FOLLOW-05 修復)：
+      // 若該瀏覽器已透過門禁完成特定學員報到，優先以真實報到姓名為準；
+      // 若一般學員在 URL 試圖偽造名字（如 ?user=Percy 或 ?user=敏捷講師），
+      // 系統強制以其登入認證的真實姓名為準，拒絕 URL 任意冒名提權！
+      if (registeredName) {
+        user = registeredName;
+      } else {
+        user = (user && user.trim()) ? user.trim() : '學員';
       }
 
       if (team && team.trim()) {
@@ -1487,11 +1526,33 @@
       } else {
         team = 'team-1';
       }
-      user = (user && user.trim()) ? user.trim() : '學員';
+
+      // 核心講師身分識別：
+      // 1. 講師專屬名稱「Percy」直接識別為授權講師
+      // 2. 名稱包含「講師」、「顧問」、「老師」
+      // 3. 具備後台管理認證 session (admin.html 授權)
+      const uLower = (user || '').trim().toLowerCase();
+      const isAdminSession = sessionStorage.getItem('ai_arm_admin_auth') === 'true';
+      if (uLower === 'percy' || uLower.includes('percy') || 
+          uLower.includes('講師') || uLower.includes('顧問') || uLower.includes('老師') || 
+          isAdminSession) {
+        isInstructor = true;
+      }
+
+      if (userAssignedTeam && userAssignedTeam.trim()) {
+        userAssignedTeam = userAssignedTeam.trim().toLowerCase();
+        if (!userAssignedTeam.startsWith('team-')) {
+          userAssignedTeam = 'team-' + userAssignedTeam;
+        }
+      }
+
       const teamNum = team.replace('team-', '');
       const teamDisplayName = `第 ${teamNum} 組`;
 
       let defaultRoom = (classId && classId !== 'default') ? `ai-arm-${classId}-${team}` : `ai-arm-${team}`;
+
+      // 核心權限規則：每組只能編輯自己這組白板，若進入別組則自動判定為跨組唯讀觀摩（講師豁免）
+      const isObserver = !!(userAssignedTeam && userAssignedTeam !== team && !isInstructor);
 
       return {
         teamId: team,
@@ -1499,12 +1560,18 @@
         teamDisplayName: teamDisplayName,
         userName: user,
         classId: classId,
-        roomId: room || defaultRoom
+        roomId: room || defaultRoom,
+        userAssignedTeam: userAssignedTeam,
+        isInstructor: isInstructor,
+        isObserver: isObserver
       };
     }
 
     const TEAM_INFO = getTeamInfo();
     const CURRENT_ROOM_ID = TEAM_INFO.roomId;
+    if (TEAM_INFO.isObserver) {
+      isBoardReadOnly = true;
+    }
 
     // 更新連線與同步狀態 UI
     function setSyncStatus(status, message) {
@@ -1513,7 +1580,7 @@
 
       if (status === 'synced') {
         badge.className = 'inline-flex items-center gap-1 font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]';
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span id="sync-status-text">${message || '已即時同步'}</span>`;
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span id="sync-status-text">${message || '全組即時協作中'}</span>`;
       } else if (status === 'saving') {
         badge.className = 'inline-flex items-center gap-1 font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[11px]';
         badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span><span id="sync-status-text">${message || '雲端同步中...'}</span>`;
@@ -1649,6 +1716,7 @@
         isFirestoreInitialized = true;
         setSyncStatus('saving', '連線中...');
         initBoardClassConfig();
+        initBoardPresence();
 
         roomDocRef.onSnapshot((doc) => {
           if (!doc.exists) {
@@ -1699,7 +1767,7 @@
           if (isBoardReadOnly) {
             setSyncStatus('synced', '唯讀觀摩模式');
           } else {
-            setSyncStatus('synced', '已即時同步');
+            setSyncStatus('synced', '全組即時協作中');
           }
         }, (error) => {
           console.error("[Firestore] Snapshot Error:", error);
@@ -1756,7 +1824,7 @@
 
         roomDocRef.set(dataToSave, { merge: true })
           .then(() => {
-            setSyncStatus('synced', '已即時同步');
+            setSyncStatus('synced', '全組即時協作中');
             localStorage.setItem(APP_ID + '_' + CURRENT_ROOM_ID, JSON.stringify(boardState));
           })
           .catch((err) => {
@@ -1808,12 +1876,20 @@
       if (TEAM_INFO.userName) {
         url.searchParams.set('user', TEAM_INFO.userName);
       }
+      const roleParam = new URLSearchParams(window.location.search).get('role');
+      if (roleParam) {
+        url.searchParams.set('role', roleParam);
+      }
       try {
         const storageKey = classId ? `ai_arm_auth_user_${classId}` : 'ai_arm_auth_user';
         const saved = localStorage.getItem(storageKey);
         if (saved) {
           const parsed = JSON.parse(saved);
-          parsed.team = newTeam;
+          // 確保原本所屬組別被鎖定在 assignedTeam
+          if (!parsed.assignedTeam && parsed.team) {
+            parsed.assignedTeam = parsed.team;
+          }
+          parsed.viewingTeam = newTeam;
           localStorage.setItem(storageKey, JSON.stringify(parsed));
         }
       } catch(e) {}
@@ -1888,7 +1964,12 @@
             isBoardReadOnly = true;
             showBoardInactiveOverlay(className);
           } else {
-            isBoardReadOnly = false;
+            // 若為跨組觀摩學員，強制維持唯讀狀態
+            if (TEAM_INFO.isObserver) {
+              isBoardReadOnly = true;
+            } else {
+              isBoardReadOnly = false;
+            }
             dismissBoardInactiveOverlay(false);
           }
           updateBoardPermissionsUI();
@@ -1927,9 +2008,14 @@
     function dismissBoardInactiveOverlay(readOnly = false) {
       const overlay = document.getElementById('board-inactive-overlay');
       if (overlay) overlay.classList.add('hidden');
-      if (readOnly || isBoardReadOnly) {
+      if (readOnly || isBoardReadOnly || TEAM_INFO.isObserver) {
         isBoardReadOnly = true;
-        showToast("已進入白板唯讀觀摩模式（僅供瀏覽，無法編輯）", "slate");
+        if (TEAM_INFO.isObserver) {
+          const myAssignedNum = (TEAM_INFO.userAssignedTeam || '').replace('team-', '');
+          showToast(`已進入第 ${TEAM_INFO.teamNum} 組白板（唯讀觀摩模式，您所屬第 ${myAssignedNum} 組）`, "slate");
+        } else {
+          showToast("已進入白板唯讀觀摩模式（僅供瀏覽，無法編輯）", "slate");
+        }
       }
       updateBoardPermissionsUI();
     }
@@ -1944,8 +2030,16 @@
         if (addBtn) addBtn.classList.add('opacity-50', 'pointer-events-none');
         if (uploadBtn) uploadBtn.classList.add('opacity-50', 'pointer-events-none');
         if (importBtn) importBtn.classList.add('opacity-50', 'pointer-events-none');
-        if (readOnlyBadge) readOnlyBadge.classList.remove('hidden');
-        setSyncStatus('synced', '唯讀觀摩模式');
+        if (readOnlyBadge) {
+          readOnlyBadge.classList.remove('hidden');
+          if (TEAM_INFO.isObserver) {
+            const myAssignedNum = (TEAM_INFO.userAssignedTeam || '').replace('team-', '');
+            readOnlyBadge.innerHTML = `<i data-lucide="eye" class="w-3 h-3 text-amber-600"></i>唯讀觀摩中（第 ${myAssignedNum} 組學員）`;
+          } else {
+            readOnlyBadge.innerHTML = `<i data-lucide="eye" class="w-3 h-3 text-amber-600"></i>唯讀觀摩中`;
+          }
+        }
+        setSyncStatus('synced', TEAM_INFO.isObserver ? '跨組唯讀觀摩' : '唯讀觀摩模式');
       } else {
         if (addBtn) addBtn.classList.remove('opacity-50', 'pointer-events-none');
         if (uploadBtn) uploadBtn.classList.remove('opacity-50', 'pointer-events-none');
@@ -1974,6 +2068,450 @@
         userBadge.innerText = TEAM_INFO.userName;
       }
       document.title = `${TEAM_INFO.teamDisplayName} 線上協作白板 | AI 賦能敏捷`;
+      updateBoardPermissionsUI();
+    }
+
+    // =========================================================================
+    // === 白板在線在場系統與視角跟隨 (Presence & Follow Mode System) ===
+    // =========================================================================
+    const MY_CLIENT_ID = 'cli_' + (sessionStorage.getItem('aigile_board_cli_id') || (function() {
+      const id = Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem('aigile_board_cli_id', id);
+      return id;
+    })());
+
+    const BOARD_PRESENCE_COLLECTION = 'ai_arm_board_presence';
+    let boardPresenceUnsubscribe = null;
+    let boardPresenceHeartbeatTimer = null;
+    let viewportBroadcastChannel = null;
+    let activePresencesMap = new Map();
+
+    const AVATAR_PALETTE = ['#4f46e5', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#c026d3', '#2563eb', '#0d9488', '#ea580c'];
+    function getDeterministicAvatarColor(str) {
+      let hash = 0;
+      for (let i = 0; i < (str || '').length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+    }
+    const MY_AVATAR_COLOR = getDeterministicAvatarColor(TEAM_INFO.userName || '學員');
+
+    // 跟隨模式核心狀態
+    let followState = {
+      isFollowing: false,
+      targetClientId: null,
+      targetUserName: '',
+      targetColor: '#4f46e5',
+      targetViewport: null,
+      rafId: null
+    };
+
+    // 取得當前視野中心在白板世界座標中的位置
+    function getViewportWorldCenter() {
+      const W = container ? (container.clientWidth || window.innerWidth) : window.innerWidth;
+      const H = container ? (container.clientHeight || window.innerHeight) : window.innerHeight;
+      return {
+        cx: (W / 2 - panX) / scale,
+        cy: (H / 2 - panY) / scale,
+        scale: scale
+      };
+    }
+
+    // 啟動白板在場 Presence 與視角通道
+    function initBoardPresence() {
+      if (!db || !CURRENT_ROOM_ID) return;
+
+      // 1. 初始化同設備/瀏覽器 0 延遲廣播通道 (BroadcastChannel)
+      try {
+        if (window.BroadcastChannel) {
+          if (viewportBroadcastChannel) {
+            viewportBroadcastChannel.close();
+          }
+          viewportBroadcastChannel = new BroadcastChannel('aigile_vp_bc_' + CURRENT_ROOM_ID);
+          viewportBroadcastChannel.onmessage = (event) => {
+            handleViewportBroadcastMessage(event.data);
+          };
+        }
+      } catch(e) {
+        console.warn("[Presence] BroadcastChannel unavailable:", e);
+      }
+
+      // 2. 送出第一次在線心跳
+      sendBoardPresenceHeartbeat(true);
+
+      // 3. 定時 12 秒維護心跳
+      if (boardPresenceHeartbeatTimer) clearInterval(boardPresenceHeartbeatTimer);
+      boardPresenceHeartbeatTimer = setInterval(() => {
+        sendBoardPresenceHeartbeat(true);
+      }, 12000);
+
+      // 4. 視窗關閉前離線清理
+      window.addEventListener('beforeunload', () => {
+        sendBoardPresenceHeartbeat(false);
+        if (viewportBroadcastChannel) {
+          try {
+            viewportBroadcastChannel.postMessage({ type: 'LEAVE', clientId: MY_CLIENT_ID, roomId: CURRENT_ROOM_ID });
+            viewportBroadcastChannel.close();
+          } catch(e) {}
+        }
+      });
+
+      // 5. 訂閱雲端在線成員集合
+      subscribeBoardPresence();
+    }
+
+    function sendBoardPresenceHeartbeat(isOnline = true) {
+      if (!db || !CURRENT_ROOM_ID) return;
+      const docId = `${CURRENT_ROOM_ID}_${MY_CLIENT_ID}`;
+      const docRef = db.collection(BOARD_PRESENCE_COLLECTION).doc(docId);
+      if (!isOnline) {
+        docRef.delete().catch(() => {});
+        return;
+      }
+
+      const vp = getViewportWorldCenter();
+      docRef.set({
+        roomId: CURRENT_ROOM_ID,
+        classId: TEAM_INFO.classId || 'default',
+        viewingTeam: TEAM_INFO.teamId,
+        clientId: MY_CLIENT_ID,
+        userName: TEAM_INFO.userName,
+        userAssignedTeam: TEAM_INFO.userAssignedTeam || TEAM_INFO.teamId,
+        isObserver: !!TEAM_INFO.isObserver,
+        isInstructor: !!TEAM_INFO.isInstructor,
+        avatarColor: MY_AVATAR_COLOR,
+        lastSeen: Date.now(),
+        viewport: {
+          cx: Math.round(vp.cx),
+          cy: Math.round(vp.cy),
+          scale: parseFloat(scale.toFixed(3)),
+          t: Date.now()
+        }
+      }, { merge: true }).catch(err => {
+        console.warn("[Presence] Heartbeat exception:", err);
+      });
+    }
+
+    function subscribeBoardPresence() {
+      if (!db || !CURRENT_ROOM_ID) return;
+      if (boardPresenceUnsubscribe) {
+        boardPresenceUnsubscribe();
+        boardPresenceUnsubscribe = null;
+      }
+
+      try {
+        const query = db.collection(BOARD_PRESENCE_COLLECTION).where('roomId', '==', CURRENT_ROOM_ID);
+        boardPresenceUnsubscribe = query.onSnapshot((snapshot) => {
+          const now = Date.now();
+          const updatedMap = new Map();
+
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data && data.clientId && (now - (data.lastSeen || 0) < 35000)) {
+              updatedMap.set(data.clientId, data);
+            }
+          });
+
+          activePresencesMap = updatedMap;
+          renderBoardPresenceAvatars();
+
+          // 若正處於跟隨狀態，檢查目標是否離線或有新座標
+          if (followState.isFollowing && followState.targetClientId) {
+            const target = activePresencesMap.get(followState.targetClientId);
+            if (target && target.viewport) {
+              onReceiveTargetViewport(target.viewport);
+            } else if (!target) {
+              stopFollowing('target_offline');
+            }
+          }
+        }, (err) => {
+          console.warn("[Presence] Subscription warning:", err);
+        });
+      } catch(e) {
+        console.warn("[Presence] Setup exception:", e);
+      }
+    }
+
+    // 視角節流推播 (250ms 防抖/節流，靜止時不傳送，同機 BroadcastChannel 0ms 瞬間推送)
+    let lastViewportBroadcastTime = 0;
+    let viewportBroadcastDebounceTimer = null;
+
+    function broadcastViewportThrottled() {
+      if (followState.isFollowing) return; // 跟隨者不反向廣播
+
+      const vp = getViewportWorldCenter();
+      const msg = {
+        type: 'VIEWPORT_UPDATE',
+        roomId: CURRENT_ROOM_ID,
+        clientId: MY_CLIENT_ID,
+        userName: TEAM_INFO.userName,
+        cx: vp.cx,
+        cy: vp.cy,
+        scale: vp.scale,
+        t: Date.now()
+      };
+
+      // 1. 本地廣播通道立即發送 (0 延遲、0 雲端消耗)
+      if (viewportBroadcastChannel) {
+        try {
+          viewportBroadcastChannel.postMessage(msg);
+        } catch(e) {}
+      }
+
+      // 2. Firestore 雲端節流發送 (250ms)
+      const now = Date.now();
+      if (now - lastViewportBroadcastTime < 250) {
+        clearTimeout(viewportBroadcastDebounceTimer);
+        viewportBroadcastDebounceTimer = setTimeout(() => {
+          sendViewportToFirestore(msg);
+        }, 250);
+        return;
+      }
+      lastViewportBroadcastTime = now;
+      sendViewportToFirestore(msg);
+    }
+
+    function sendViewportToFirestore(msg) {
+      if (!db || !CURRENT_ROOM_ID) return;
+      const docId = `${CURRENT_ROOM_ID}_${MY_CLIENT_ID}`;
+      db.collection(BOARD_PRESENCE_COLLECTION).doc(docId).set({
+        lastSeen: Date.now(),
+        viewport: {
+          cx: Math.round(msg.cx),
+          cy: Math.round(msg.cy),
+          scale: parseFloat(msg.scale.toFixed(3)),
+          t: msg.t
+        }
+      }, { merge: true }).catch(() => {});
+    }
+
+    // 處理 BroadcastChannel 本地即時訊息
+    function handleViewportBroadcastMessage(data) {
+      if (!data || data.roomId !== CURRENT_ROOM_ID) return;
+
+      if (data.type === 'VIEWPORT_UPDATE') {
+        if (activePresencesMap.has(data.clientId)) {
+          const item = activePresencesMap.get(data.clientId);
+          item.viewport = {
+            cx: data.cx,
+            cy: data.cy,
+            scale: data.scale,
+            t: data.t
+          };
+          item.lastSeen = Date.now();
+        }
+
+        // 若當前跟隨此人，以 0 延遲進入平滑運鏡
+        if (followState.isFollowing && followState.targetClientId === data.clientId) {
+          onReceiveTargetViewport({
+            cx: data.cx,
+            cy: data.cy,
+            scale: data.scale,
+            t: data.t
+          });
+        }
+      } else if (data.type === 'LEAVE') {
+        if (followState.isFollowing && followState.targetClientId === data.clientId) {
+          stopFollowing('target_offline');
+        }
+        activePresencesMap.delete(data.clientId);
+        renderBoardPresenceAvatars();
+      }
+    }
+
+    function getAvatarDisplayInitial(name) {
+      if (!name) return '學';
+      const clean = name.trim();
+      if ((clean.startsWith('學員') || clean.startsWith('組員')) && clean.length > 2) {
+        return clean.substring(2, 4);
+      }
+      return clean.charAt(0).toUpperCase();
+    }
+
+    // 渲染工具列在線成員頭像區 (Avatar Bar)
+    function renderBoardPresenceAvatars() {
+      const containerEl = document.getElementById('board-presence-avatars');
+      if (!containerEl) return;
+
+      const members = Array.from(activePresencesMap.values());
+      // 排序：自己排最前，其次依名字排序
+      members.sort((a, b) => {
+        if (a.clientId === MY_CLIENT_ID) return -1;
+        if (b.clientId === MY_CLIENT_ID) return 1;
+        return (a.userName || '').localeCompare(b.userName || '');
+      });
+
+      let html = '';
+      const maxDisplay = 5;
+      const displayList = members.slice(0, maxDisplay);
+      const extraCount = members.length - maxDisplay;
+
+      displayList.forEach(m => {
+        const isMe = (m.clientId === MY_CLIENT_ID);
+        const isCurrentFollowing = (followState.isFollowing && followState.targetClientId === m.clientId);
+        const initial = getAvatarDisplayInitial(m.userName);
+        const roleText = m.isInstructor ? '【講師】' : (m.isObserver ? '【觀摩】' : '');
+        const titleText = isMe ? `${m.userName} (您)` : `${roleText}${m.userName} (點擊跟隨視角)`;
+
+        let ringClasses = 'ring-2 ring-white hover:scale-110';
+        if (isCurrentFollowing) {
+          ringClasses = 'ring-3 ring-amber-400 scale-110 shadow-md animate-pulse';
+        }
+
+        const cursorStyle = isMe ? 'cursor-default opacity-90' : 'cursor-pointer active:scale-95';
+        const observerBadge = m.isObserver ? '<span class="absolute -top-1 -left-1 text-[8px] bg-slate-800 text-slate-200 px-1 rounded-full scale-75 font-mono">觀</span>' : '';
+
+        html += `
+          <div class="relative group transition-transform duration-150 ${cursorStyle}" 
+               onclick="${isMe ? '' : `toggleFollowUser('${m.clientId}')`}" 
+               title="${titleText}">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-[11px] sm:text-xs font-bold transition-all shadow-xs ${ringClasses}"
+                 style="background-color: ${m.avatarColor || '#4f46e5'};">
+              ${initial}
+            </div>
+            ${observerBadge}
+            <span class="absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+          </div>
+        `;
+      });
+
+      if (extraCount > 0) {
+        html += `
+          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-200 text-slate-700 text-[10px] sm:text-xs font-bold flex items-center justify-center ring-2 ring-white shadow-xs" title="還有 ${extraCount} 位在線協作者">
+            +${extraCount}
+          </div>
+        `;
+      }
+
+      containerEl.innerHTML = html;
+    }
+
+    // 切換 / 啟動 / 解除跟隨
+    function toggleFollowUser(clientId) {
+      if (!clientId || clientId === MY_CLIENT_ID) return;
+      if (followState.isFollowing && followState.targetClientId === clientId) {
+        stopFollowing('user_toggle');
+      } else {
+        const member = activePresencesMap.get(clientId);
+        if (!member) {
+          showToast("該成員已離線", "rose");
+          return;
+        }
+        startFollowingUser(clientId, member.userName, member.avatarColor);
+      }
+    }
+
+    function startFollowingUser(clientId, userName, color) {
+      followState.isFollowing = true;
+      followState.targetClientId = clientId;
+      followState.targetUserName = userName;
+      followState.targetColor = color || '#4f46e5';
+
+      // 啟用邊緣光暈 Vignette
+      const vignette = document.getElementById('follow-indicator-vignette');
+      if (vignette) {
+        vignette.classList.remove('hidden');
+        vignette.style.borderColor = followState.targetColor;
+        vignette.style.boxShadow = `inset 0 0 28px ${followState.targetColor}88`;
+      }
+
+      // 顯示頂部膠囊 Banner
+      const banner = document.getElementById('following-banner');
+      const targetNameEl = document.getElementById('following-target-name');
+      if (banner && targetNameEl) {
+        targetNameEl.innerText = userName;
+        targetNameEl.style.color = followState.targetColor;
+        banner.classList.remove('hidden');
+        banner.classList.add('flex');
+      }
+
+      renderBoardPresenceAvatars();
+      showToast(`已開始跟隨【${userName}】的視角（滑動滾輪或按 Esc 可隨時退出）`, "indigo");
+
+      // 若目標已有最新座標，立即推進
+      const member = activePresencesMap.get(clientId);
+      if (member && member.viewport) {
+        onReceiveTargetViewport(member.viewport);
+      }
+    }
+
+    function stopFollowing(reason = '') {
+      if (!followState.isFollowing) return;
+      const prevName = followState.targetUserName;
+      followState.isFollowing = false;
+      followState.targetClientId = null;
+      followState.targetUserName = '';
+      followState.targetViewport = null;
+
+      if (followState.rafId) {
+        cancelAnimationFrame(followState.rafId);
+        followState.rafId = null;
+      }
+
+      const vignette = document.getElementById('follow-indicator-vignette');
+      if (vignette) vignette.classList.add('hidden');
+
+      const banner = document.getElementById('following-banner');
+      if (banner) {
+        banner.classList.remove('flex');
+        banner.classList.add('hidden');
+      }
+
+      renderBoardPresenceAvatars();
+
+      if (reason === 'target_offline') {
+        showToast(`跟隨目標【${prevName}】已離線，已退出跟隨`, "amber");
+      } else if (reason === 'user_action' || reason === 'user_wheel' || reason === 'user_pan') {
+        showToast("已手動調整視角，自動退出跟隨", "slate");
+      } else if (reason === 'escape' || reason === 'button_click' || reason === 'user_toggle') {
+        showToast("已停止跟隨視角", "slate");
+      }
+    }
+
+    // 60fps 平滑相機運鏡補間 (Smooth Camera Lerp)
+    function onReceiveTargetViewport(vp) {
+      if (!followState.isFollowing || !vp) return;
+      followState.targetViewport = vp;
+      if (!followState.rafId) {
+        followState.rafId = requestAnimationFrame(animateFollowStep);
+      }
+    }
+
+    function animateFollowStep() {
+      if (!followState.isFollowing || !followState.targetViewport) {
+        followState.rafId = null;
+        return;
+      }
+
+      const vp = followState.targetViewport;
+      const W = container ? (container.clientWidth || window.innerWidth) : window.innerWidth;
+      const H = container ? (container.clientHeight || window.innerHeight) : window.innerHeight;
+
+      const desiredScale = Math.max(0.15, Math.min(vp.scale || 1.0, 3.5));
+      const desiredPanX = W / 2 - vp.cx * desiredScale;
+      const desiredPanY = H / 2 - vp.cy * desiredScale;
+
+      const dx = desiredPanX - panX;
+      const dy = desiredPanY - panY;
+      const ds = desiredScale - scale;
+
+      // 差距極微小時直接就位並停止 RAF 迴圈
+      if (Math.abs(dx) < 0.3 && Math.abs(dy) < 0.3 && Math.abs(ds) < 0.002) {
+        panX = desiredPanX;
+        panY = desiredPanY;
+        scale = desiredScale;
+        updateCanvasTransform();
+        followState.rafId = null;
+        return;
+      }
+
+      // 線性內插 (Lerp factor = 0.18，極致滑順如電影運鏡)
+      panX += dx * 0.18;
+      panY += dy * 0.18;
+      scale += ds * 0.18;
+
+      updateCanvasTransform();
+      followState.rafId = requestAnimationFrame(animateFollowStep);
     }
 
     // --- 初始化入口 ---
@@ -2349,6 +2887,11 @@
     function setupCanvasEventListeners() {
       // 智慧滾輪與觸控板監聽：支援觸控板兩指滑動平移與捏合縮放，亦支援傳統滑鼠滾輪
       container.addEventListener('wheel', function(e) {
+        // 使用者轉動滾輪或雙指滑動時，即刻退出視角跟隨
+        if (typeof followState !== 'undefined' && followState.isFollowing) {
+          stopFollowing('user_wheel');
+        }
+
         e.preventDefault();
 
         const isPinchOrCtrl = e.ctrlKey || e.metaKey;
@@ -2416,6 +2959,11 @@
         }
 
         if (isMiddleClick || isSpaceDown || (isHandMode && isBgClick)) {
+          // 點擊拖曳畫布時，立即退出視角跟隨
+          if (typeof followState !== 'undefined' && followState.isFollowing) {
+            stopFollowing('user_pan');
+          }
+
           isPanning = true;
           container.style.cursor = 'grabbing';
           startMouseX = e.clientX - panX;
@@ -2516,6 +3064,11 @@
 
       container.addEventListener('touchstart', function(e) {
         stopInertia();
+        // 觸控螢幕開始操作畫布時，即刻退出視角跟隨
+        if (typeof followState !== 'undefined' && followState.isFollowing) {
+          stopFollowing('user_action');
+        }
+
         if (e.touches.length === 2) {
           isDoubleTouch = true;
           touchStartDist = Math.hypot(
@@ -2807,10 +3360,30 @@
       }
 
       updateMinimap();
+
+      // 當使用者操作視角時，廣播自身最新坐標（若處於跟隨狀態則不重複廣播）
+      if (typeof followState !== 'undefined' && !followState.isFollowing) {
+        broadcastViewportThrottled();
+      }
     }
 
     function setupKeyboardListeners() {
       window.addEventListener('keydown', function(e) {
+        // 跟隨模式安全退出快捷鍵：Esc 退出跟隨
+        if (e.key === 'Escape') {
+          if (typeof followState !== 'undefined' && followState.isFollowing) {
+            stopFollowing('escape');
+            e.preventDefault();
+          }
+        }
+
+        // 使用者主動按下鍵盤移動視角 (方向鍵或 Space) 時，立即退出跟隨
+        if (e.code === 'Space' || e.key.startsWith('Arrow')) {
+          if (typeof followState !== 'undefined' && followState.isFollowing) {
+            stopFollowing('user_action');
+          }
+        }
+
         if (e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
           isHoldingSpace = true;
           container.style.cursor = 'grab';
@@ -4398,6 +4971,9 @@
         if (currentMode === 'hand') return; 
         if (e.target.closest('.note-tool-btn') || e.target.closest('.quick-palette') || e.target.closest('.note-port')) return;
 
+        // 唯讀觀摩模式下嚴格禁止拖曳移動卡片 (BUG-FOLLOW-01 修復)
+        if (isBoardReadOnly) return;
+
         hideLineToolbar();
 
         if (isLockedByOther) {
@@ -4423,7 +4999,7 @@
       });
 
       card.addEventListener('pointermove', function(e) {
-        if (!isPointerDown) return;
+        if (!isPointerDown || isBoardReadOnly) return;
 
         const moveDist = Math.hypot(e.clientX - startX, e.clientY - startY);
 
