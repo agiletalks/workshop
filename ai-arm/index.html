@@ -182,6 +182,29 @@
         border: 1px solid #cbd5e1 !important;
       }
     }
+
+    /* ===== 語音重點筆記功能樣式 ===== */
+    @keyframes voiceRecordPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.85); }
+    }
+    .voice-record-dot {
+      animation: voiceRecordPulse 1.2s ease-in-out infinite;
+    }
+    #voice-transcript-window {
+      max-height: 4.5rem; /* 約 3 行 */
+      overflow: hidden;
+    }
+    #voice-transcript-final {
+      word-break: break-all;
+    }
+    .voice-summary-card-enter {
+      animation: fadeSlideIn 0.3s ease-out forwards;
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body class="h-full bg-slate-100 text-slate-800 flex flex-col font-sans overflow-hidden">
@@ -525,6 +548,25 @@
 
         <!-- 右側：操作按鈕與同步狀態 (已移除重複出現的學習公約，保留頂部全域公約) -->
         <div class="flex items-center gap-1.5 flex-shrink-0 pl-1">
+          <!-- ===== 語音錄音按鈕（僅講師身分可見） ===== -->
+          <!-- 錄音啟動按鈕 -->
+          <button id="btn-voice-note" class="hidden px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" onclick="startVoiceRecording()" title="啟動語音錄音，自動產生這頁的講解重點摘要">
+            <span class="text-base leading-none">🎙️</span>
+            <span class="hidden sm:inline">錄音筆記</span>
+          </button>
+          <!-- 不支援瀏覽器時顯示的 disabled 按鈕 -->
+          <button id="btn-voice-note-unsupported" class="hidden px-2.5 py-1 rounded-lg bg-slate-100 text-slate-400 border border-slate-200 text-xs font-semibold shadow-2xs flex items-center gap-1 cursor-not-allowed" disabled title="請使用 Chrome 或 Edge 以啟用語音辨識">
+            <span class="text-base leading-none">🎙️</span>
+            <span class="hidden sm:inline">不支援</span>
+          </button>
+          <!-- 錄音中：停止按鈕（含閃爍紅點 + 計時器） -->
+          <button id="btn-voice-note-stop" class="hidden px-2.5 py-1 rounded-lg bg-red-500 hover:bg-red-600 active:scale-95 text-white border border-red-600 text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer" onclick="stopVoiceRecording()" title="停止錄音並由 AI 整理摘要">
+            <span class="voice-record-dot inline-block w-2 h-2 rounded-full bg-white flex-shrink-0"></span>
+            <span>停止</span>
+            <span id="voice-timer" class="font-mono">00:00</span>
+          </button>
+          <!-- ===== END 語音錄音按鈕 ===== -->
+
           <!-- 翻面看範例按鈕 (有範例時顯示) -->
           <button id="btn-flip-example" onclick="toggleFlipExample()" class="hidden px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="點擊翻面查看講師示範標竿範例">
             <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i>
@@ -570,6 +612,17 @@
         </div>
       </div>
 
+      <!-- ===== 語音錄音：即時逐字稿浮窗 ===== -->
+      <div id="voice-transcript-window" class="hidden flex-shrink-0 bg-slate-900/95 text-white px-3 py-2 border-b border-slate-700 text-xs leading-relaxed">
+        <div class="flex items-center gap-1.5 mb-1 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+          <span class="voice-record-dot inline-block w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0"></span>
+          即時辨識中
+        </div>
+        <div id="voice-transcript-final" class="text-slate-100 leading-snug mb-0.5"></div>
+        <div id="voice-transcript-interim" class="text-slate-400 italic"></div>
+      </div>
+      <!-- ===== END 逐字稿浮窗 ===== -->
+
       <!-- 筆記區核心本體 (3D 翻轉結構：正面為滿版筆記，反面為講師範例) -->
       <div id="note-flipper-container" class="note-flipper flex-1 min-h-0 overflow-hidden relative bg-white">
         <div class="note-flipper-inner h-full">
@@ -593,6 +646,58 @@
               <!-- 動態渲染的 Prompt 操作按鈕群 -->
               <div id="prompt-buttons-container" class="flex flex-wrap items-center gap-2"></div>
             </div>
+
+            <!-- ===== 語音筆記 AI 摘要卡片（講師專屬，預設隱藏） ===== -->
+            <div id="voice-summary-card" class="hidden flex-shrink-0 mb-3 rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50 overflow-hidden shadow-xs voice-summary-card-enter">
+              <!-- 卡片頂部：標題列 -->
+              <div class="flex items-center justify-between px-3 py-2 border-b border-indigo-100 bg-indigo-50/80">
+                <div class="flex items-center gap-1.5">
+                  <span class="px-1.5 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-black tracking-wide">AI 摘要</span>
+                  <span id="voice-summary-slide-label" class="text-xs font-semibold text-indigo-900 truncate max-w-[160px]"></span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button id="btn-voice-summary-toggle" onclick="toggleVoiceSummaryCollapse()" class="p-1 rounded-lg hover:bg-indigo-100 text-indigo-500 hover:text-indigo-700 transition-colors cursor-pointer" title="展開/摺疊">
+                    <i data-lucide="chevron-up" id="voice-summary-toggle-icon" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button onclick="closeVoiceSummaryCard()" class="p-1 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors cursor-pointer" title="關閉卡片（不刪除已儲存資料）">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 卡片主體（可摺疊） -->
+              <div id="voice-summary-body" class="px-3 py-2.5 space-y-2">
+
+                <!-- Loading 狀態 -->
+                <div id="voice-summary-loading" class="hidden flex items-center gap-2 py-3 justify-center">
+                  <div class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span class="text-xs font-medium text-indigo-700">AI 整理中...</span>
+                </div>
+
+                <!-- 錯誤 / 空白逐字稿提示 -->
+                <div id="voice-summary-error" class="hidden text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 leading-relaxed"></div>
+
+                <!-- 摘要內容 -->
+                <div id="voice-summary-content" class="hidden space-y-2">
+                  <!-- 整體摘要句 -->
+                  <p id="voice-summary-overview" class="text-xs text-indigo-900 leading-relaxed font-medium"></p>
+                  <!-- 核心重點列表 -->
+                  <ul id="voice-summary-takeaways" class="space-y-1 pl-1"></ul>
+                </div>
+
+                <!-- 操作按鈕列 -->
+                <div id="voice-summary-actions" class="hidden flex flex-wrap items-center gap-1.5 pt-1 border-t border-indigo-100">
+                  <button onclick="applyVoiceSummaryToMemo()" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white shadow-2xs flex items-center gap-1 transition-all cursor-pointer">
+                    ✅ 套用到筆記區
+                  </button>
+                  <button onclick="retryVoiceSummary()" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs flex items-center gap-1 transition-all cursor-pointer">
+                    ✏️ 重新整理
+                  </button>
+                </div>
+
+              </div>
+            </div>
+            <!-- ===== END AI 摘要卡片 ===== -->
 
             <!-- 盡量大面積的輸入框 (無遮蔽、充滿全高，附帶點擊提示) -->
             <div id="memo-input-wrapper" class="w-full flex-1 flex flex-col relative min-h-[140px]" onclick="handleMemoWrapperClick(event)">
@@ -857,6 +962,34 @@
           <span>確認儲存變更</span>
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- ==================== 語音錄音換頁防護 Modal ==================== -->
+  <div id="voice-nav-modal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="px-5 pt-5 pb-4">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+            <span class="text-xl">🎙️</span>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm leading-snug">您正在錄音中</h3>
+            <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">切換投影片會中斷目前的錄音，請選擇操作：</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <button onclick="handleVoiceNavChoice('stop-and-summarize')" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer">
+            <span>🤖</span> 停止並整理摘要，再換頁
+          </button>
+          <button onclick="handleVoiceNavChoice('discard-and-navigate')" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-700 flex items-center justify-center gap-2 transition-all cursor-pointer">
+            <span>⏭️</span> 直接換頁（丟棄本次錄音）
+          </button>
+          <button onclick="handleVoiceNavChoice('cancel')" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-white hover:bg-slate-50 active:scale-98 text-slate-500 border border-slate-200 flex items-center justify-center gap-2 transition-all cursor-pointer">
+            <span>▶️</span> 取消，繼續錄音
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2672,6 +2805,10 @@
 
       // 訂閱當前頁面與當前組別的 Firestore 筆記
       subscribeToFirestore();
+
+      // 語音重點筆記：換頁時載入已有的摘要（若有）
+      const slideId = `P${String(index).padStart(2, '0')}`;
+      loadVoiceNoteFromFirestore(slideId, slide.title || '');
     }
 
     // --- 團隊任務 AI Prompt 指令庫與複製控制器 (通用架構，後續任務直接複用) ---
@@ -4644,11 +4781,22 @@
     }
 
     function navigateSlide(delta) {
+      // 語音錄音防護：錄音中攔截換頁
+      if (isVoiceRecording) {
+        showVoiceNavModal({ type: 'delta', value: delta });
+        return;
+      }
       releaseLock();
       renderSlide(currentSlideIndex + delta);
     }
 
     function jumpToSlide(idx) {
+      // 語音錄音防護：錄音中攔截換頁
+      if (isVoiceRecording) {
+        showVoiceNavModal({ type: 'index', value: idx });
+        closeTocDrawer();
+        return;
+      }
       releaseLock();
       renderSlide(idx);
       closeTocDrawer();
@@ -4712,10 +4860,17 @@
             tags += `<span class="text-[9px] px-1.5 py-0.5 rounded ${isCurrent ? 'bg-rose-600 text-white' : 'bg-rose-100 text-rose-800'} font-bold">演練</span>`;
           }
 
+          const tocSlideId = getVoiceNoteSlideId(s.index);
+          btn.dataset.tocSlideId = tocSlideId;
+
+          // 📝 語音摘要標記
+          const hasVoiceNote = voiceNoteBadgeSlides.has(tocSlideId);
+
           btn.innerHTML = `
             <div class="flex items-center gap-2 truncate pr-2">
               <span class="font-mono text-[10px] ${isCurrent ? 'text-white' : 'text-slate-400'} font-bold">P${String(s.index).padStart(2, '0')}</span>
               <span class="truncate">${s.title}</span>
+              ${hasVoiceNote ? `<span class="voice-note-toc-badge text-[10px]">📝</span>` : ''}
             </div>
             <div class="flex items-center gap-1 flex-shrink-0">${tags}</div>
           `;
@@ -7603,8 +7758,690 @@ function copyCatalogPromptById(promptId, slideIndex) {
       setupKeyboardShortcuts();
       setupTouchGestures();
       updateTimerUI();
+      initVoiceNote();
       lucide.createIcons();
     });
+
+    // ================================================================
+    // ===== 語音重點筆記模組 (feature/instructor-voice-notes) =====
+    // ================================================================
+
+    // --- 狀態變數 ---
+    let voiceRecorder = null;
+    let isVoiceRecording = false;
+    let voiceRecordingSlideId = null;
+    let voiceTimerInterval = null;
+    let voiceTimerSeconds = 0;
+    let voiceRawTranscript = '';
+    let voiceCurrentSummary = null;       // { overviewSummary, takeaways }
+    let voicePendingNavAction = null;     // 換頁防護用：{ type, value }
+    let voiceSummaryCollapsed = false;    // 摘要卡片摺疊狀態
+
+    // --- 工具函式 ---
+    function isInstructor() {
+      return sessionStorage.getItem('ai_arm_admin_auth') === 'true';
+    }
+
+    function getVoiceNoteSlideId(index) {
+      return `P${String(index).padStart(2, '0')}`;
+    }
+
+    function getVoiceNoteFirestorePath(slideId) {
+      // /classes/{classId}/slides/{slideId}/instructorNotes/latest
+      return db.collection('classes')
+        .doc(currentClassId || 'default')
+        .collection('slides')
+        .doc(slideId)
+        .collection('instructorNotes')
+        .doc('latest');
+    }
+
+    // --- VoiceNoteRecorder 類別 ---
+    class VoiceNoteRecorder {
+      constructor() {
+        this._recognition = null;
+        this._finalText = '';
+        this._interimText = '';
+        this._onInterim = null;
+        this._onFinal = null;
+        this._onError = null;
+        this._bound_slideId = null;
+        this._stopped = false;
+        this._stopResolve = null;
+      }
+
+      isSupported() {
+        return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+      }
+
+      start(slideId) {
+        if (!this.isSupported()) return false;
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this._recognition = new SR();
+        this._recognition.lang = 'zh-TW';
+        this._recognition.continuous = true;
+        this._recognition.interimResults = true;
+        this._recognition.maxAlternatives = 1;
+        this._bound_slideId = slideId;
+        this._finalText = '';
+        this._interimText = '';
+        this._stopped = false;
+
+        this._recognition.onresult = (event) => {
+          let interim = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const t = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              this._finalText += t;
+              interim = '';
+            } else {
+              interim += t;
+            }
+          }
+          this._interimText = interim;
+          if (this._onInterim) this._onInterim(this._interimText);
+          if (this._onFinal) this._onFinal(this._finalText);
+        };
+
+        this._recognition.onerror = (event) => {
+          if (this._onError) this._onError(event.error);
+        };
+
+        this._recognition.onend = () => {
+          // continuous mode 可能自動停止，若未主動 stop() 則重啟（持續錄音 10min+ 穩健性）
+          if (!this._stopped && this._recognition) {
+            try { this._recognition.start(); } catch(e) {}
+          } else {
+            if (this._stopResolve) {
+              this._stopResolve(this._finalText);
+              this._stopResolve = null;
+            }
+          }
+        };
+
+        try {
+          this._recognition.start();
+          return true;
+        } catch(e) {
+          return false;
+        }
+      }
+
+      stop() {
+        return new Promise((resolve) => {
+          this._stopped = true;
+          this._stopResolve = resolve;
+          if (this._recognition) {
+            try { this._recognition.stop(); } catch(e) { resolve(this._finalText); }
+          } else {
+            resolve(this._finalText);
+          }
+        });
+      }
+
+      getInterimText() { return this._interimText; }
+      getFinalText()   { return this._finalText; }
+
+      onInterim(fn) { this._onInterim = fn; return this; }
+      onFinal(fn)   { this._onFinal = fn; return this; }
+      onError(fn)   { this._onError = fn; return this; }
+
+      destroy() {
+        this._stopped = true;
+        this._onInterim = null;
+        this._onFinal = null;
+        this._onError = null;
+        if (this._recognition) {
+          try { this._recognition.abort(); } catch(e) {}
+          this._recognition = null;
+        }
+      }
+    }
+
+    // --- 初始化（DOMContentLoaded 後呼叫） ---
+    function initVoiceNote() {
+      const btnStart = document.getElementById('btn-voice-note');
+      const btnUnsup = document.getElementById('btn-voice-note-unsupported');
+      const btnStop  = document.getElementById('btn-voice-note-stop');
+
+      if (!isInstructor()) {
+        // 學員身分：所有按鈕維持 hidden
+        return;
+      }
+
+      // 檢查瀏覽器支援
+      const testRecorder = new VoiceNoteRecorder();
+      if (!testRecorder.isSupported()) {
+        if (btnUnsup) btnUnsup.classList.remove('hidden');
+      } else {
+        if (btnStart) btnStart.classList.remove('hidden');
+      }
+    }
+
+    // --- 計時器 ---
+    function startVoiceTimer() {
+      voiceTimerSeconds = 0;
+      updateVoiceTimerDisplay();
+      if (voiceTimerInterval) clearInterval(voiceTimerInterval);
+      voiceTimerInterval = setInterval(() => {
+        voiceTimerSeconds++;
+        updateVoiceTimerDisplay();
+      }, 1000);
+    }
+
+    function stopVoiceTimer() {
+      if (voiceTimerInterval) {
+        clearInterval(voiceTimerInterval);
+        voiceTimerInterval = null;
+      }
+    }
+
+    function updateVoiceTimerDisplay() {
+      const el = document.getElementById('voice-timer');
+      if (!el) return;
+      const m = String(Math.floor(voiceTimerSeconds / 60)).padStart(2, '0');
+      const s = String(voiceTimerSeconds % 60).padStart(2, '0');
+      el.textContent = `${m}:${s}`;
+    }
+
+    // --- 啟動錄音 ---
+    async function startVoiceRecording() {
+      if (isVoiceRecording) return;
+
+      const slideIndex = currentSlideIndex;
+      const slideId = getVoiceNoteSlideId(slideIndex);
+      const slide = SLIDES_DATA[slideIndex - 1] || {};
+      const slideTitle = slide.title || slideId;
+
+      voiceRecorder = new VoiceNoteRecorder();
+
+      voiceRecorder.onError((errCode) => {
+        stopVoiceTimer();
+        isVoiceRecording = false;
+        voiceRecordingSlideId = null;
+
+        const errMap = {
+          'not-allowed': '麥克風存取權限已被拒絕，請在瀏覽器設定中允許使用麥克風',
+          'no-speech': '未偵測到語音，請確認麥克風是否正常',
+          'network': '網路連線失敗，無法啟動語音辨識',
+        };
+        showToast(errMap[errCode] || `語音辨識錯誤：${errCode}`, 'rose');
+        setVoiceRecordingUIState(false);
+      });
+
+      voiceRecorder.onInterim((text) => {
+        const el = document.getElementById('voice-transcript-interim');
+        if (el) el.textContent = text;
+      });
+
+      voiceRecorder.onFinal((text) => {
+        const el = document.getElementById('voice-transcript-final');
+        if (el) {
+          // 限制顯示最後 200 字
+          el.textContent = text.length > 200 ? '…' + text.slice(-200) : text;
+          el.scrollTop = el.scrollHeight;
+        }
+      });
+
+      const started = voiceRecorder.start(slideId);
+      if (!started) {
+        showToast('無法啟動語音辨識，請重試', 'rose');
+        return;
+      }
+
+      isVoiceRecording = true;
+      voiceRecordingSlideId = slideId;
+      voiceRawTranscript = '';
+
+      setVoiceRecordingUIState(true);
+      startVoiceTimer();
+    }
+
+    // --- 停止錄音並觸發 AI 摘要 ---
+    async function stopVoiceRecording({ skipSummarize = false } = {}) {
+      if (!isVoiceRecording || !voiceRecorder) return;
+
+      stopVoiceTimer();
+      setVoiceRecordingUIState(false);
+      isVoiceRecording = false;
+
+      const transcript = await voiceRecorder.stop();
+      voiceRawTranscript = transcript ? transcript.trim() : '';
+      voiceRecorder.destroy();
+      voiceRecorder = null;
+
+      if (skipSummarize) return;
+
+      const slideIndex = currentSlideIndex;
+      const slideId = getVoiceNoteSlideId(slideIndex);
+      const slide = SLIDES_DATA[slideIndex - 1] || {};
+      const slideTitle = slide.title || slideId;
+
+      // AC-03-7：逐字稿不足 3 秒或空白
+      const minWords = 3;
+      if (!voiceRawTranscript || voiceRawTranscript.replace(/\s/g, '').length < minWords) {
+        showVoiceSummaryError('未偵測到語音，請重新錄音');
+        return;
+      }
+
+      await requestAISummary(voiceRawTranscript, slideTitle, slideId);
+    }
+
+    // --- 切換 UI 狀態 ---
+    function setVoiceRecordingUIState(isRecording) {
+      const btnStart  = document.getElementById('btn-voice-note');
+      const btnStop   = document.getElementById('btn-voice-note-stop');
+      const transcriptWin = document.getElementById('voice-transcript-window');
+
+      if (isRecording) {
+        if (btnStart)  btnStart.classList.add('hidden');
+        if (btnStop)   btnStop.classList.remove('hidden');
+        if (transcriptWin) {
+          transcriptWin.classList.remove('hidden');
+          // 清空
+          const fi = document.getElementById('voice-transcript-final');
+          const ii = document.getElementById('voice-transcript-interim');
+          if (fi) fi.textContent = '';
+          if (ii) ii.textContent = '';
+        }
+      } else {
+        if (btnStart)  btnStart.classList.remove('hidden');
+        if (btnStop)   btnStop.classList.add('hidden');
+        if (transcriptWin) transcriptWin.classList.add('hidden');
+      }
+    }
+
+    // --- 呼叫 Gemini AI 整理摘要 ---
+    async function requestAISummary(transcript, slideTitle, slideId) {
+      // 檢查 API Key
+      const apiKey = localStorage.getItem('GEMINI_API_KEY') ||
+                     (new URLSearchParams(location.search)).get('gemini_key');
+      if (!apiKey) {
+        showVoiceSummaryError(
+          '尚未設定 Gemini API Key，請在控制台執行：\n' +
+          "localStorage.setItem('GEMINI_API_KEY', 'your-key') 後重試"
+        );
+        return;
+      }
+
+      // 顯示 loading 卡片
+      showVoiceSummaryLoading(slideId);
+
+      // 逐字稿最多 3000 字（TC-07-3 穩健性）
+      const safeTranscript = transcript.length > 3000
+        ? transcript.slice(-3000)
+        : transcript;
+
+      const prompt = `你是一個專業的課程講解重點整理引擎。
+以下是講師針對投影片「${slideTitle}」的即時講解逐字稿：
+
+=== 逐字稿 ===
+${safeTranscript}
+
+請整理成：
+1. overviewSummary：2句話的整體摘要
+2. takeaways：3~5個核心學習重點（條列式）
+
+規則：
+- 去除口語贅字（呃、那個、就是說）
+- 保留關鍵術語
+- 使用繁體中文（台灣商務用語）
+- 輸出純 JSON：{ "overviewSummary": "...", "takeaways": ["...", "..."] }`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // AC-03-2：15s timeout
+
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+          })
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!resp.ok) {
+          throw new Error(`API 回傳錯誤 ${resp.status}`);
+        }
+
+        const data = await resp.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        // 解析 JSON
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('AI 回傳格式錯誤');
+
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (!parsed.overviewSummary || !Array.isArray(parsed.takeaways)) {
+          throw new Error('摘要結構不完整');
+        }
+
+        voiceCurrentSummary = parsed;
+
+        // 儲存到 Firestore
+        const slide = SLIDES_DATA[currentSlideIndex - 1] || {};
+        await saveVoiceNoteToFirestore({
+          slideId,
+          slideTitle,
+          rawTranscript: voiceRawTranscript,
+          overviewSummary: parsed.overviewSummary,
+          takeaways: parsed.takeaways,
+          appliedToTeamMemo: false,
+        });
+
+        renderVoiceSummaryCard(parsed, slideId, slideTitle, false);
+
+      } catch (err) {
+        const isTimeout = err.name === 'AbortError';
+        const isNetwork = err.message.includes('Failed to fetch') || err.message.includes('network');
+        const msg = isTimeout
+          ? 'AI 整理失敗（逾時），原始逐字稿已保留'
+          : isNetwork
+            ? '網路連線失敗，原始逐字稿已保留'
+            : `AI 整理失敗，原始逐字稿已保留`;
+
+        showVoiceSummaryError(`${msg}\n\n原始逐字稿：\n${voiceRawTranscript}`);
+      }
+    }
+
+    // --- UI：顯示 loading 卡片 ---
+    function showVoiceSummaryLoading(slideId) {
+      const card  = document.getElementById('voice-summary-card');
+      const loading = document.getElementById('voice-summary-loading');
+      const content = document.getElementById('voice-summary-content');
+      const actions = document.getElementById('voice-summary-actions');
+      const errEl  = document.getElementById('voice-summary-error');
+      const label  = document.getElementById('voice-summary-slide-label');
+      const body   = document.getElementById('voice-summary-body');
+
+      if (!card) return;
+      card.classList.remove('hidden');
+      if (label) label.textContent = slideId;
+      if (loading) loading.classList.remove('hidden');
+      if (content) content.classList.add('hidden');
+      if (actions) actions.classList.add('hidden');
+      if (errEl)   errEl.classList.add('hidden');
+      if (body)    body.classList.remove('hidden');
+
+      voiceSummaryCollapsed = false;
+      const toggleIcon = document.getElementById('voice-summary-toggle-icon');
+      if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'chevron-up');
+      if (window.lucide) lucide.createIcons({ scope: card });
+    }
+
+    // --- UI：顯示錯誤訊息 ---
+    function showVoiceSummaryError(msg) {
+      const card  = document.getElementById('voice-summary-card');
+      const loading = document.getElementById('voice-summary-loading');
+      const content = document.getElementById('voice-summary-content');
+      const actions = document.getElementById('voice-summary-actions');
+      const errEl  = document.getElementById('voice-summary-error');
+
+      if (card) card.classList.remove('hidden');
+      if (loading) loading.classList.add('hidden');
+      if (content) content.classList.add('hidden');
+      if (actions) actions.classList.add('hidden');
+      if (errEl) {
+        errEl.classList.remove('hidden');
+        errEl.style.whiteSpace = 'pre-wrap';
+        errEl.textContent = msg;
+      }
+    }
+
+    // --- UI：渲染摘要卡片 ---
+    function renderVoiceSummaryCard(summary, slideId, slideTitle, collapsed = false) {
+      const card  = document.getElementById('voice-summary-card');
+      const loading = document.getElementById('voice-summary-loading');
+      const content = document.getElementById('voice-summary-content');
+      const actions = document.getElementById('voice-summary-actions');
+      const errEl  = document.getElementById('voice-summary-error');
+      const label  = document.getElementById('voice-summary-slide-label');
+      const overviewEl = document.getElementById('voice-summary-overview');
+      const takeawaysEl = document.getElementById('voice-summary-takeaways');
+      const body   = document.getElementById('voice-summary-body');
+      const toggleIcon = document.getElementById('voice-summary-toggle-icon');
+
+      if (!card) return;
+      card.classList.remove('hidden');
+      if (label) label.textContent = slideId || '';
+      if (loading) loading.classList.add('hidden');
+      if (errEl)   errEl.classList.add('hidden');
+
+      if (overviewEl) overviewEl.textContent = summary.overviewSummary || '';
+      if (takeawaysEl) {
+        takeawaysEl.innerHTML = '';
+        (summary.takeaways || []).forEach(t => {
+          const li = document.createElement('li');
+          li.className = 'flex items-start gap-1.5 text-xs text-slate-700';
+          li.innerHTML = `<span class="text-indigo-500 font-bold mt-0.5 flex-shrink-0">▸</span><span>${t}</span>`;
+          takeawaysEl.appendChild(li);
+        });
+      }
+
+      voiceSummaryCollapsed = collapsed;
+      if (collapsed) {
+        if (body) body.classList.add('hidden');
+        if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'chevron-down');
+      } else {
+        if (body) body.classList.remove('hidden');
+        if (content) content.classList.remove('hidden');
+        if (actions) actions.classList.remove('hidden');
+        if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'chevron-up');
+      }
+
+      if (window.lucide) lucide.createIcons({ scope: card });
+    }
+
+    // --- 摺疊/展開摘要卡片 ---
+    function toggleVoiceSummaryCollapse() {
+      const body = document.getElementById('voice-summary-body');
+      const toggleIcon = document.getElementById('voice-summary-toggle-icon');
+      voiceSummaryCollapsed = !voiceSummaryCollapsed;
+      if (voiceSummaryCollapsed) {
+        if (body) body.classList.add('hidden');
+        if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'chevron-down');
+      } else {
+        if (body) body.classList.remove('hidden');
+        if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'chevron-up');
+      }
+      if (window.lucide) lucide.createIcons({ scope: document.getElementById('voice-summary-card') });
+    }
+
+    // --- 關閉摘要卡片（不刪除 Firestore 資料） ---
+    function closeVoiceSummaryCard() {
+      const card = document.getElementById('voice-summary-card');
+      if (card) card.classList.add('hidden');
+      voiceCurrentSummary = null;
+    }
+
+    // --- 套用摘要到筆記區 ---
+    async function applyVoiceSummaryToMemo() {
+      if (!voiceCurrentSummary) return;
+      const memoInput = document.getElementById('team-memo-input');
+      if (!memoInput) return;
+
+      const summaryText = [
+        `\n【AI 講師摘要】`,
+        voiceCurrentSummary.overviewSummary,
+        '',
+        ...(voiceCurrentSummary.takeaways || []).map((t, i) => `${i + 1}. ${t}`)
+      ].join('\n');
+
+      memoInput.value = memoInput.value + summaryText;
+      memoInput.dispatchEvent(new Event('input', { bubbles: true }));
+      memoInput.focus();
+      memoInput.scrollTop = memoInput.scrollHeight;
+
+      // 更新 Firestore appliedToTeamMemo = true
+      const slideId = voiceRecordingSlideId || getVoiceNoteSlideId(currentSlideIndex);
+      try {
+        await getVoiceNoteFirestorePath(slideId).update({ appliedToTeamMemo: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      } catch(e) {}
+
+      showToast('已將 AI 摘要追加到筆記區 ✅', 'emerald');
+    }
+
+    // --- 重新整理摘要 ---
+    async function retryVoiceSummary() {
+      if (!voiceRawTranscript) {
+        showToast('原始逐字稿已清除，無法重新整理', 'rose');
+        return;
+      }
+      const slideIndex = currentSlideIndex;
+      const slideId = getVoiceNoteSlideId(slideIndex);
+      const slide = SLIDES_DATA[slideIndex - 1] || {};
+      const slideTitle = slide.title || slideId;
+      await requestAISummary(voiceRawTranscript, slideTitle, slideId);
+    }
+
+    // --- Firestore 儲存 ---
+    async function saveVoiceNoteToFirestore(data) {
+      if (!currentClassId) return;
+      try {
+        await getVoiceNoteFirestorePath(data.slideId).set({
+          ...data,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        updateTocVoiceNoteBadge(data.slideId, true);
+      } catch(e) {
+        console.warn('[VoiceNote] Firestore 儲存失敗', e);
+      }
+    }
+
+    // --- Firestore 讀取（換頁時還原） ---
+    async function loadVoiceNoteFromFirestore(slideId, slideTitle) {
+      const card = document.getElementById('voice-summary-card');
+      if (!card) return;
+
+      // 若正在錄音中或沒有 classId，跳過
+      if (isVoiceRecording || !currentClassId) {
+        card.classList.add('hidden');
+        voiceCurrentSummary = null;
+        return;
+      }
+
+      // 若不是講師，不顯示
+      if (!isInstructor()) {
+        card.classList.add('hidden');
+        return;
+      }
+
+      try {
+        const doc = await getVoiceNoteFirestorePath(slideId).get();
+        if (doc.exists) {
+          const data = doc.data();
+          voiceCurrentSummary = {
+            overviewSummary: data.overviewSummary || '',
+            takeaways: data.takeaways || [],
+          };
+          voiceRawTranscript = data.rawTranscript || '';
+          voiceRecordingSlideId = slideId;
+          // 預設摺疊顯示（AC-04-2）
+          renderVoiceSummaryCard(voiceCurrentSummary, slideId, slideTitle || data.slideTitle || '', true);
+        } else {
+          card.classList.add('hidden');
+          voiceCurrentSummary = null;
+        }
+      } catch(e) {
+        card.classList.add('hidden');
+        voiceCurrentSummary = null;
+      }
+    }
+
+    // --- 目錄 📝 標記 ---
+    const voiceNoteBadgeSlides = new Set();
+
+    function updateTocVoiceNoteBadge(slideId, hasNote) {
+      if (hasNote) {
+        voiceNoteBadgeSlides.add(slideId);
+      } else {
+        voiceNoteBadgeSlides.delete(slideId);
+      }
+      // 更新目錄 DOM（若已渲染）
+      const items = document.querySelectorAll('[data-toc-slide-id]');
+      items.forEach(el => {
+        if (el.dataset.tocSlideId === slideId) {
+          let badge = el.querySelector('.voice-note-toc-badge');
+          if (hasNote && !badge) {
+            badge = document.createElement('span');
+            badge.className = 'voice-note-toc-badge text-[10px] ml-1';
+            badge.textContent = '📝';
+            el.appendChild(badge);
+          } else if (!hasNote && badge) {
+            badge.remove();
+          }
+        }
+      });
+    }
+
+    // --- 換頁防護 Modal ---
+    function showVoiceNavModal(action) {
+      voicePendingNavAction = action;
+      const modal = document.getElementById('voice-nav-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function hideVoiceNavModal() {
+      const modal = document.getElementById('voice-nav-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function handleVoiceNavChoice(choice) {
+      hideVoiceNavModal();
+
+      if (choice === 'cancel') {
+        // 維持錄音，不換頁
+        voicePendingNavAction = null;
+        return;
+      }
+
+      const pendingAction = voicePendingNavAction;
+      voicePendingNavAction = null;
+
+      if (choice === 'stop-and-summarize') {
+        // 停止錄音並等待 AI 摘要，完成後換頁
+        await stopVoiceRecording();
+        // 換頁（使用儲存的動作）
+        _executeNavAction(pendingAction);
+
+      } else if (choice === 'discard-and-navigate') {
+        // 直接丟棄錄音、換頁
+        if (voiceRecorder) {
+          voiceRecorder.destroy();
+          voiceRecorder = null;
+        }
+        stopVoiceTimer();
+        isVoiceRecording = false;
+        voiceRecordingSlideId = null;
+        voiceRawTranscript = '';
+        setVoiceRecordingUIState(false);
+        _executeNavAction(pendingAction);
+      }
+    }
+
+    function _executeNavAction(action) {
+      if (!action) return;
+      if (action.type === 'delta') {
+        releaseLock();
+        renderSlide(currentSlideIndex + action.value);
+      } else if (action.type === 'index') {
+        releaseLock();
+        renderSlide(action.value);
+        closeTocDrawer();
+      }
+    }
+
+    // ================================================================
+    // ===== END 語音重點筆記模組 =====
+    // ================================================================
+
   </script>
 </body>
 </html>
