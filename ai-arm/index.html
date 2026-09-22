@@ -364,11 +364,23 @@
     </div>
   </aside>
 
-  <!-- ==================== 主工作區 (電腦版左右雙欄，行動端直向自適應平滑滾動) ==================== -->
-  <main class="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden relative">
+  <!-- 手機專屬頁籤切換列 (投影片 / 小組筆記) -->
+  <div id="mobile-view-tabs" class="md:hidden flex items-center bg-slate-100 border-b border-slate-200 px-3 py-1.5 gap-2 flex-shrink-0 z-20">
+    <button type="button" id="tab-btn-slide" onclick="switchMobileView('slide')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-xs cursor-pointer">
+      <i data-lucide="presentation" class="w-3.5 h-3.5"></i>
+      <span>投影片</span>
+    </button>
+    <button type="button" id="tab-btn-notes" onclick="switchMobileView('notes')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer">
+      <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+      <span>小組筆記與附件</span>
+    </button>
+  </div>
+
+  <!-- ==================== 主工作區 (電腦版左右雙欄，行動端單一滿版切換) ==================== -->
+  <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative min-h-0">
 
     <!-- 左側：投影片瀏覽器 (高清晰、無遮蔽、沉浸式，預設左圖右筆記雙欄) -->
-    <section id="slide-section" class="w-full md:w-1/2 min-h-[220px] max-h-[42vh] md:max-h-none md:h-full flex flex-col relative overflow-hidden bg-slate-100/60 transition-all duration-300 flex-shrink-0">
+    <section id="slide-section" class="w-full md:w-1/2 flex-1 md:h-full h-full min-h-0 flex flex-col relative overflow-hidden bg-slate-100/60 transition-all duration-300 flex-shrink-0">
       
       <!-- 投影片圖檔展示畫布 (flex-1 搭配 min-h-0，確保圖片自適應縮放，永不被任何下方工具列遮蔽) -->
       <div id="slide-container" class="flex-1 min-h-0 w-full flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden relative">
@@ -474,8 +486,8 @@
       </div>
     </section>
 
-    <!-- 右側：沉浸式小組隨堂筆記區 (行動端彈性延展至少 380px，預設常駐展開) -->
-    <aside id="notes-aside" class="w-full md:w-1/2 flex-1 md:h-full bg-white flex flex-col overflow-hidden min-h-[380px] border-t md:border-t-0 md:border-l border-slate-200">
+    <!-- 右側：沉浸式小組隨堂筆記區 -->
+    <aside id="notes-aside" class="w-full md:w-1/2 flex-1 h-full md:h-full bg-white hidden md:flex flex-col overflow-hidden min-h-0 border-t md:border-t-0 md:border-l border-slate-200">
 
       <!-- 整合式工作台頂部工具列 (單一精簡 44px 列：組別下拉選單 + 組員即時在線 + 翻面 + 同步狀態) -->
       <div class="bg-slate-50/90 border-b border-slate-200 px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
@@ -583,8 +595,8 @@
             </div>
 
             <!-- 盡量大面積的輸入框 (無遮蔽、充滿全高，附帶點擊提示) -->
-            <div id="memo-input-wrapper" class="w-full flex-1 flex flex-col relative min-h-[120px]" onclick="handleMemoWrapperClick(event)">
-              <textarea id="team-memo-input" placeholder="點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）..." class="w-full flex-1 p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed select-text"></textarea>
+            <div id="memo-input-wrapper" class="w-full flex-1 flex flex-col relative min-h-[140px]" onclick="handleMemoWrapperClick(event)">
+              <textarea id="team-memo-input" placeholder="點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）..." class="w-full flex-1 min-h-[140px] p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed select-text"></textarea>
             </div>
 
             <!-- 小組附件管理區 (Attachments Panel) -->
@@ -738,10 +750,9 @@
           <div id="gatekeeper-code-group">
             <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
               <span>1. 班級專屬代碼 (Class Code) <span class="text-rose-400">*</span></span>
-              <span class="text-[11px] text-slate-500 font-normal font-mono">例：2026-cathay</span>
             </label>
             <div class="relative">
-              <input type="text" id="gatekeeper-code-input" autofocus autocomplete="off" placeholder="請輸入班級代碼 (例如 2026-cathay)" 
+              <input type="text" id="gatekeeper-code-input" autofocus autocomplete="off" placeholder="請輸入講師公布之專屬代碼" 
                 class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-amber-300 font-mono text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all placeholder:text-slate-600 placeholder:font-sans" />
               <i data-lucide="hash" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3"></i>
             </div>
@@ -1555,6 +1566,127 @@
     let classConfigUnsubscribe = null;
     let lastKnownClearedAt = parseInt(localStorage.getItem(`ai_arm_${currentClassId || 'default'}_cleared_at`) || '0', 10);
 
+    // --- 門禁連續失敗安全鎖定機制 (Rate Limiting & Lockout) ---
+    const GATEKEEPER_MAX_FAILURES = 5;
+    const GATEKEEPER_LOCKOUT_MS = 3 * 60 * 1000; // 3 分鐘 (180 秒)
+    const GATEKEEPER_FAIL_KEY = 'ai_arm_gate_fail_count';
+    const GATEKEEPER_LOCK_KEY = 'ai_arm_gate_lock_until';
+    let gatekeeperLockTimer = null;
+
+    function getGatekeeperLockState() {
+      try {
+        const lockUntil = parseInt(localStorage.getItem(GATEKEEPER_LOCK_KEY) || '0', 10);
+        const failCount = parseInt(localStorage.getItem(GATEKEEPER_FAIL_KEY) || '0', 10);
+        const now = Date.now();
+        if (lockUntil && lockUntil > now) {
+          return { isLocked: true, remainingMs: lockUntil - now, failCount };
+        }
+        if (lockUntil && lockUntil <= now) {
+          localStorage.removeItem(GATEKEEPER_LOCK_KEY);
+          localStorage.removeItem(GATEKEEPER_FAIL_KEY);
+          return { isLocked: false, remainingMs: 0, failCount: 0 };
+        }
+        return { isLocked: false, remainingMs: 0, failCount };
+      } catch (e) {
+        return { isLocked: false, remainingMs: 0, failCount: 0 };
+      }
+    }
+
+    function recordGatekeeperFailure() {
+      try {
+        let failCount = parseInt(localStorage.getItem(GATEKEEPER_FAIL_KEY) || '0', 10) + 1;
+        localStorage.setItem(GATEKEEPER_FAIL_KEY, String(failCount));
+        if (failCount >= GATEKEEPER_MAX_FAILURES) {
+          const lockUntil = Date.now() + GATEKEEPER_LOCKOUT_MS;
+          localStorage.setItem(GATEKEEPER_LOCK_KEY, String(lockUntil));
+          applyGatekeeperLockUI();
+          return true;
+        }
+        return false;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function clearGatekeeperFailures() {
+      try {
+        localStorage.removeItem(GATEKEEPER_FAIL_KEY);
+        localStorage.removeItem(GATEKEEPER_LOCK_KEY);
+      } catch (e) {}
+      if (gatekeeperLockTimer) {
+        clearInterval(gatekeeperLockTimer);
+        gatekeeperLockTimer = null;
+      }
+    }
+
+    function applyGatekeeperLockUI() {
+      const state = getGatekeeperLockState();
+      const inputCodeEl = document.getElementById('gatekeeper-code-input');
+      const inputNameEl = document.getElementById('gatekeeper-name-input');
+      const submitBtn = document.getElementById('btn-gatekeeper-submit');
+      const errorEl = document.getElementById('gatekeeper-error-msg');
+      const errorTextEl = document.getElementById('gatekeeper-error-text');
+
+      if (state.isLocked) {
+        if (inputCodeEl) inputCodeEl.disabled = true;
+        if (inputNameEl) inputNameEl.disabled = true;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        const updateLockCountdown = () => {
+          const curState = getGatekeeperLockState();
+          if (!curState.isLocked) {
+            if (gatekeeperLockTimer) {
+              clearInterval(gatekeeperLockTimer);
+              gatekeeperLockTimer = null;
+            }
+            if (inputCodeEl) {
+              inputCodeEl.disabled = false;
+              inputCodeEl.focus();
+            }
+            if (inputNameEl) inputNameEl.disabled = false;
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+              submitBtn.innerHTML = `<span>🚀 完成報到，進入第 1 頁講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+              if (window.lucide) lucide.createIcons({ scope: submitBtn });
+            }
+            if (errorEl) errorEl.classList.add('hidden');
+            return;
+          }
+
+          const totalSecs = Math.ceil(curState.remainingMs / 1000);
+          const mins = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+          const secs = String(totalSecs % 60).padStart(2, '0');
+          if (errorEl && errorTextEl) {
+            errorTextEl.innerHTML = `⚠️ 連續嘗試失敗達上限，安全鎖定中，請等待 <strong class="text-amber-300 font-mono">${mins}:${secs}</strong> 後再試`;
+            errorEl.classList.remove('hidden');
+          }
+          if (submitBtn) {
+            submitBtn.innerHTML = `<span>⏳ 安全鎖定中 (${mins}:${secs})</span>`;
+          }
+        };
+
+        updateLockCountdown();
+        if (!gatekeeperLockTimer) {
+          gatekeeperLockTimer = setInterval(updateLockCountdown, 1000);
+        }
+      } else {
+        if (gatekeeperLockTimer) {
+          clearInterval(gatekeeperLockTimer);
+          gatekeeperLockTimer = null;
+        }
+        if (inputCodeEl) inputCodeEl.disabled = false;
+        if (inputNameEl) inputNameEl.disabled = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+      }
+    }
+
     // --- 智能班級代碼解析器 (超強容錯) ---
     function parseClassCode(input) {
       if (!input) return '';
@@ -1562,7 +1694,7 @@
       // 1. 去除首尾引號與多餘空白
       str = str.replace(/^['"]+|['"]+$/g, '').trim();
       
-      // 2. 若貼上完整 URL (例：https://aigile.tw/workshop/ai-arm/?c=2026-cathay 或 ?c=xxx)
+      // 2. 若貼上完整 URL (例：https://aigile.tw/workshop/ai-arm/?c=xxx)
       try {
         if (str.includes('?') || str.startsWith('http://') || str.startsWith('https://')) {
           const dummyBase = 'http://localhost/';
@@ -1600,6 +1732,10 @@
         const submitBtn = document.getElementById('btn-gatekeeper-submit');
 
         if (!codeInput) return null;
+        if (getGatekeeperLockState().isLocked) {
+          applyGatekeeperLockUI();
+          return null;
+        }
         const rawCode = codeInput.value;
         const code = parseClassCode(rawCode);
 
@@ -1711,7 +1847,9 @@
       if (!overlay) return;
       overlay.classList.remove('hidden');
       setupGatekeeperListeners();
+      applyGatekeeperLockUI();
 
+      const lockState = getGatekeeperLockState();
       const targetCode = prefillClassId || currentClassId;
       const codeInput = document.getElementById('gatekeeper-code-input');
       const badge = document.getElementById('gatekeeper-class-badge');
@@ -1719,7 +1857,9 @@
 
       if (targetCode) {
         if (codeInput) codeInput.value = targetCode;
-        inspectGatekeeperClassCode(true, true);
+        if (!lockState.isLocked) {
+          inspectGatekeeperClassCode(true, true);
+        }
       } else {
         if (badge) badge.classList.add('hidden');
         renderGatekeeperTeamOptions(TOTAL_TEAMS || 6);
@@ -1727,6 +1867,7 @@
 
       if (window.lucide) lucide.createIcons({ scope: overlay });
       setTimeout(() => {
+        if (getGatekeeperLockState().isLocked) return;
         if (targetCode) {
           document.getElementById('gatekeeper-name-input')?.focus();
         } else {
@@ -1789,6 +1930,13 @@
 
     async function handleGatekeeperSubmit(e) {
       if (e) e.preventDefault();
+
+      const lockState = getGatekeeperLockState();
+      if (lockState.isLocked) {
+        applyGatekeeperLockUI();
+        return;
+      }
+
       const inputCodeEl = document.getElementById('gatekeeper-code-input');
       const inputNameEl = document.getElementById('gatekeeper-name-input');
       const errorEl = document.getElementById('gatekeeper-error-msg');
@@ -1801,7 +1949,7 @@
 
       if (!code) {
         if (errorEl && errorTextEl) {
-          errorTextEl.innerText = "請輸入班級代碼（例如：2026-cathay）";
+          errorTextEl.innerText = "請輸入講師公布之專屬班級代碼";
           errorEl.classList.remove('hidden');
         }
         inputCodeEl?.focus();
@@ -1831,8 +1979,15 @@
         if (db) {
           const docSnap = await db.collection(CLASSES_COLLECTION).doc(code).get();
           if (!docSnap.exists) {
+            const isLocked = recordGatekeeperFailure();
+            if (isLocked) {
+              applyGatekeeperLockUI();
+              return;
+            }
+            const curState = getGatekeeperLockState();
+            const remaining = GATEKEEPER_MAX_FAILURES - curState.failCount;
             if (errorEl && errorTextEl) {
-              errorTextEl.innerText = `查無班級代碼【${code}】，請確認後重新輸入`;
+              errorTextEl.innerText = `查無班級代碼【${code}】，請確認後重新輸入（剩餘嘗試次數：${remaining} 次）`;
               errorEl.classList.remove('hidden');
             }
             if (submitBtn) {
@@ -1858,6 +2013,9 @@
             return;
           }
         }
+
+        // 通過驗證，清除失敗計數
+        clearGatekeeperFailures();
 
         const classTeamCount = parseInt(classDocData?.teamCount, 10) || 6;
         TOTAL_TEAMS = classTeamCount;
@@ -1901,6 +2059,8 @@
         if (usernameInput) usernameInput.value = name;
         selectLoginTeam(teamVal);
         initClassConfig();
+        initSyncChannel();
+        initReactionStreamListener(true);
         subscribeToFirestore();
         renderSlide(1);
 
@@ -2123,6 +2283,8 @@
           renderLoginTeamOptions();
           renderTeamTabs();
           renderPrintTeamOptions();
+          initSyncChannel();
+          initReactionStreamListener(true);
           const printModal = document.getElementById('print-modal');
           if (printModal && !printModal.classList.contains('hidden')) {
             printSelectedTeam = activeTeamId || (currentUser ? currentUser.team : 'team-1');
@@ -2332,11 +2494,74 @@
       return `第 ${num} 組`;
     }
 
+    // --- 行動端專屬頁籤檢視切換 (投影片 / 小組筆記) ---
+    let currentMobileView = 'slide'; // 'slide' | 'notes'
+
+    function switchMobileView(view) {
+      currentMobileView = view;
+      applyMobileView();
+    }
+
+    function applyMobileView() {
+      const isMobile = window.innerWidth < 768;
+      const slideBtn = document.getElementById('tab-btn-slide');
+      const notesBtn = document.getElementById('tab-btn-notes');
+      const section = document.getElementById('slide-section');
+      const aside = document.getElementById('notes-aside');
+
+      if (!isMobile) {
+        if (section) {
+          section.classList.remove('hidden');
+          section.classList.add('flex');
+        }
+        applyLayoutMode(currentLayoutMode === 'workstation');
+        return;
+      }
+
+      // 行動端模式：依據 currentMobileView 決定顯示項目
+      if (currentMobileView === 'slide') {
+        if (slideBtn) {
+          slideBtn.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-xs cursor-pointer";
+        }
+        if (notesBtn) {
+          notesBtn.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer";
+        }
+        if (section) {
+          section.classList.remove('hidden');
+          section.classList.add('flex');
+        }
+        if (aside) {
+          aside.classList.add('hidden');
+          aside.classList.remove('flex');
+        }
+      } else {
+        if (slideBtn) {
+          slideBtn.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-600 hover:text-slate-900 border border-slate-200 cursor-pointer";
+        }
+        if (notesBtn) {
+          notesBtn.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-xs cursor-pointer";
+        }
+        if (section) {
+          section.classList.add('hidden');
+          section.classList.remove('flex');
+        }
+        if (aside) {
+          aside.classList.remove('hidden');
+          aside.classList.add('flex');
+        }
+      }
+    }
+
     // --- 劇院大圖模式 ⇋ 左圖右筆記雙欄模式 控制器 ---
     let currentLayoutMode = 'workstation';
     let userManualLayoutOverride = null;
 
     function applyLayoutMode(isWorkstation = true) {
+      if (window.innerWidth < 768) {
+        applyMobileView();
+        return;
+      }
+
       const section = document.getElementById('slide-section');
       const aside = document.getElementById('notes-aside');
       const btnIcon = document.getElementById('layout-mode-icon');
@@ -2348,8 +2573,8 @@
 
       if (activeMode === 'workstation') {
         if (section) {
-          section.classList.remove('w-full', 'md:w-full');
-          section.classList.add('w-full', 'md:w-1/2');
+          section.classList.remove('w-full', 'md:w-full', 'hidden');
+          section.classList.add('w-full', 'md:w-1/2', 'flex');
         }
         if (aside) {
           aside.classList.remove('hidden');
@@ -2361,7 +2586,7 @@
       } else {
         if (section) {
           section.classList.remove('md:w-1/2');
-          section.classList.add('w-full', 'md:w-full');
+          section.classList.add('w-full', 'md:w-full', 'flex');
         }
         if (aside) {
           aside.classList.add('hidden');
@@ -3013,15 +3238,26 @@
     }
 
     // --- 多分頁與跨裝置極速同步頻道 (BroadcastChannel + LocalStorage + Firestore) ---
-    const syncChannelName = (currentClassId === 'default') ? 'ai_arm_workshop_sync' : `ai_arm_workshop_sync_${currentClassId}`;
-    const workshopSyncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel(syncChannelName) : null;
-    if (workshopSyncChannel) {
+    let workshopSyncChannel = null;
+
+    function initSyncChannel() {
+      if (!('BroadcastChannel' in window)) return;
+      const channelName = (!currentClassId || currentClassId === 'default') ? 'ai_arm_workshop_sync' : `ai_arm_workshop_sync_${currentClassId}`;
+      if (workshopSyncChannel && workshopSyncChannel.name === channelName) return;
+      if (workshopSyncChannel) {
+        try { workshopSyncChannel.close(); } catch (e) {}
+      }
+      workshopSyncChannel = new BroadcastChannel(channelName);
       workshopSyncChannel.onmessage = (event) => {
         const data = event.data;
         if (!data) return;
 
-        // 1. 即時情緒反應漂浮同步
-        if (data.type === 'SLIDE_REACTION' && data.slideIndex === currentSlideIndex) {
+        // 1. 即時情緒反應漂浮同步 (全班跨頁、跨組、全場即時同歡)
+        if (data.type === 'SLIDE_REACTION') {
+          if (data.reactionId) {
+            if (data.reactionId === lastProcessedReactionId) return;
+            lastProcessedReactionId = data.reactionId;
+          }
           spawnReactionParticle(data.emoji, data.x, data.y);
         }
         // 2. 新便利貼提問送達 (同步清單、更新標籤、彈出即時提示 Toast)
@@ -3053,6 +3289,7 @@
         }
       };
     }
+    initSyncChannel();
 
     // ========================================================
     // 全域課堂倒數計時器 (Global Workshop Timer)
@@ -3470,6 +3707,11 @@
       mindblown: '🤯'
     };
 
+    let reactionStreamUnsubscribe = null;
+    let activeReactionDocKey = null;
+    let lastProcessedReactionId = null;
+    let isInitialReactionSnapshot = true;
+
     function getReactionDocKey() {
       return (currentClassId === 'default') ? 'ai_arm_reaction_latest' : `ai_arm_${currentClassId}_reaction_latest`;
     }
@@ -3487,10 +3729,14 @@
       // 1. 本地立即噴出
       spawnReactionParticle(emoji, originX, originY);
 
+      const reactionId = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      lastProcessedReactionId = reactionId;
+
       // 2. 本地多分頁極速廣播 (同台電腦模擬投影 0ms 噴出)
       if (workshopSyncChannel) {
         workshopSyncChannel.postMessage({
           type: 'SLIDE_REACTION',
+          reactionId: reactionId,
           slideIndex: currentSlideIndex,
           emoji: emoji,
           x: originX,
@@ -3498,12 +3744,13 @@
         });
       }
 
-      // 3. 雲端同步 (跨裝置學生送出的反應)
+      // 3. 雲端同步 (跨裝置學生送出的反應，全班即時跨組、跨頁同歡)
       try {
         if (db && typeof db.collection === 'function') {
           db.collection(NOTES_COLLECTION).doc(getReactionDocKey()).set({
             type: type,
             emoji: emoji,
+            reactionId: reactionId,
             slideIndex: currentSlideIndex,
             xRatio: originX / window.innerWidth,
             yRatio: originY / window.innerHeight,
@@ -3549,22 +3796,58 @@
       }, 1900);
     }
 
-    function initReactionStreamListener() {
-      if (reactionStreamUnsubscribe) return;
-      if (db && typeof db.collection === 'function') {
+    function initReactionStreamListener(forceRebind = false) {
+      if (!db || typeof db.collection !== 'function') return;
+      const targetDocKey = getReactionDocKey();
+      if (reactionStreamUnsubscribe) {
+        if (!forceRebind && activeReactionDocKey === targetDocKey) {
+          return;
+        }
         try {
-          reactionStreamUnsubscribe = db.collection(NOTES_COLLECTION).doc(getReactionDocKey())
-            .onSnapshot(doc => {
-              if (doc.exists) {
-                const data = doc.data();
-                if (data && data.slideIndex === currentSlideIndex && (Date.now() - (data.timestamp || 0) < 3000)) {
-                  const x = (data.xRatio || 0.5) * window.innerWidth;
-                  const y = (data.yRatio || 0.8) * window.innerHeight;
-                  spawnReactionParticle(data.emoji || '❤️', x, y);
-                }
+          reactionStreamUnsubscribe();
+        } catch (e) {}
+        reactionStreamUnsubscribe = null;
+      }
+
+      activeReactionDocKey = targetDocKey;
+      isInitialReactionSnapshot = true;
+
+      try {
+        reactionStreamUnsubscribe = db.collection(NOTES_COLLECTION).doc(targetDocKey)
+          .onSnapshot(doc => {
+            if (!doc.exists) return;
+            const data = doc.data();
+            if (!data) return;
+
+            // 首次讀取快照：記錄既有 reactionId，避免重新整理頁面時重複彈出過期表情
+            if (isInitialReactionSnapshot) {
+              isInitialReactionSnapshot = false;
+              if (data.reactionId) {
+                lastProcessedReactionId = data.reactionId;
               }
-            }, err => {});
-        } catch (err) {}
+              // 若是 4 秒內發送的即時反應，才予以播映
+              if (Date.now() - (data.timestamp || 0) > 4000) {
+                return;
+              }
+            }
+
+            // 比對 reactionId 防重複播放
+            if (data.reactionId && data.reactionId === lastProcessedReactionId) {
+              return;
+            }
+            if (data.reactionId) {
+              lastProcessedReactionId = data.reactionId;
+            }
+
+            // 全班即時跨組、跨頁、跨裝置同歡
+            const x = (data.xRatio || 0.5) * window.innerWidth;
+            const y = (data.yRatio || 0.8) * window.innerHeight;
+            spawnReactionParticle(data.emoji || '❤️', x, y);
+          }, err => {
+            console.warn("Reaction stream listener error:", err);
+          });
+      } catch (err) {
+        console.warn("Failed to init reaction stream listener:", err);
       }
     }
 
@@ -3572,7 +3855,6 @@
     let selectedStickyColor = 'yellow';
     let currentSlideQuestions = [];
     let slideQuestionsUnsubscribe = null;
-    let reactionStreamUnsubscribe = null;
 
     function getQuestionsDocKey(slideIndex) {
       return (currentClassId === 'default') ? `ai_arm_questions_p${slideIndex}` : `ai_arm_${currentClassId}_questions_p${slideIndex}`;
@@ -7305,10 +7587,15 @@ function copyCatalogPromptById(promptId, slideIndex) {
       releaseLock();
     });
 
+    window.addEventListener('resize', () => {
+      applyMobileView();
+    });
+
     window.addEventListener('DOMContentLoaded', async () => {
       initFirebase();
       closeLoginModal();
       setupGatekeeperListeners();
+      applyMobileView();
       if (!currentClassId) {
         showGatekeeperOverlay();
         if (appInitResolve) {
