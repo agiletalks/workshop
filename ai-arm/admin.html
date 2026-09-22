@@ -805,8 +805,8 @@
     // --- 儲存班級 (新增 or 更新) ---
     async function handleSaveClass(e) {
       e.preventDefault();
-      const isEdit = document.getElementById("form-is-edit").value === "true";
-      const classId = document.getElementById("form-class-id").value.trim();
+      const rawClassId = document.getElementById("form-class-id").value.trim();
+      const classId = rawClassId.toLowerCase();
       const name = document.getElementById("form-class-name").value.trim();
       const teamCount = parseInt(document.getElementById("form-team-count").value, 10) || 6;
       const coursePassword = document.getElementById("form-course-password").value.trim() || "agile-2026";
@@ -841,9 +841,15 @@
         if (!isEdit) {
           classData.createdAt = Date.now();
           await db.collection(CLASSES_COLLECTION).doc(classId).set(classData);
+          if (rawClassId !== classId) {
+            await db.collection(CLASSES_COLLECTION).doc(rawClassId).set({ ...classData, id: rawClassId }).catch(() => {});
+          }
           showToast(`班級【${name}】建立成功！`, "emerald");
         } else {
-          await db.collection(CLASSES_COLLECTION).doc(classId).update(classData);
+          await db.collection(CLASSES_COLLECTION).doc(classId).set(classData, { merge: true });
+          if (rawClassId !== classId) {
+            await db.collection(CLASSES_COLLECTION).doc(rawClassId).set({ ...classData, id: rawClassId }, { merge: true }).catch(() => {});
+          }
           showToast(`班級【${name}】設定已更新！`, "emerald");
         }
 
