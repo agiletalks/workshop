@@ -8132,12 +8132,15 @@ function copyCatalogPromptById(promptId, slideIndex) {
 
     // --- 呼叫 Gemini AI 依 MECE 原則萃取手寫便利貼清單 ---
     async function requestAIMeceStickies(transcript, slideTitle, slideId) {
+      console.log(`[VoiceNote] 🚀 開始為 ${slideId} 萃取 MECE 便利貼...`, { length: transcript.length });
+
       const apiKey = localStorage.getItem('GEMINI_API_KEY') ||
                      (new URLSearchParams(location.search)).get('gemini_key');
 
       if (!apiKey) {
         slideProcessingVoiceNotes.delete(slideId);
-        showToast('尚未設定 Gemini API Key，請在控制台執行設定', 'rose');
+        showToast('尚未設定 Gemini API Key，請先於控制台設定', 'rose');
+        console.error('[VoiceNote] ❌ 缺少 GEMINI_API_KEY');
         updateStickiesWallUI(getVoiceNoteSlideId(currentSlideIndex));
         return;
       }
@@ -8174,7 +8177,7 @@ ${safeTranscript}
 
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s 容錯
+        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s 容錯
 
         const resp = await fetch(url, {
           method: 'POST',
@@ -8187,17 +8190,36 @@ ${safeTranscript}
         });
 
         clearTimeout(timeoutId);
-        if (!resp.ok) throw new Error(`Gemini API 回傳錯誤碼: ${resp.status}`);
+        if (!resp.ok) {
+          const errBody = await resp.text().catch(() => '');
+          throw new Error(`Gemini API 回傳錯誤碼: ${resp.status} - ${errBody}`);
+        }
 
         const data = await resp.json();
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const cleaned = rawText.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
-        const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) throw new Error('AI 回傳格式非合法陣列');
+        console.log('[VoiceNote] 📥 AI 回傳原始內容:', rawText);
 
-        const stickies = JSON.parse(jsonMatch[0]);
+        const cleaned = rawText.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+        let stickies = null;
+
+        try {
+          const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            stickies = JSON.parse(jsonMatch[0]);
+          }
+        } catch (parseErr) {
+          console.warn('[VoiceNote] JSON 解析失敗，嘗試降級分析', parseErr);
+        }
+
+        // 萬一 AI 沒有輸出標準 JSON 陣列，啟動優雅降級萃取
         if (!Array.isArray(stickies) || stickies.length === 0) {
-          throw new Error('未萃取出任何便利貼');
+          console.warn('[VoiceNote] 啟動純文字備用切割');
+          const lines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
+          stickies = [{
+            title: slideTitle.slice(0, 10) || '課程重點',
+            color: 'yellow',
+            points: lines.slice(0, 4).map(l => l.replace(/^[0-9\.\-\*#\s]+/, ''))
+          }];
         }
 
         // 確保結構完整性與預設色系
@@ -8207,6 +8229,8 @@ ${safeTranscript}
           color: STICKY_PALETTES.some(p => p.id === s.color) ? s.color : STICKY_PALETTES[idx % STICKY_PALETTES.length].id,
           points: Array.isArray(s.points) ? s.points : [String(s.points || '重點內容')]
         }));
+
+        console.log('[VoiceNote] ✅ 便利貼標準化結構完成:', normalizedStickies);
 
         // 更新記憶體快取
         slideStickiesCache.set(slideId, normalizedStickies);
@@ -8233,7 +8257,7 @@ ${safeTranscript}
 
       } catch (err) {
         slideProcessingVoiceNotes.delete(slideId);
-        console.error('[VoiceNote] 萃取失敗', err);
+        console.error('[VoiceNote] ❌ 萃取失敗詳細原因:', err);
         const currentSlide = getVoiceNoteSlideId(currentSlideIndex);
         if (currentSlide === slideId) {
           updateStickiesWallUI(slideId);
