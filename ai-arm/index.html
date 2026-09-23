@@ -1749,7 +1749,7 @@
           return null;
         }
         const rawCode = codeInput.value;
-        const code = parseClassCode(rawCode);
+        let code = parseClassCode(rawCode);
 
         if (!code) {
           lastInspectedCode = '';
@@ -1979,7 +1979,7 @@
       const submitBtn = document.getElementById('btn-gatekeeper-submit');
 
       const rawCode = inputCodeEl ? inputCodeEl.value : '';
-      const code = parseClassCode(rawCode);
+      let code = parseClassCode(rawCode);
       const name = inputNameEl ? inputNameEl.value.trim() : '';
 
       if (!code) {
