@@ -801,6 +801,12 @@
           <p class="text-[11px] text-slate-600">
             班級代碼由講師現場公布 (例如投影大螢幕或白板)
           </p>
+          <p class="text-[11px] text-slate-500 pt-0.5">
+            遇驗證問題或舊版本殘留？
+            <button type="button" onclick="try{localStorage.clear();sessionStorage.clear();}catch(e){}location.reload();" class="text-amber-400 hover:text-amber-300 underline font-medium cursor-pointer">
+              點此清除快取重整
+            </button>
+          </p>
         </div>
       </div>
     </div>
@@ -1554,6 +1560,22 @@
       ? (parseInt(localStorage.getItem(`ai_arm_class_teams_${currentClassId}`), 10) || 6)
       : 6;
     let APP_STORAGE_KEY = currentClassId ? `ai_arm_auth_user_${currentClassId}` : "ai_arm_auth_user";
+    let activeTeamId = 'team-1';
+    let currentUser = null; // { name: '', team: 'team-1', loggedInAt: 0 }
+    let db = null;
+    let storage = null;
+    try {
+      if (currentClassId) {
+        const savedAuth = localStorage.getItem(APP_STORAGE_KEY);
+        if (savedAuth) {
+          const parsed = JSON.parse(savedAuth);
+          if (parsed && parsed.name && parsed.team) {
+            currentUser = parsed;
+            activeTeamId = parsed.team;
+          }
+        }
+      }
+    } catch (e) {}
 
     // 應用全局非同步初始化 Promise (確保班級設定與身分完全就緒)
     let appInitResolve = null;
@@ -1567,57 +1589,25 @@
     let lastKnownClearedAt = parseInt(localStorage.getItem(`ai_arm_${currentClassId || 'default'}_cleared_at`) || '0', 10);
 
     // --- 門禁連續失敗安全鎖定機制 (Rate Limiting & Lockout) ---
-    const GATEKEEPER_MAX_FAILURES = 5;
-    const GATEKEEPER_LOCKOUT_MS = 3 * 60 * 1000; // 3 分鐘 (180 秒)
+    const GATEKEEPER_MAX_FAILURES = 9999;
     const GATEKEEPER_FAIL_KEY = 'ai_arm_gate_fail_count';
     const GATEKEEPER_LOCK_KEY = 'ai_arm_gate_lock_until';
     let gatekeeperLockTimer = null;
 
-    function getGatekeeperLockState() {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlUser = (urlParams.get('user') || urlParams.get('name') || '').toLowerCase();
-        if (
-          urlParams.has('unlock') || 
-          urlParams.has('reset') || 
-          urlUser === 'percy' || 
-          sessionStorage.getItem('ai_arm_admin_auth') === 'true'
-        ) {
-          clearGatekeeperFailures();
-          return { isLocked: false, remainingMs: 0, failCount: 0 };
-        }
+    // 啟動時自動清除所有誤鎖狀態，確保所有學員立即解鎖
+    try {
+      localStorage.removeItem(GATEKEEPER_FAIL_KEY);
+      localStorage.removeItem(GATEKEEPER_LOCK_KEY);
+    } catch (e) {}
 
-        const lockUntil = parseInt(localStorage.getItem(GATEKEEPER_LOCK_KEY) || '0', 10);
-        const failCount = parseInt(localStorage.getItem(GATEKEEPER_FAIL_KEY) || '0', 10);
-        const now = Date.now();
-        if (lockUntil && lockUntil > now) {
-          return { isLocked: true, remainingMs: lockUntil - now, failCount };
-        }
-        if (lockUntil && lockUntil <= now) {
-          localStorage.removeItem(GATEKEEPER_LOCK_KEY);
-          localStorage.removeItem(GATEKEEPER_FAIL_KEY);
-          return { isLocked: false, remainingMs: 0, failCount: 0 };
-        }
-        return { isLocked: false, remainingMs: 0, failCount };
-      } catch (e) {
-        return { isLocked: false, remainingMs: 0, failCount: 0 };
-      }
+    function getGatekeeperLockState() {
+      clearGatekeeperFailures();
+      return { isLocked: false, remainingMs: 0, failCount: 0 };
     }
 
     function recordGatekeeperFailure() {
-      try {
-        let failCount = parseInt(localStorage.getItem(GATEKEEPER_FAIL_KEY) || '0', 10) + 1;
-        localStorage.setItem(GATEKEEPER_FAIL_KEY, String(failCount));
-        if (failCount >= GATEKEEPER_MAX_FAILURES) {
-          const lockUntil = Date.now() + GATEKEEPER_LOCKOUT_MS;
-          localStorage.setItem(GATEKEEPER_LOCK_KEY, String(lockUntil));
-          applyGatekeeperLockUI();
-          return true;
-        }
-        return false;
-      } catch (e) {
-        return false;
-      }
+      clearGatekeeperFailures();
+      return false;
     }
 
     function clearGatekeeperFailures() {
@@ -1632,72 +1622,19 @@
     }
 
     function applyGatekeeperLockUI() {
-      const state = getGatekeeperLockState();
+      clearGatekeeperFailures();
       const inputCodeEl = document.getElementById('gatekeeper-code-input');
       const inputNameEl = document.getElementById('gatekeeper-name-input');
       const submitBtn = document.getElementById('btn-gatekeeper-submit');
       const errorEl = document.getElementById('gatekeeper-error-msg');
-      const errorTextEl = document.getElementById('gatekeeper-error-text');
-
-      if (state.isLocked) {
-        if (inputCodeEl) inputCodeEl.disabled = true;
-        if (inputNameEl) inputNameEl.disabled = true;
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
-
-        const updateLockCountdown = () => {
-          const curState = getGatekeeperLockState();
-          if (!curState.isLocked) {
-            if (gatekeeperLockTimer) {
-              clearInterval(gatekeeperLockTimer);
-              gatekeeperLockTimer = null;
-            }
-            if (inputCodeEl) {
-              inputCodeEl.disabled = false;
-              inputCodeEl.focus();
-            }
-            if (inputNameEl) inputNameEl.disabled = false;
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-              submitBtn.innerHTML = `<span>🚀 完成報到，進入第 1 頁講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
-              if (window.lucide) lucide.createIcons({ scope: submitBtn });
-            }
-            if (errorEl) errorEl.classList.add('hidden');
-            return;
-          }
-
-          const totalSecs = Math.ceil(curState.remainingMs / 1000);
-          const mins = String(Math.floor(totalSecs / 60)).padStart(2, '0');
-          const secs = String(totalSecs % 60).padStart(2, '0');
-          if (errorEl && errorTextEl) {
-            errorTextEl.innerHTML = `⚠️ 連續嘗試失敗達上限，安全鎖定中，請等待 <strong class="text-amber-300 font-mono">${mins}:${secs}</strong> 後再試<br><span class="text-xs text-slate-400 mt-1.5 inline-block">若您是授課講師：可 <button type="button" onclick="clearGatekeeperFailures(); applyGatekeeperLockUI();" class="text-amber-400 underline hover:text-amber-300 font-bold cursor-pointer">點此手動重置鎖定</button> 或至 <a href="admin.html" class="text-amber-400 underline hover:text-amber-300">講師後台</a></span>`;
-            errorEl.classList.remove('hidden');
-          }
-          if (submitBtn) {
-            submitBtn.innerHTML = `<span>⏳ 安全鎖定中 (${mins}:${secs})</span>`;
-          }
-        };
-
-        updateLockCountdown();
-        if (!gatekeeperLockTimer) {
-          gatekeeperLockTimer = setInterval(updateLockCountdown, 1000);
-        }
-      } else {
-        if (gatekeeperLockTimer) {
-          clearInterval(gatekeeperLockTimer);
-          gatekeeperLockTimer = null;
-        }
-        if (inputCodeEl) inputCodeEl.disabled = false;
-        if (inputNameEl) inputNameEl.disabled = false;
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
+      if (inputCodeEl) inputCodeEl.disabled = false;
+      if (inputNameEl) inputNameEl.disabled = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       }
     }
+
 
     // --- 智能班級代碼解析器 (超強容錯) ---
     function parseClassCode(input) {
@@ -1748,10 +1685,11 @@
           applyGatekeeperLockUI();
           return null;
         }
-        const rawCode = codeInput.value;
-        let code = parseClassCode(rawCode);
+        const rawCode = codeInput ? codeInput.value : '';
+        const parsedCode = parseClassCode(rawCode);
+        let resolvedCode = parsedCode;
 
-        if (!code) {
+        if (!resolvedCode) {
           lastInspectedCode = '';
           if (badge) badge.classList.add('hidden');
           if (errorEl) errorEl.classList.add('hidden');
@@ -1763,11 +1701,11 @@
           return null;
         }
 
-        if (code === lastInspectedCode && !immediate && !onBlur && currentClassData && currentClassData.id === code) {
+        if (resolvedCode === lastInspectedCode && !immediate && !onBlur && currentClassData && currentClassData.id === resolvedCode) {
           return currentClassData;
         }
 
-        lastInspectedCode = code;
+        lastInspectedCode = resolvedCode;
 
         try {
           if (!db && typeof firebase !== 'undefined') {
@@ -1775,21 +1713,21 @@
           }
           if (!db) return null;
 
-          let docSnap = await db.collection(CLASSES_COLLECTION).doc(code).get();
+          let docSnap = await db.collection(CLASSES_COLLECTION).doc(resolvedCode).get();
           if (!docSnap.exists) {
-            if (rawCode && rawCode.trim() !== code) {
+            if (rawCode && rawCode.trim() !== resolvedCode) {
               const snapRaw = await db.collection(CLASSES_COLLECTION).doc(rawCode.trim()).get();
               if (snapRaw.exists) docSnap = snapRaw;
             }
             if (!docSnap.exists) {
-              const snapUpper = await db.collection(CLASSES_COLLECTION).doc(code.toUpperCase()).get();
+              const snapUpper = await db.collection(CLASSES_COLLECTION).doc(resolvedCode.toUpperCase()).get();
               if (snapUpper.exists) docSnap = snapUpper;
             }
             if (!docSnap.exists) {
               try {
                 const allSnap = await db.collection(CLASSES_COLLECTION).get();
                 for (const d of allSnap.docs) {
-                  if (d.id.toLowerCase() === code.toLowerCase()) {
+                  if (d.id.toLowerCase() === resolvedCode.toLowerCase()) {
                     docSnap = d;
                     break;
                   }
@@ -1799,19 +1737,19 @@
           }
 
           if (docSnap && docSnap.exists) {
-            code = docSnap.id;
-            const data = docSnap.data();
+            resolvedCode = docSnap.id;
+            const data = docSnap.data() || {};
             currentClassData = data;
             const classTeamCount = parseInt(data.teamCount, 10) || 6;
             TOTAL_TEAMS = classTeamCount;
 
             if (data.status === 'inactive') {
               if (errorEl && errorTextEl) {
-                errorTextEl.innerText = `班級【${data.name || code}】目前已停用或未開放報到，請聯繫講師`;
+                errorTextEl.innerText = `班級【${data.name || resolvedCode}】目前已停用或未開放報到，請聯繫講師`;
                 errorEl.classList.remove('hidden');
               }
               if (badge && badgeText) {
-                badgeText.innerText = `${data.name || code} (已停用)`;
+                badgeText.innerText = `${data.name || resolvedCode} (已停用)`;
                 badge.classList.remove('hidden');
               }
               renderGatekeeperTeamOptions(TOTAL_TEAMS);
@@ -1824,7 +1762,7 @@
 
             if (errorEl) errorEl.classList.add('hidden');
             if (badge && badgeText) {
-              badgeText.innerText = data.name ? `${data.name} (#${code})` : `#${code}`;
+              badgeText.innerText = data.name ? `${data.name} (#${resolvedCode})` : `#${resolvedCode}`;
               badge.classList.remove('hidden');
             }
             if (submitBtn) {
@@ -1837,7 +1775,7 @@
             currentClassData = null;
             if (onBlur) {
               if (errorEl && errorTextEl) {
-                errorTextEl.innerText = `查無班級代碼【${code}】，請確認後重新輸入`;
+                errorTextEl.innerText = `查無班級代碼【${resolvedCode}】，請確認後重新輸入`;
                 errorEl.classList.remove('hidden');
               }
             }
@@ -1979,10 +1917,11 @@
       const submitBtn = document.getElementById('btn-gatekeeper-submit');
 
       const rawCode = inputCodeEl ? inputCodeEl.value : '';
-      let code = parseClassCode(rawCode);
+      const parsedCode = parseClassCode(rawCode);
+      let resolvedClassId = parsedCode;
       const name = inputNameEl ? inputNameEl.value.trim() : '';
 
-      if (!code) {
+      if (!resolvedClassId) {
         if (errorEl && errorTextEl) {
           errorTextEl.innerText = "請輸入講師公布之專屬班級代碼";
           errorEl.classList.remove('hidden');
@@ -2012,21 +1951,21 @@
         }
         let classDocData = null;
         if (db) {
-          let docSnap = await db.collection(CLASSES_COLLECTION).doc(code).get();
+          let docSnap = await db.collection(CLASSES_COLLECTION).doc(resolvedClassId).get();
           if (!docSnap.exists) {
-            if (rawCode && rawCode.trim() !== code) {
+            if (rawCode && rawCode.trim() !== resolvedClassId) {
               const snapRaw = await db.collection(CLASSES_COLLECTION).doc(rawCode.trim()).get();
               if (snapRaw.exists) docSnap = snapRaw;
             }
             if (!docSnap.exists) {
-              const snapUpper = await db.collection(CLASSES_COLLECTION).doc(code.toUpperCase()).get();
+              const snapUpper = await db.collection(CLASSES_COLLECTION).doc(resolvedClassId.toUpperCase()).get();
               if (snapUpper.exists) docSnap = snapUpper;
             }
             if (!docSnap.exists) {
               try {
                 const allSnap = await db.collection(CLASSES_COLLECTION).get();
                 for (const d of allSnap.docs) {
-                  if (d.id.toLowerCase() === code.toLowerCase()) {
+                  if (d.id.toLowerCase() === resolvedClassId.toLowerCase()) {
                     docSnap = d;
                     break;
                   }
@@ -2036,15 +1975,9 @@
           }
 
           if (!docSnap || !docSnap.exists) {
-            const isLocked = recordGatekeeperFailure();
-            if (isLocked) {
-              applyGatekeeperLockUI();
-              return;
-            }
-            const curState = getGatekeeperLockState();
-            const remaining = GATEKEEPER_MAX_FAILURES - curState.failCount;
+            recordGatekeeperFailure();
             if (errorEl && errorTextEl) {
-              errorTextEl.innerText = `查無班級代碼【${code}】，請確認後重新輸入（剩餘嘗試次數：${remaining} 次）`;
+              errorTextEl.innerHTML = `查無班級代碼【${escapeHtml(resolvedClassId)}】，請確認後重新輸入。<br><span class="text-xs text-slate-400 mt-1 inline-block">若持續異常，可 <button type="button" onclick="try{localStorage.clear();sessionStorage.clear();}catch(e){}location.reload();" class="text-amber-300 underline font-bold cursor-pointer">點此清除瀏覽器快取重試</button></span>`;
               errorEl.classList.remove('hidden');
             }
             if (submitBtn) {
@@ -2055,11 +1988,11 @@
             inputCodeEl?.focus();
             return;
           }
-          classDocData = docSnap.data();
-          code = docSnap.id; // 對齊 Firestore Document ID (不論大小寫)
+          classDocData = docSnap.data() || {};
+          resolvedClassId = docSnap.id; // 對齊 Firestore Document ID (不論大小寫)
           if (classDocData.status === 'inactive') {
             if (errorEl && errorTextEl) {
-              errorTextEl.innerText = `班級【${classDocData.name || code}】目前已停用或未開放報到，請聯繫講師`;
+              errorTextEl.innerText = `班級【${classDocData.name || resolvedClassId}】目前已停用或未開放報到，請聯繫講師`;
               errorEl.classList.remove('hidden');
             }
             if (submitBtn) {
@@ -2087,27 +2020,33 @@
         const teamVal = rawTeamVal;
 
         // 設置當前班級資料與身分
-        currentClassId = code;
-        currentClassData = classDocData || { id: code, name: code };
-        APP_STORAGE_KEY = `ai_arm_auth_user_${code}`;
+        currentClassId = resolvedClassId;
+        currentClassData = classDocData || { id: resolvedClassId, name: resolvedClassId };
+        APP_STORAGE_KEY = `ai_arm_auth_user_${resolvedClassId}`;
 
         currentUser = {
           name: name,
           team: teamVal,
           loggedInAt: Date.now()
         };
-        localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
+        try {
+          localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
+        } catch (e) {}
 
         // 同步獨立 HTML 工具 session keys
         const teamNum = teamVal.replace('team-', '');
-        localStorage.setItem('ai_arm_team', `Team ${teamNum}`);
-        localStorage.setItem('ai_arm_team_id', teamVal);
-        localStorage.setItem('ai_arm_nickname', name);
+        try {
+          localStorage.setItem('ai_arm_team', `Team ${teamNum}`);
+          localStorage.setItem('ai_arm_team_id', teamVal);
+          localStorage.setItem('ai_arm_nickname', name);
+        } catch (e) {}
         activeTeamId = teamVal;
 
         // 平滑更新瀏覽器網址 (帶入 ?c=代碼)，不刷新頁面
-        const newUrl = `${window.location.origin}${window.location.pathname}?c=${encodeURIComponent(code)}`;
-        window.history.replaceState({ classId: code }, '', newUrl);
+        try {
+          const newUrl = `${window.location.origin}${window.location.pathname}?c=${encodeURIComponent(resolvedClassId)}`;
+          window.history.replaceState({ classId: resolvedClassId }, '', newUrl);
+        } catch (e) {}
 
         // 套用 UI 與進入課程
         applyUserIdentityUI();
@@ -2123,11 +2062,11 @@
         renderSlide(1);
 
         const teamDisplayName = getTeamDisplayName(teamVal);
-        showToast(`【${currentClassData?.name || code}】報到完成！歡迎 ${name}（${teamDisplayName}）`, "emerald");
+        showToast(`【${currentClassData?.name || resolvedClassId}】報到完成！歡迎 ${name}（${teamDisplayName}）`, "emerald");
       } catch (err) {
         console.error("報到驗證異常:", err);
         if (errorEl && errorTextEl) {
-          errorTextEl.innerText = `驗證失敗：${err.message || '請確認網路連線'}`;
+          errorTextEl.innerHTML = `驗證失敗：${escapeHtml(err.message || '請確認網路連線')}<br><span class="text-xs text-slate-400 mt-1 inline-block">若持續異常，可 <button type="button" onclick="try{localStorage.clear();sessionStorage.clear();}catch(e){}location.reload();" class="text-amber-300 underline font-bold cursor-pointer">點此清除瀏覽器快取重試</button></span>`;
           errorEl.classList.remove('hidden');
         }
         if (submitBtn) {
@@ -2146,20 +2085,6 @@
     }
 
     let currentSlideIndex = 1; // 1-based (P01 ~ P40)
-    let activeTeamId = 'team-1';
-    let currentUser = null; // { name: '', team: 'team-1', loggedInAt: 0 }
-    try {
-      if (currentClassId) {
-        const savedAuth = localStorage.getItem(APP_STORAGE_KEY);
-        if (savedAuth) {
-          const parsed = JSON.parse(savedAuth);
-          if (parsed && parsed.name && parsed.team) {
-            currentUser = parsed;
-            activeTeamId = parsed.team;
-          }
-        }
-      }
-    } catch (e) {}
     let isExampleFlipped = false;
 
     // 當前頁面與當前組別的資料狀態 (一頁一筆記)
@@ -2169,8 +2094,6 @@
       attachments: []
     };
 
-    let db = null;
-    let storage = null;
     let currentPreviewAttachment = null;
     let currentDocUnsubscribe = null;
     let memoDebounceTimer = null;
