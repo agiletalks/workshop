@@ -1022,6 +1022,13 @@
           <i data-lucide="check" class="w-4 h-4"></i>
           <span>確認儲存變更</span>
         </button>
+
+        <div class="pt-3 border-t border-slate-100">
+          <button type="button" onclick="logoutToGatekeeper()" class="w-full py-2.5 px-3 text-xs text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs">
+            <i data-lucide="crown" class="w-4 h-4 text-amber-600"></i>
+            <span>切換為講師登入 / 重新報到</span>
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -2609,6 +2616,21 @@
       // 若尚未選擇班級（在門禁頁），不處理登入報到
       if (!currentClassId) return false;
 
+      // 支援以 ?relogin=1 或 ?logout=1 強制返回門禁報到畫面
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('relogin') || urlParams.has('logout')) {
+        localStorage.removeItem(APP_STORAGE_KEY);
+        sessionStorage.removeItem('ai_arm_admin_auth');
+        currentUser = null;
+        urlParams.delete('relogin');
+        urlParams.delete('logout');
+        const cleanQuery = urlParams.toString() ? `?${urlParams.toString()}` : '';
+        try {
+          window.history.replaceState({}, '', `${window.location.pathname}${cleanQuery}`);
+        } catch(e) {}
+        return false;
+      }
+
       const saved = localStorage.getItem(APP_STORAGE_KEY);
       if (saved) {
         try {
@@ -2627,6 +2649,16 @@
         } catch (e) {}
       }
       return false;
+    }
+
+    function logoutToGatekeeper() {
+      try {
+        localStorage.removeItem(APP_STORAGE_KEY);
+        sessionStorage.removeItem('ai_arm_admin_auth');
+      } catch (e) {}
+      currentUser = null;
+      closeLoginModal();
+      showGatekeeperOverlay(currentClassId);
     }
 
     function openLoginModal(canClose = true) {
