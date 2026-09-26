@@ -686,23 +686,23 @@
               <div id="prompt-buttons-container" class="flex flex-wrap items-center gap-2"></div>
             </div>
 
-            <!-- ===== 筆記視圖切換列（當本頁有講師便利貼或正在萃取時顯示） ===== -->
+            <!-- ===== 筆記視圖切換列（講師常駐；學員依是否有便利貼動態顯示） ===== -->
             <div id="notes-view-mode-bar" class="hidden flex-shrink-0 mb-3 flex items-center justify-between bg-slate-100/90 p-1 rounded-xl border border-slate-200 text-xs">
               <div class="flex items-center gap-1">
                 <button id="btn-view-stickies" onclick="switchNotesView('stickies')" class="px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-indigo-700 shadow-2xs">
                   <span>📌</span>
-                  <span>講師重點便利貼</span>
+                  <span id="tab-label-stickies">講師重點講義</span>
                   <span id="stickies-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-indigo-100 text-indigo-700">0</span>
                 </button>
                 <button id="btn-view-memo" onclick="switchNotesView('memo')" class="px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900">
                   <span>📝</span>
-                  <span>小組手動筆記</span>
+                  <span id="tab-label-memo">小組隨堂筆記</span>
                 </button>
               </div>
               <div class="flex items-center gap-1.5 pr-1">
                 <button id="btn-copy-stickies-to-memo" onclick="copyStickiesToMemo()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer" title="將所有便利貼重點追加到小組筆記框">
                   <i data-lucide="copy-plus" class="w-3 h-3"></i>
-                  <span class="hidden sm:inline">貼入小組筆記</span>
+                  <span id="btn-copy-stickies-text" class="hidden sm:inline">貼入小組筆記</span>
                 </button>
                 <button id="btn-add-manual-sticky" onclick="addNewManualSticky()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors flex items-center gap-1 cursor-pointer" title="手動增加一張便利貼">
                   <i data-lucide="plus" class="w-3 h-3"></i>
@@ -2758,6 +2758,9 @@
           localStorage.setItem('ai_arm_team', 'Team 1');
           localStorage.setItem('ai_arm_team_id', 'team-1');
         } catch (e) {}
+        if (typeof switchNotesView === 'function') {
+          switchNotesView('stickies');
+        }
       } else {
         // 同步獨立 HTML 工具 session key (以防重新整理或切換身分時遺漏)
         if (currentUser.team && currentUser.name) {
@@ -5227,6 +5230,10 @@
       updatePermissionUI();
       subscribeToFirestore();
       subscribeTeamPresence();
+      if (typeof updateStickiesWallUI === 'function') {
+        const slideId = getVoiceNoteSlideId(currentSlideIndex);
+        updateStickiesWallUI(slideId);
+      }
     }
 
     function switchToMyTeam() {
@@ -8569,13 +8576,27 @@ ${safeTranscript}
       const loadingBanner = document.getElementById('stickies-loading-banner');
       const grid = document.getElementById('stickies-grid');
       const countBadge = document.getElementById('stickies-count-badge');
+      const tabLabelMemo = document.getElementById('tab-label-memo');
+      const copyBtnText = document.getElementById('btn-copy-stickies-text');
 
+      const isInst = isInstructor();
       const isProcessing = slideProcessingVoiceNotes.has(slideId);
       const stickies = slideStickiesCache.get(slideId) || [];
+      const activeNum = activeTeamId.replace('team-', '');
 
-      // 若有便利貼或正在處理，顯示切換列
+      // 更新分頁與動作標籤 (講師 vs 學員)
+      if (tabLabelMemo) {
+        tabLabelMemo.innerText = isInst ? `巡堂筆記：第 ${activeNum} 組` : '小組隨堂筆記';
+      }
+      if (copyBtnText) {
+        copyBtnText.innerText = isInst ? `貼入第 ${activeNum} 組` : '貼入小組筆記';
+      }
+
+      // 控制切換列顯隱：
+      // - 講師身分：始終常駐切換列（提供放置與管理講義重點的專屬工作台）
+      // - 學員身分：僅在有便利貼或正在萃取時顯示切換列
       if (bar) {
-        if (stickies.length > 0 || isProcessing) {
+        if (isInst || stickies.length > 0 || isProcessing) {
           bar.classList.remove('hidden');
         } else {
           bar.classList.add('hidden');
@@ -8601,12 +8622,40 @@ ${safeTranscript}
       grid.innerHTML = '';
 
       if (stickies.length === 0 && !isProcessing) {
-        grid.innerHTML = `
-          <div class="col-span-full py-8 text-center text-slate-400 text-xs">
-            <span class="text-2xl block mb-1">📌</span>
-            本頁尚無講師便利貼，點選右上角「加便利貼」或「🎙️ 錄音筆記」由 AI 自動產生。
-          </div>
-        `;
+        if (isInst) {
+          // 講師端專屬空狀態：手繪風放置區與引導便條卡
+          grid.innerHTML = `
+            <div class="col-span-full border-2 border-dashed border-amber-300/80 bg-amber-50/70 rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center shadow-xs transition-all">
+              <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-amber-700 flex items-center justify-center text-2xl mb-3 shadow-inner">
+                📌
+              </div>
+              <h4 class="text-base font-black text-amber-950 font-['Zen_Maru_Gothic',sans-serif] mb-1.5">
+                本頁尚無講義重點便利貼
+              </h4>
+              <p class="text-xs text-amber-900/80 max-w-sm leading-relaxed mb-5 font-['Klee_One',sans-serif]">
+                點擊上方「<span class="font-bold text-red-600">🎙️ 錄音筆記</span>」講授課程，AI 將即時依 MECE 原則萃取手寫便條；您也可以直接手動新增本頁核心論點！
+              </p>
+              <div class="flex flex-wrap items-center justify-center gap-3">
+                <button type="button" onclick="addNewManualSticky()" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 active:scale-95 shadow-md shadow-amber-600/20 transition-all flex items-center gap-1.5 cursor-pointer">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                  <span>➕ 手動新增便利貼</span>
+                </button>
+                <button type="button" onclick="startVoiceRecording()" class="px-4 py-2 rounded-xl text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-all flex items-center gap-1.5 cursor-pointer">
+                  <i data-lucide="mic" class="w-3.5 h-3.5 text-red-600"></i>
+                  <span>🎙️ 開始本頁錄音</span>
+                </button>
+              </div>
+            </div>
+          `;
+          if (window.lucide) lucide.createIcons({ scope: grid });
+        } else {
+          grid.innerHTML = `
+            <div class="col-span-full py-8 text-center text-slate-400 text-xs">
+              <span class="text-2xl block mb-1">📌</span>
+              本頁尚無講師便利貼重點。
+            </div>
+          `;
+        }
         return;
       }
 
@@ -8793,16 +8842,21 @@ ${safeTranscript}
 
     // --- Firestore 讀取（換頁時還原便利貼視圖） ---
     async function loadVoiceNoteFromFirestore(slideId, slideTitle) {
-      if (!currentClassId || !isInstructor()) {
-        const bar = document.getElementById('notes-view-mode-bar');
-        if (bar) bar.classList.add('hidden');
-        switchNotesView('memo');
-        return;
-      }
+      if (!currentClassId) return;
+
+      const isInst = isInstructor();
 
       // 如果記憶體已有快取，直接以快取渲染
       if (slideStickiesCache.has(slideId)) {
         updateStickiesWallUI(slideId);
+        const stickies = slideStickiesCache.get(slideId) || [];
+        if (isInst) {
+          switchNotesView('stickies');
+        } else if (stickies.length > 0) {
+          // 學員若此頁有便利貼可保留目前視圖
+        } else {
+          switchNotesView('memo');
+        }
         return;
       }
 
@@ -8827,7 +8881,8 @@ ${safeTranscript}
 
           if (stickies.length > 0) {
             updateTocVoiceNoteBadge(slideId, true);
-            // 預設切至便利貼展示
+          }
+          if (isInst) {
             switchNotesView('stickies');
           } else {
             switchNotesView('memo');
@@ -8835,11 +8890,21 @@ ${safeTranscript}
         } else {
           slideStickiesCache.set(slideId, []);
           updateStickiesWallUI(slideId);
-          switchNotesView('memo');
+          if (isInst) {
+            switchNotesView('stickies');
+          } else {
+            switchNotesView('memo');
+          }
         }
       } catch(e) {
         console.warn('[VoiceNote] 讀取便利貼失敗', e);
-        switchNotesView('memo');
+        slideStickiesCache.set(slideId, []);
+        updateStickiesWallUI(slideId);
+        if (isInst) {
+          switchNotesView('stickies');
+        } else {
+          switchNotesView('memo');
+        }
       }
     }
 
