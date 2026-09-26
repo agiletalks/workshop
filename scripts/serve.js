@@ -2,6 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+const https = require('https');
+
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
 const ROOT_DIR = path.join(__dirname, '..', 'dist');
 
@@ -30,6 +32,88 @@ const server = http.createServer((req, res) => {
   const [rawPath, rawQuery] = req.url.split('?');
   const queryString = rawQuery ? `?${rawQuery}` : '';
   let reqPath = decodeURIComponent(rawPath);
+
+  // ===== 0. 後端 Proxy: /api/gemini 轉發 Gemini API 請求 =====
+  if (reqPath === '/api/gemini') {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-goog-api-key'
+      });
+      res.end();
+      return;
+    }
+
+    if (req.method === 'POST') {
+      let bodyData = '';
+      req.on('data', chunk => { bodyData += chunk; });
+      req.on('end', () => {
+        try {
+          const authHeader = req.headers['authorization'] || '';
+          const customApiKey = req.headers['x-goog-api-key'] || '';
+          const apiKey = customApiKey || authHeader.replace(/^Bearer\s+/i, '').trim();
+
+          if (!apiKey) {
+            res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(JSON.stringify({ error: { message: 'Missing API Key in header' } }));
+            return;
+          }
+
+          // 構建向 Google Gemini API 發出的請求
+          const isBearer = apiKey.startsWith('AQ.') || (authHeader && authHeader.toLowerCase().startsWith('bearer'));
+          const googlePath = isBearer
+            ? '/v1beta/models/gemini-2.0-flash:generateContent'
+            : `/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+          const googleHeaders = {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(bodyData)
+          };
+          if (isBearer) {
+            googleHeaders['Authorization'] = authHeader || `Bearer ${apiKey}`;
+          } else {
+            googleHeaders['x-goog-api-key'] = apiKey;
+          }
+
+          const googleReqOptions = {
+            hostname: 'generativelanguage.googleapis.com',
+            port: 443,
+            path: googlePath,
+            method: 'POST',
+            headers: googleHeaders
+          };
+
+          const googleReq = https.request(googleReqOptions, googleRes => {
+            let googleData = '';
+            googleRes.on('data', d => { googleData += d; });
+            googleRes.on('end', () => {
+              res.writeHead(googleRes.statusCode, {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Access-Control-Allow-Origin': '*'
+              });
+              res.end(googleData);
+            });
+          });
+
+          googleReq.on('error', err => {
+            console.error('[Proxy Error]', err);
+            res.writeHead(502, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(JSON.stringify({ error: { message: 'Google API Proxy connection error: ' + err.message } }));
+          });
+
+          googleReq.write(bodyData);
+          googleReq.end();
+
+        } catch (e) {
+          console.error('[Proxy Exception]', e);
+          res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ error: { message: e.message } }));
+        }
+      });
+      return;
+    }
+  }
 
   // 1. 根目錄重定向至 /workshop/
   if (reqPath === '/' || reqPath === '') {
