@@ -767,7 +767,7 @@
                     <span id="lecture-stickies-count" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-amber-100 text-amber-800 font-bold">0</span>
                   </div>
                   <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="addNewManualSticky()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors flex items-center gap-1 cursor-pointer" title="手動增加一張便利貼">
+                    <button id="btn-add-manual-sticky" type="button" onclick="addNewManualSticky()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors flex items-center gap-1 cursor-pointer" title="手動增加一張便利貼">
                       <i data-lucide="plus" class="w-3 h-3"></i>
                       <span>加便利貼</span>
                     </button>
@@ -781,7 +781,7 @@
                 <!-- 便籤主網格 -->
                 <div id="stickies-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pb-2"></div>
                 <div class="mt-2 text-right">
-                  <span class="text-[10px] text-slate-400 italic">💡 提示：點擊便籤文字可直接修訂錯字，失焦自動即時存檔。</span>
+                  <span id="stickies-instructor-hint" class="text-[10px] text-slate-400 italic">💡 提示：點擊便籤文字可直接修訂錯字，失焦自動即時存檔。</span>
                 </div>
               </div>
 
@@ -1210,8 +1210,8 @@
             <i data-lucide="printer" class="w-4 h-4"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-tight">全課程筆記彙編 ｜ 列印與 PDF 匯出</h3>
-            <p class="text-[11px] text-slate-500">依四大主題（WHY / WHO / HOW / WHAT）完整歸納呈現</p>
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-tight">全書級隨堂講義實錄手冊 ｜ 列印與 PDF 匯出</h3>
+            <p class="text-[11px] text-slate-500">依投影片完整收錄隨堂重點便籤、深度講義詳解與實作交付物</p>
           </div>
         </div>
 
@@ -2322,7 +2322,7 @@
       if (isInstructorLogin) {
         const passInput = document.getElementById('gatekeeper-password-input');
         const passVal = passInput ? passInput.value.trim() : '';
-        const validPassList = ['agile-2026', '24721942@Ai'];
+        const validPassList = ['agile2026', 'agile-2026', '24721942@Ai'];
         if (!validPassList.includes(passVal)) {
           if (errorEl && errorTextEl) {
             errorTextEl.innerText = "講師管理密碼錯誤，請重新輸入";
@@ -7864,10 +7864,13 @@ function copyCatalogPromptById(promptId, slideIndex) {
       if (!md) return '';
       let html = escapeHtml(md);
 
-      // 標題轉換
-      html = html.replace(/^### (.*$)/gim, '<h4 class="text-sm font-bold text-slate-900 mt-3 mb-1.5 flex items-center gap-1.5"><span class="w-1.5 h-3.5 bg-amber-500 rounded-xs flex-shrink-0"></span><span>$1</span></h4>');
-      html = html.replace(/^## (.*$)/gim, '<h3 class="text-base font-bold text-slate-900 mt-4 mb-2 pb-1 border-b border-slate-200">$1</h3>');
-      html = html.replace(/^# (.*$)/gim, '<h2 class="text-lg font-black text-slate-900 mt-5 mb-2.5 pb-1.5 border-b border-amber-300">$1</h2>');
+      // 標題轉換（依層級由深至淺比對）
+      html = html.replace(/^###### (.*$)/gim, '<h6 class="text-xs font-bold text-slate-800 mt-2 mb-1">$1</h6>');
+      html = html.replace(/^##### (.*$)/gim, '<h5 class="text-xs font-bold text-slate-800 mt-2.5 mb-1">$1</h5>');
+      html = html.replace(/^#### (.*$)/gim, '<h4 class="text-xs sm:text-sm font-bold text-slate-900 mt-3 mb-1 flex items-center gap-1.5"><span class="w-1.5 h-3 bg-amber-400 rounded-xs flex-shrink-0"></span><span>$1</span></h4>');
+      html = html.replace(/^### (.*$)/gim, '<h3 class="text-sm sm:text-base font-bold text-slate-900 mt-4 mb-1.5 pb-1 border-b border-slate-200 flex items-center gap-1.5"><span class="w-1.5 h-3.5 bg-amber-500 rounded-xs flex-shrink-0"></span><span>$1</span></h3>');
+      html = html.replace(/^## (.*$)/gim, '<h2 class="text-base sm:text-lg font-bold text-slate-900 mt-5 mb-2 pb-1 border-b border-slate-300">$1</h2>');
+      html = html.replace(/^# (.*$)/gim, '<h1 class="text-lg sm:text-xl font-black text-slate-900 mt-6 mb-2.5 pb-1.5 border-b-2 border-amber-400">$1</h1>');
 
       // 粗體、斜體與程式碼
       html = html.replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold text-slate-900">$1</strong>');
@@ -8012,11 +8015,17 @@ function copyCatalogPromptById(promptId, slideIndex) {
       const exportTime = new Date().toLocaleString('zh-TW', { hour12: false });
       const activeUser = (currentUser && currentUser.name) ? currentUser.name : '學員';
 
-      const totalWithNotes = printNotesData.filter(d => 
-        (d.stickies && d.stickies.length > 0) || 
-        (d.textbookArticle && d.textbookArticle.trim().length > 0) || 
-        (d.memo && d.memo.trim().length > 0)
-      ).length;
+      const hasPrintableContent = (d) => {
+        const hasStickies = Array.isArray(d.stickies) && d.stickies.length > 0;
+        const hasArticle = typeof d.textbookArticle === 'string' && d.textbookArticle.trim().length > 0;
+        const hasTaskOutput = !!d.slide.isTeamTask && (
+          (typeof d.memo === 'string' && d.memo.trim().length > 0) ||
+          (Array.isArray(d.attachments) && d.attachments.length > 0)
+        );
+        return hasStickies || hasArticle || hasTaskOutput;
+      };
+
+      const totalWithNotes = printNotesData.filter(hasPrintableContent).length;
 
       let html = `
         <!-- 報表首頁與抬頭 -->
@@ -8057,18 +8066,14 @@ function copyCatalogPromptById(promptId, slideIndex) {
         html += `
           <div class="py-12 text-center text-slate-400 text-sm space-y-2">
             <p class="text-base font-bold text-slate-600">目前尚未有已完成講授排版之隨堂講義或小組筆記。</p>
-            <p class="text-xs text-slate-400">若想列印全套講義留白架構，可取消勾選上方「僅含筆記頁」。</p>
+            <p class="text-xs text-slate-400">若想列印全套講義留白架構，可取消勾選上方「僅列印有講義／實作之頁面」。</p>
           </div>
         `;
       } else {
         CHAPTERS.forEach(chap => {
           const chapItems = printNotesData.filter(d => d.slide.chapterId === chap.id);
           const filteredItems = filterEmpty 
-            ? chapItems.filter(d => 
-                (d.stickies && d.stickies.length > 0) || 
-                (d.textbookArticle && d.textbookArticle.trim().length > 0) || 
-                (d.memo && d.memo.trim().length > 0)
-              ) 
+            ? chapItems.filter(hasPrintableContent) 
             : chapItems;
 
           if (filteredItems.length === 0) return;
@@ -8308,6 +8313,7 @@ function copyCatalogPromptById(promptId, slideIndex) {
     const slideStickiesCache = new Map();        // 快取各 slide 的 stickies 陣列: slideId -> Array<sticky>
     const slideTextbookCache = new Map();        // 快取各 slide 的 textbookArticle 字串: slideId -> string
     let stickySaveDebounceTimer = null;
+    let currentVoiceNoteUnsubscribe = null;      // 當前頁隨堂講義 Firestore onSnapshot 監聽取消函式
 
     // 便利貼馬卡龍色系預設清單 (手寫便條紙質感)
     const STICKY_PALETTES = [
@@ -8455,11 +8461,36 @@ function copyCatalogPromptById(promptId, slideIndex) {
             clearTimeout(this._restartTimer);
             this._restartTimer = null;
           }
-          this._stopResolve = resolve;
+
+          let resolved = false;
+          let safetyTimer = null;
+          const doResolve = (text) => {
+            if (resolved) return;
+            resolved = true;
+            if (safetyTimer) {
+              clearTimeout(safetyTimer);
+              safetyTimer = null;
+            }
+            this._stopResolve = null;
+            resolve(text);
+          };
+
+          this._stopResolve = doResolve;
+
+          // 1500ms safety timeout: 避免極短停止或 recognition 尚未開始時 onend 未觸發而卡住
+          safetyTimer = setTimeout(() => {
+            console.warn('[VoiceNote] stop() 安全逾時觸發，強制結束');
+            doResolve(this._finalText);
+          }, 1500);
+
           if (this._recognition) {
-            try { this._recognition.stop(); } catch(e) { resolve(this._finalText); }
+            try {
+              this._recognition.stop();
+            } catch(e) {
+              doResolve(this._finalText);
+            }
           } else {
-            resolve(this._finalText);
+            doResolve(this._finalText);
           }
         });
       }
@@ -8690,14 +8721,18 @@ function copyCatalogPromptById(promptId, slideIndex) {
       const slideTitle = slide.title || targetSlideId;
 
       stopVoiceTimer();
-      setVoiceRecordingUIState(false);
       isVoiceRecording = false;
       voiceRecordingSlideId = null;
+      setVoiceRecordingUIState(false);
+      // 即時復位右側隨堂講義看板狀態，確保零延遲離開 ON-AIR
+      renderLectureCompanionUI(targetSlideId);
 
       const transcript = await voiceRecorder.stop();
       voiceRawTranscript = transcript ? transcript.trim() : '';
-      voiceRecorder.destroy();
-      voiceRecorder = null;
+      if (voiceRecorder) {
+        voiceRecorder.destroy();
+        voiceRecorder = null;
+      }
 
       if (skipSummarize) {
         renderLectureCompanionUI(targetSlideId);
@@ -9000,9 +9035,24 @@ ${safeTranscript}
       const grid = document.getElementById('stickies-grid');
       const countBadge = document.getElementById('lecture-stickies-count');
       const stickies = slideStickiesCache.get(slideId) || [];
+      const isInst = isInstructor();
 
       if (countBadge) {
         countBadge.textContent = stickies.length;
+      }
+
+      // 依權限顯示/隱藏「加便利貼」按鈕
+      const btnAddManual = document.getElementById('btn-add-manual-sticky');
+      if (btnAddManual) {
+        btnAddManual.classList.toggle('hidden', !isInst);
+      }
+
+      // 依權限切換操作提示
+      const hintEl = document.getElementById('stickies-instructor-hint');
+      if (hintEl) {
+        hintEl.textContent = isInst
+          ? '💡 提示：點擊便籤文字可直接修訂錯字，失焦自動即時存檔。'
+          : '💡 提示：隨堂重點便籤由講師講授時同步萃取，全班即時連線更新。';
       }
 
       if (!grid) return;
@@ -9030,7 +9080,7 @@ ${safeTranscript}
           pointsHtml += `
             <li class="flex items-start gap-1.5 leading-relaxed">
               <span class="opacity-60 text-xs mt-0.5 flex-shrink-0">▪</span>
-              <span class="sticky-editable flex-1 text-sm handwriting-font font-medium outline-none py-0.5 px-1 cursor-text" contenteditable="true" onblur="handleStickyContentChange('${slideId}', ${sIndex}, 'point', ${pIndex}, this)">${escapeHtml(pt)}</span>
+              <span class="sticky-editable flex-1 text-sm handwriting-font font-medium outline-none py-0.5 px-1 ${isInst ? 'cursor-text' : 'cursor-default'}" contenteditable="${isInst ? 'true' : 'false'}" ${isInst ? `onblur="handleStickyContentChange('${slideId}', ${sIndex}, 'point', ${pIndex}, this)"` : ''}>${escapeHtml(pt)}</span>
             </li>
           `;
         });
@@ -9042,13 +9092,15 @@ ${safeTranscript}
               <span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${pal.badge} flex-shrink-0">
                 MECE #${sIndex + 1}
               </span>
-              <span class="sticky-editable text-sm sm:text-base font-bold handwriting-font truncate outline-none px-1 cursor-text flex-1" contenteditable="true" onblur="handleStickyContentChange('${slideId}', ${sIndex}, 'title', null, this)">${escapeHtml(stk.title)}</span>
+              <span class="sticky-editable text-sm sm:text-base font-bold handwriting-font truncate outline-none px-1 ${isInst ? 'cursor-text' : 'cursor-default'} flex-1" contenteditable="${isInst ? 'true' : 'false'}" ${isInst ? `onblur="handleStickyContentChange('${slideId}', ${sIndex}, 'title', null, this)"` : ''}>${escapeHtml(stk.title)}</span>
             </div>
-            <!-- 工具選單（換色、刪除） -->
+            <!-- 工具選單（換色、刪除，僅講師有權限） -->
+            ${isInst ? `
             <div class="flex items-center gap-1 flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity">
               <button type="button" onclick="cycleStickyColor('${slideId}', ${sIndex})" class="p-1 rounded-md hover:bg-black/10 text-xs cursor-pointer" title="切換便籤顏色">🎨</button>
               <button type="button" onclick="deleteSticky('${slideId}', ${sIndex})" class="p-1 rounded-md hover:bg-red-500/20 text-red-700 text-xs cursor-pointer" title="移除此張便籤">✕</button>
             </div>
+            ` : ''}
           </div>
 
           <!-- 便條紙重點清單 -->
@@ -9058,7 +9110,7 @@ ${safeTranscript}
 
           <!-- 底部微標籤 -->
           <div class="flex items-center justify-between pt-1 border-t border-black/5 text-[10px] opacity-40">
-            <span>可直接點字修訂</span>
+            <span>${isInst ? '可直接點字修訂' : '隨堂重點便籤'}</span>
             <span>${pal.name}便條</span>
           </div>
         `;
@@ -9069,6 +9121,7 @@ ${safeTranscript}
 
     // --- 現場訂正文字：自動 Debounce 存檔 ---
     function handleStickyContentChange(slideId, stickyIndex, type, pointIndex, el) {
+      if (!isInstructor()) return;
       const stickies = slideStickiesCache.get(slideId);
       if (!stickies || !stickies[stickyIndex]) return;
 
@@ -9084,6 +9137,7 @@ ${safeTranscript}
 
     // --- 切換顏色 ---
     function cycleStickyColor(slideId, stickyIndex) {
+      if (!isInstructor()) return;
       const stickies = slideStickiesCache.get(slideId);
       if (!stickies || !stickies[stickyIndex]) return;
 
@@ -9098,6 +9152,7 @@ ${safeTranscript}
 
     // --- 刪除一張便籤 ---
     function deleteSticky(slideId, stickyIndex) {
+      if (!isInstructor()) return;
       const stickies = slideStickiesCache.get(slideId);
       if (!stickies) return;
       stickies.splice(stickyIndex, 1);
@@ -9108,6 +9163,7 @@ ${safeTranscript}
 
     // --- 手動新增一張便籤 ---
     function addNewManualSticky() {
+      if (!isInstructor()) return;
       const slideId = getVoiceNoteSlideId(currentSlideIndex);
       let stickies = slideStickiesCache.get(slideId);
       if (!stickies) {
@@ -9157,6 +9213,7 @@ ${safeTranscript}
 
     // --- Debounced 自動儲存至 Firestore ---
     function triggerStickiesAutoSave(slideId) {
+      if (!isInstructor()) return;
       if (stickySaveDebounceTimer) clearTimeout(stickySaveDebounceTimer);
       stickySaveDebounceTimer = setTimeout(async () => {
         const stickies = slideStickiesCache.get(slideId) || [];
@@ -9176,7 +9233,7 @@ ${safeTranscript}
 
     // --- Firestore 儲存 ---
     async function saveVoiceNoteToFirestore(data) {
-      if (!currentClassId) return;
+      if (!currentClassId || !isInstructor()) return;
       try {
         await getVoiceNoteFirestorePath(data.slideId).set(data, { merge: true });
         updateTocVoiceNoteBadge(data.slideId, true);
@@ -9185,50 +9242,62 @@ ${safeTranscript}
       }
     }
 
-    // --- Firestore 讀取（換頁時還原隨堂講義） ---
-    async function loadVoiceNoteFromFirestore(slideId, slideTitle) {
+    // --- Firestore 讀取與即時監聽（換頁時訂閱隨堂講義） ---
+    function loadVoiceNoteFromFirestore(slideId, slideTitle) {
       if (!currentClassId) return;
 
-      // 如果記憶體已有快取，直接以快取渲染
+      // 清除前一頁的監聽
+      if (typeof currentVoiceNoteUnsubscribe === 'function') {
+        try { currentVoiceNoteUnsubscribe(); } catch(e) {}
+        currentVoiceNoteUnsubscribe = null;
+      }
+
+      // 如果記憶體已有快取，直接以快取先立即渲染，避免換頁時白畫面閃爍
       if (slideStickiesCache.has(slideId) || slideTextbookCache.has(slideId)) {
         renderLectureCompanionUI(slideId);
-        return;
       }
 
       try {
-        const doc = await getVoiceNoteFirestorePath(slideId).get();
-        if (doc.exists) {
-          const data = doc.data();
-          let stickies = data.stickies || [];
-          let article = data.textbookArticle || '';
+        currentVoiceNoteUnsubscribe = getVoiceNoteFirestorePath(slideId).onSnapshot((doc) => {
+          if (doc.exists) {
+            const data = doc.data();
+            let stickies = data.stickies || [];
+            let article = data.textbookArticle || '';
 
-          // 若為早期格式向下相容轉成便籤
-          if ((!stickies || stickies.length === 0) && (data.overviewSummary || data.takeaways)) {
-            stickies = [{
-              id: `stk_legacy_1`,
-              title: '核心概要',
-              color: 'yellow',
-              points: [data.overviewSummary].concat(data.takeaways || []).filter(Boolean)
-            }];
+            // 若為早期格式向下相容轉成便籤
+            if ((!stickies || stickies.length === 0) && (data.overviewSummary || data.takeaways)) {
+              stickies = [{
+                id: `stk_legacy_1`,
+                title: '核心概要',
+                color: 'yellow',
+                points: [data.overviewSummary].concat(data.takeaways || []).filter(Boolean)
+              }];
+            }
+
+            slideStickiesCache.set(slideId, stickies);
+            slideTextbookCache.set(slideId, article);
+
+            if (stickies.length > 0 || (article && article.trim().length > 0)) {
+              updateTocVoiceNoteBadge(slideId, true);
+            }
+          } else {
+            // 文件不存在：若未處於本地錄音或背景編排中，清理該頁快取
+            if (!slideProcessingVoiceNotes.has(slideId) && !(isVoiceRecording && voiceRecordingSlideId === slideId)) {
+              slideStickiesCache.set(slideId, []);
+              slideTextbookCache.set(slideId, '');
+            }
           }
 
-          slideStickiesCache.set(slideId, stickies);
-          slideTextbookCache.set(slideId, article);
-          renderLectureCompanionUI(slideId);
-
-          if (stickies.length > 0 || article) {
-            updateTocVoiceNoteBadge(slideId, true);
+          // 只要目前畫面仍停留在該頁，就即時觸發 UI 渲染更新
+          const currentSlide = getVoiceNoteSlideId(currentSlideIndex);
+          if (currentSlide === slideId) {
+            renderLectureCompanionUI(slideId);
           }
-        } else {
-          slideStickiesCache.set(slideId, []);
-          slideTextbookCache.set(slideId, '');
-          renderLectureCompanionUI(slideId);
-        }
+        }, (err) => {
+          console.warn('[VoiceNote] 隨堂講義即時監聽異常', err);
+        });
       } catch(e) {
-        console.warn('[VoiceNote] 讀取隨堂講義失敗', e);
-        slideStickiesCache.set(slideId, []);
-        slideTextbookCache.set(slideId, '');
-        renderLectureCompanionUI(slideId);
+        console.warn('[VoiceNote] 啟動隨堂講義即時監聽失敗', e);
       }
     }
 
