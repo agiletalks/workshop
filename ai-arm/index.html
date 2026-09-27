@@ -8955,7 +8955,7 @@ ${safeTranscript}
         const sentences = safeTranscript
           .split(/[\n。！？!?；;]+/)
           .map(s => s.trim())
-          .filter(s => s.length >= 2);
+          .filter(s => s.length >= 1);
 
         const generatedStickies = [];
         if (sentences.length > 0) {
@@ -8976,7 +8976,7 @@ ${safeTranscript}
             id: `stk_${Date.now()}_0`,
             title: '隨堂講述重點',
             color: 'yellow',
-            points: [safeTranscript || '講師已完成本頁隨堂講授']
+            points: [safeTranscript]
           });
         }
 
@@ -8984,9 +8984,14 @@ ${safeTranscript}
         const part1 = sentences.slice(0, half).join('。');
         const part2 = sentences.slice(half).join('。');
 
+        let articleContent = `### 核心主旨：${slideTitle}\n\n#### 概念深度剖析\n${part1 || safeTranscript}`;
+        if (part2 && part2.trim().length > 0) {
+          articleContent += `\n\n#### 實務敏捷落地與案例\n${part2}`;
+        }
+
         parsedData = {
           stickies: generatedStickies,
-          textbookArticle: `### 核心主旨：${slideTitle}\n\n#### 概念深度剖析\n${part1 || safeTranscript}\n\n#### 實務敏捷落地與案例\n${part2 || '依課堂講授核心脈絡落實實務敏捷實踐。'}`
+          textbookArticle: articleContent
         };
       }
 
