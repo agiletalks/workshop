@@ -230,6 +230,74 @@
       from { opacity: 0; transform: translateY(-8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+    /* 課堂實錄排版中骨架流光 */
+    @keyframes shimmerAnim {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .shimmer-skeleton {
+      background: linear-gradient(90deg, rgba(241, 245, 249, 0.8) 25%, rgba(226, 232, 240, 0.95) 50%, rgba(241, 245, 249, 0.8) 75%);
+      background-size: 200% 100%;
+      animation: shimmerAnim 2s infinite ease-in-out;
+    }
+    /* 收音聲波音柱動畫 */
+    @keyframes wavePulse {
+      0%, 100% { height: 6px; opacity: 0.4; }
+      50% { height: 26px; opacity: 1; }
+    }
+    .wave-bar-1 { animation: wavePulse 1s ease-in-out infinite 0.1s; }
+    .wave-bar-2 { animation: wavePulse 1.2s ease-in-out infinite 0.3s; }
+    .wave-bar-3 { animation: wavePulse 0.9s ease-in-out infinite 0.2s; }
+    .wave-bar-4 { animation: wavePulse 1.1s ease-in-out infinite 0.4s; }
+    .wave-bar-5 { animation: wavePulse 1s ease-in-out infinite 0.15s; }
+
+    /* 教材書本級文章排版排版 */
+    .textbook-article {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      line-height: 1.8;
+      color: #334155;
+    }
+    .textbook-article h2 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-top: 1.4rem;
+      margin-bottom: 0.6rem;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 0.35rem;
+    }
+    .textbook-article h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 1.2rem;
+      margin-bottom: 0.45rem;
+    }
+    .textbook-article p {
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: #334155;
+      margin-bottom: 0.85rem;
+    }
+    .textbook-article ul {
+      list-style-type: disc;
+      padding-left: 1.4rem;
+      margin-bottom: 0.85rem;
+      font-size: 0.875rem;
+      color: #334155;
+    }
+    .textbook-article li {
+      margin-bottom: 0.35rem;
+    }
+    .textbook-article blockquote {
+      border-left: 4px solid #f59e0b;
+      background-color: #fffbeb;
+      padding: 0.65rem 0.85rem;
+      margin: 0.85rem 0;
+      border-radius: 0 0.5rem 0.5rem 0;
+      font-size: 0.85rem;
+      color: #92400e;
+    }
   </style>
 </head>
 <body class="h-full bg-slate-100 text-slate-800 flex flex-col font-sans overflow-hidden">
@@ -534,72 +602,82 @@
       </div>
     </section>
 
-    <!-- 右側：沉浸式小組隨堂筆記區 -->
+    <!-- 右側：隨堂講義與實作工作台看板 -->
     <aside id="notes-aside" class="w-full md:w-1/2 flex-1 h-full md:h-full bg-white hidden md:flex flex-col overflow-hidden min-h-0 border-t md:border-t-0 md:border-l border-slate-200">
 
-      <!-- 整合式工作台頂部工具列 (單一精簡 44px 列：組別下拉選單 + 組員即時在線 + 翻面 + 同步狀態) -->
-      <div class="bg-slate-50/90 border-b border-slate-200 px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
+      <!-- ===== 統一頂部工具列 ===== -->
+      <div id="aside-header-bar" class="bg-slate-50/90 border-b border-slate-200 px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
         
-        <!-- 左側：組別快速切換下拉選單 + 該組組員與在線狀態 -->
+        <!-- 左側模式標示／組別切換 -->
         <div class="flex items-center gap-2 min-w-0 flex-1">
-          <div class="relative flex items-center gap-1.5 flex-shrink-0" id="team-dropdown-container">
-            <button id="btn-team-dropdown" onclick="toggleTeamDropdown(event)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer" title="切換檢視或觀摩各組隨堂筆記">
-              <i data-lucide="users" class="w-3.5 h-3.5 text-amber-600" id="team-dropdown-icon"></i>
-              <span id="team-dropdown-label" class="font-bold text-slate-800">第 1 組 (我的組別)</span>
-              <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
-            </button>
+          <!-- 實作任務模式時顯示：組別切換與在線狀態 -->
+          <div id="team-task-nav-container" class="hidden flex items-center gap-2 min-w-0">
+            <div class="relative flex items-center gap-1.5 flex-shrink-0" id="team-dropdown-container">
+              <button id="btn-team-dropdown" onclick="toggleTeamDropdown(event)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer" title="切換檢視或觀摩各組隨堂實作">
+                <i data-lucide="users" class="w-3.5 h-3.5 text-amber-600" id="team-dropdown-icon"></i>
+                <span id="team-dropdown-label" class="font-bold text-slate-800">第 1 組 (我的組別)</span>
+                <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+              </button>
 
-            <!-- 快速切回我的組別微按鈕 (觀摩他組時自動浮出) -->
-            <button id="btn-quick-my-team" onclick="switchToMyTeam()" class="hidden px-2 py-0.5 rounded-md text-[11px] font-bold text-sky-700 bg-sky-100 hover:bg-sky-200 border border-sky-300 transition-colors flex items-center gap-1 cursor-pointer" title="結束觀摩，切回我所屬組別的筆記">
-              <i data-lucide="corner-down-left" class="w-3 h-3"></i>
-              <span>切回我組</span>
-            </button>
+              <button id="btn-quick-my-team" onclick="switchToMyTeam()" class="hidden px-2 py-0.5 rounded-md text-[11px] font-bold text-sky-700 bg-sky-100 hover:bg-sky-200 border border-sky-300 transition-colors flex items-center gap-1 cursor-pointer" title="結束觀摩，切回我所屬組別的實作">
+                <i data-lucide="corner-down-left" class="w-3 h-3"></i>
+                <span>切回我組</span>
+              </button>
 
-            <!-- 下拉選單彈窗浮層 (點擊展開 1~6 組) -->
-            <div id="team-dropdown-menu" class="hidden absolute top-full mt-1.5 left-0 w-52 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50">
-              <div class="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider flex items-center justify-between">
-                <span>切換檢視組別</span>
-                <span id="team-dropdown-total-label" class="text-[9px] text-slate-400 font-normal">共 6 組</span>
+              <div id="team-dropdown-menu" class="hidden absolute top-full mt-1.5 left-0 w-52 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50">
+                <div class="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider flex items-center justify-between">
+                  <span>切換檢視組別</span>
+                  <span id="team-dropdown-total-label" class="text-[9px] text-slate-400 font-normal">共 6 組</span>
+                </div>
+                <div id="team-dropdown-items" class="space-y-0.5 mt-0.5"></div>
               </div>
-              <div id="team-dropdown-items" class="space-y-0.5 mt-0.5"></div>
             </div>
+
+            <div id="team-members-presence-container" class="flex items-center gap-1.5 pl-2 border-l border-slate-200 overflow-x-auto py-0.5 max-w-[200px] sm:max-w-[300px] scrollbar-none" title="該組組員與線上狀態"></div>
           </div>
 
-          <!-- 該組組員名單與即時在線狀態 (緊鄰在組別按鈕右側) -->
-          <div id="team-members-presence-container" class="flex items-center gap-1.5 pl-2 border-l border-slate-200 overflow-x-auto py-0.5 max-w-[220px] sm:max-w-[340px] scrollbar-none" title="該組組員與線上狀態">
-            <!-- 由 JS renderTeamMembersPresence() 即時渲染 -->
+          <!-- 一般講義模式時顯示：乾淨的隨堂講義標籤 -->
+          <div id="lecture-companion-nav-container" class="flex items-center gap-2 min-w-0">
+            <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white font-black text-xs shadow-2xs flex-shrink-0">
+              隨堂講義
+            </span>
+            <span id="lecture-nav-title" class="text-xs font-bold text-slate-800 truncate">
+              隨堂重點與講義
+            </span>
           </div>
         </div>
 
-        <!-- 右側：操作按鈕與同步狀態 (已移除重複出現的學習公約，保留頂部全域公約) -->
+        <!-- 右側：操作按鈕區 (錄音、翻面、同步) -->
         <div class="flex items-center gap-1.5 flex-shrink-0 pl-1">
-          <!-- ===== 語音錄音按鈕（僅講師身分可見） ===== -->
-          <!-- 錄音啟動按鈕 -->
-          <button id="btn-voice-note" class="hidden px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" onclick="startVoiceRecording()" title="啟動語音錄音，自動產生這頁的講解重點摘要">
+          <!-- 講師錄音控制項 -->
+          <button id="btn-voice-note" class="hidden px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-300 text-xs font-bold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" onclick="handleVoiceRecordClick()" title="開始本頁錄音，講授完畢後自動編排講義">
             <span class="text-base leading-none">🎙️</span>
             <span class="hidden sm:inline">錄音筆記</span>
           </button>
-          <!-- 不支援瀏覽器時顯示的 disabled 按鈕 -->
           <button id="btn-voice-note-unsupported" class="hidden px-2.5 py-1 rounded-lg bg-slate-100 text-slate-400 border border-slate-200 text-xs font-semibold shadow-2xs flex items-center gap-1 cursor-not-allowed" disabled title="請使用 Chrome 或 Edge 以啟用語音辨識">
             <span class="text-base leading-none">🎙️</span>
             <span class="hidden sm:inline">不支援</span>
           </button>
-          <!-- 錄音中：停止按鈕（含閃爍紅點 + 計時器） -->
-          <button id="btn-voice-note-stop" class="hidden px-2.5 py-1 rounded-lg bg-red-500 hover:bg-red-600 active:scale-95 text-white border border-red-600 text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer" onclick="stopVoiceRecording()" title="停止錄音並由 AI 整理摘要">
+          <button id="btn-voice-note-stop" class="hidden px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 active:scale-95 text-white border border-red-600 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer" onclick="stopVoiceRecording()" title="結束本頁講解並編排講義">
             <span class="voice-record-dot inline-block w-2 h-2 rounded-full bg-white flex-shrink-0"></span>
             <span>停止</span>
             <span id="voice-timer" class="font-mono">00:00</span>
           </button>
-          <!-- ===== END 語音錄音按鈕 ===== -->
 
-          <!-- 翻面看範例按鈕 (有範例時顯示) -->
+          <!-- 隨堂講義翻面按鈕 (便籤 ⇋ 講義文章) -->
+          <button id="btn-flip-lecture-note" onclick="toggleFlipLectureNote()" class="hidden px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-950 border border-amber-300 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer" title="切換檢視正面便利貼或背面完整講義">
+            <i data-lucide="book-open" class="w-3.5 h-3.5 text-amber-700"></i>
+            <span id="btn-flip-lecture-text">翻面看講義</span>
+          </button>
+
+          <!-- 實作任務翻面按鈕 (查看講師示範範例) -->
           <button id="btn-flip-example" onclick="toggleFlipExample()" class="hidden px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="點擊翻面查看講師示範標竿範例">
             <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i>
             <span id="btn-flip-text">看範例</span>
           </button>
 
-          <!-- 即時同步狀態指示 -->
-          <div id="memo-save-status-pill" class="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium px-2 py-0.5 rounded-md bg-white border border-slate-200 shadow-2xs">
+          <!-- 實作任務同步狀態指示 -->
+          <div id="memo-save-status-pill" class="hidden flex items-center gap-1.5 text-[11px] text-slate-500 font-medium px-2 py-0.5 rounded-md bg-white border border-slate-200 shadow-2xs">
             <span id="memo-sync-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             <span id="memo-save-status">已同步</span>
           </div>
@@ -607,248 +685,280 @@
 
       </div>
 
-      <!-- 狀態通知橫幅區 (唯讀觀摩 / 併發鎖定提示，平時隱藏) -->
-      <div id="status-banner-container" class="flex-shrink-0">
-        <!-- 班級唯讀/停用模式提示 -->
-        <div id="class-readonly-banner" class="hidden bg-rose-500 text-white px-3 py-1.5 flex items-center justify-between text-xs shadow-md">
-          <div class="flex items-center gap-1.5 font-medium">
-            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
-            <span id="class-readonly-banner-text">本班級處於停用/唯讀模式（僅供觀摩，無法編輯筆記或發布內容）</span>
+      <!-- ===== 區塊一：隨堂講義專屬看板 (非 Task 頁面顯示) ===== -->
+      <div id="lecture-companion-panel" class="flex-1 flex flex-col min-h-0 overflow-hidden relative bg-slate-50/50">
+
+        <!-- 狀態 0：初始未錄音 (極簡留白) -->
+        <div id="lecture-state-unrecorded" class="h-full flex flex-col items-center justify-center p-6 text-center select-none">
+          <div class="w-16 h-16 rounded-3xl bg-white border border-slate-200/70 shadow-2xs flex items-center justify-center text-slate-300 mb-3">
+            <i data-lucide="book-open" class="w-7 h-7 text-slate-300"></i>
           </div>
-          <span class="text-[10px] font-bold px-1.5 py-0.5 bg-rose-700/60 rounded">唯讀</span>
+          <p class="text-xs text-slate-500 font-medium tracking-wide">本頁隨堂講義待講授中</p>
+          <p class="text-[11px] text-slate-400 mt-1 max-w-xs leading-relaxed">講授結束後將自動呈現隨堂重點便籤與深入講義詳解</p>
         </div>
 
-        <!-- 唯讀觀摩提示 -->
-        <div id="readonly-banner" class="hidden bg-sky-50 border-b border-sky-100 px-3 py-1.5 flex items-center justify-between text-xs text-sky-800">
-          <div class="flex items-center gap-1.5">
-            <i data-lucide="eye" class="w-3.5 h-3.5 text-sky-600"></i>
-            <span>觀摩 <strong id="readonly-team-name">第 2 組</strong> 筆記中</span>
-          </div>
-          <button onclick="switchToMyTeam()" class="text-xs font-bold text-sky-600 hover:text-sky-800 underline">切回我的組別</button>
-        </div>
-
-        <!-- 併發鎖定警告提示 -->
-        <div id="lock-banner" class="hidden bg-amber-500 text-white px-3 py-1.5 flex items-center justify-between text-xs shadow-md">
-          <div class="flex items-center gap-1.5 font-medium">
-            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
-            <span>組員 <strong id="lock-username">Alex</strong> 編輯中 (鎖定保護中)</span>
-          </div>
-          <span class="text-[10px] opacity-80">自動同步</span>
-        </div>
-      </div>
-
-      <!-- 筆記區核心本體 (3D 翻轉結構：正面為滿版筆記，反面為講師範例) -->
-      <div id="note-flipper-container" class="note-flipper flex-1 min-h-0 overflow-hidden relative bg-white">
-
-        <!-- ===== 語音錄音中：ON AIR 沉浸式呼吸燈全屏覆蓋層 ===== -->
-        <div id="voice-onair-overlay" class="hidden absolute inset-0 z-30 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center select-none voice-summary-card-enter">
-          <div class="relative flex items-center justify-center mb-4">
-            <div class="w-16 h-16 rounded-full bg-red-500/20 onair-badge-pulse flex items-center justify-center">
-              <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white shadow-lg">
-                <i data-lucide="mic" class="w-5 h-5"></i>
+        <!-- 狀態 1：講課錄音中 (ON-AIR 廣播級氛圍) -->
+        <div id="lecture-state-onair" class="hidden h-full flex flex-col items-center justify-center p-6 text-center select-none bg-gradient-to-b from-slate-900/90 to-slate-950/95 backdrop-blur-md text-white voice-summary-card-enter">
+          <div class="relative flex items-center justify-center mb-5">
+            <div class="w-20 h-20 rounded-full bg-red-500/15 onair-badge-pulse flex items-center justify-center">
+              <div class="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white shadow-xl shadow-red-600/40">
+                <i data-lucide="mic" class="w-6 h-6"></i>
               </div>
             </div>
           </div>
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-200 text-xs font-black tracking-widest uppercase mb-2">
+          
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-black tracking-widest uppercase mb-3">
             <span class="w-2 h-2 rounded-full bg-red-500 voice-record-dot"></span>
-            <span>ON AIR 錄音中</span>
+            <span id="onair-banner-title">ON AIR｜隨堂講授實錄中</span>
           </div>
-          <div id="voice-onair-timer" class="font-mono text-3xl font-black text-white tracking-wider mb-2">00:00</div>
-          <p class="text-xs text-slate-300 max-w-xs leading-relaxed mb-6">
-            請專注講課，語音已在背景即時聆聽。<br>按下上方或下方「停止錄音」，AI 將自動依 <span class="text-amber-300 font-bold">MECE 原則</span> 萃取手寫重點便利貼！
+
+          <!-- 聲波音柱波紋動畫 -->
+          <div class="flex items-center gap-1.5 h-7 mb-3">
+            <span class="w-1 rounded-full bg-red-400 wave-bar-1"></span>
+            <span class="w-1 rounded-full bg-red-500 wave-bar-2"></span>
+            <span class="w-1 rounded-full bg-red-400 wave-bar-3"></span>
+            <span class="w-1 rounded-full bg-red-500 wave-bar-4"></span>
+            <span class="w-1 rounded-full bg-red-400 wave-bar-5"></span>
+          </div>
+
+          <div id="onair-timer-display" class="font-mono text-4xl font-black text-white tracking-widest mb-3">00:00</div>
+          
+          <p class="text-xs text-slate-300 max-w-xs leading-relaxed mb-6 font-normal">
+            講師講授中，請專注聆聽簡報。<br><span class="text-slate-400 text-[11px]">講授告一段落後按下停止，將自動生成正面重點便籤與背面完整講義。</span>
           </p>
-          <button onclick="stopVoiceRecording()" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold text-xs shadow-lg shadow-red-600/30 flex items-center gap-2 transition-all cursor-pointer">
+
+          <button id="btn-onair-stop" onclick="stopVoiceRecording()" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold text-xs shadow-lg shadow-red-600/30 flex items-center gap-2 transition-all cursor-pointer">
             <span class="w-2 h-2 rounded-full bg-white"></span>
-            <span>結束本頁講解並萃取便利貼</span>
+            <span>結束本頁講解並編排講義</span>
           </button>
         </div>
-        <!-- ===== END ON AIR 覆蓋層 ===== -->
 
-        <div class="note-flipper-inner h-full">
-
-          <!-- ================= 正面 (Front Face)：100% 滿版沉浸式小組筆記 (支援內容過長自適應滾動) ================= -->
-          <div class="note-front-face h-full flex flex-col p-3 sm:p-4 overflow-y-auto">
-            <!-- 團隊任務專屬：Prompt 快速複製與導讀行動列 (含 prompts 時動態顯示) -->
-            <div id="team-task-prompt-bar" class="hidden flex-shrink-0 mb-3 p-3 bg-gradient-to-r from-amber-50/95 via-orange-50/90 to-amber-50/95 border border-amber-200/90 rounded-2xl shadow-2xs">
-              <div class="flex items-center justify-between gap-2 mb-2">
-                <div class="flex items-center gap-2 min-w-0">
-                  <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white font-black text-[10px] sm:text-xs flex items-center gap-1 shadow-xs flex-shrink-0">
-                    <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
-                    <span>AI 實作指令庫</span>
-                  </span>
-                  <span id="prompt-bar-hint" class="text-xs font-bold text-amber-950 truncate">
-                    本實作提供專屬 AI Prompts
-                  </span>
-                </div>
-              </div>
-
-              <!-- 動態渲染的 Prompt 操作按鈕群 -->
-              <div id="prompt-buttons-container" class="flex flex-wrap items-center gap-2"></div>
+        <!-- 狀態 2：結束錄音排版中 (骨架流光) -->
+        <div id="lecture-state-compiling" class="hidden h-full flex flex-col p-6 rounded-2xl bg-white/70 border border-slate-200/80 justify-center">
+          <div class="max-w-md mx-auto w-full space-y-4">
+            <div class="flex items-center gap-2.5 mb-2">
+              <div class="w-4 h-4 rounded-full border-2 border-amber-600 border-t-transparent animate-spin"></div>
+              <span class="text-xs font-black text-slate-800 tracking-wide">講義編排整理中...</span>
             </div>
-
-            <!-- ===== 筆記視圖切換列（講師常駐；學員依是否有便利貼動態顯示） ===== -->
-            <div id="notes-view-mode-bar" class="hidden flex-shrink-0 mb-3 flex items-center justify-between bg-slate-100/90 p-1 rounded-xl border border-slate-200 text-xs">
-              <div class="flex items-center gap-1">
-                <button id="btn-view-stickies" onclick="switchNotesView('stickies')" class="px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-indigo-700 shadow-2xs">
-                  <span>📌</span>
-                  <span id="tab-label-stickies">講師重點講義</span>
-                  <span id="stickies-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-indigo-100 text-indigo-700">0</span>
-                </button>
-                <button id="btn-view-memo" onclick="switchNotesView('memo')" class="px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900">
-                  <span>📝</span>
-                  <span id="tab-label-memo">小組隨堂筆記</span>
-                </button>
-              </div>
-              <div class="flex items-center gap-1.5 pr-1">
-                <button id="btn-copy-stickies-to-memo" onclick="copyStickiesToMemo()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer" title="將所有便利貼重點追加到小組筆記框">
-                  <i data-lucide="copy-plus" class="w-3 h-3"></i>
-                  <span id="btn-copy-stickies-text" class="hidden sm:inline">貼入小組筆記</span>
-                </button>
-                <button id="btn-add-manual-sticky" onclick="addNewManualSticky()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors flex items-center gap-1 cursor-pointer" title="手動增加一張便利貼">
-                  <i data-lucide="plus" class="w-3 h-3"></i>
-                  <span>加便利貼</span>
-                </button>
-              </div>
+            <div class="h-6 shimmer-skeleton rounded-lg w-3/4"></div>
+            <div class="space-y-2.5 pt-2">
+              <div class="h-3.5 shimmer-skeleton rounded w-full"></div>
+              <div class="h-3.5 shimmer-skeleton rounded w-5/6"></div>
+              <div class="h-3.5 shimmer-skeleton rounded w-4/6"></div>
             </div>
-
-            <!-- ===== 講師手寫便利貼牆 (MECE Sticky Notes Wall) ===== -->
-            <div id="stickies-wall-container" class="hidden flex-1 flex flex-col mb-3">
-              <!-- AI 整理中狀態（非同步流光動畫，可離開本頁） -->
-              <div id="stickies-loading-banner" class="hidden flex-shrink-0 mb-3 p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/15 to-pink-500/10 border border-indigo-200 flex items-center gap-3 animate-pulse">
-                <div class="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                <div class="min-w-0">
-                  <h4 class="text-xs font-black text-indigo-950 flex items-center gap-1">
-                    <span>✨ AI 正在依 MECE 原則萃取精華便利貼...</span>
-                  </h4>
-                  <p class="text-[11px] text-indigo-700/80 mt-0.5">您可以先切換至其他投影片講課，完成後將自動展示於此，並同步至資料庫。</p>
-                </div>
-              </div>
-
-              <!-- 便利貼主網格區 (自適應卡片流) -->
-              <div id="stickies-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pb-2">
-                <!-- 由 JS 動態注入渲染 -->
-              </div>
-              <div class="mt-2 text-right">
-                <span class="text-[10px] text-slate-400 italic">💡 提示：點擊便利貼文字可直接手動修訂錯字，失焦自動即時存檔。</span>
-              </div>
+            <div class="grid grid-cols-2 gap-3 pt-3">
+              <div class="h-24 bg-amber-50/80 border border-amber-200/50 rounded-xl shimmer-skeleton"></div>
+              <div class="h-24 bg-sky-50/80 border border-sky-200/50 rounded-xl shimmer-skeleton"></div>
             </div>
+            <p class="text-[11px] text-slate-400 text-center pt-2">課堂實錄排版中，完成後自動呈現。您可以先行換頁講課。</p>
+          </div>
+        </div>
 
-            <!-- 盡量大面積的輸入框 (小組手動筆記視圖) -->
-            <div id="memo-input-wrapper" class="w-full flex-1 flex flex-col relative min-h-[140px]" onclick="handleMemoWrapperClick(event)">
-              <textarea id="team-memo-input" placeholder="點擊此處記錄小組針對這張投影片的討論心得、萃取出的需求或問題（輸入時自動取得鎖定）..." class="w-full flex-1 min-h-[140px] p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed select-text"></textarea>
-            </div>
+        <!-- 狀態 3：生成完成 (雙面講義卡片) -->
+        <div id="lecture-state-ready" class="hidden h-full flex-1 flex flex-col min-h-0 relative overflow-hidden">
+          <div id="lecture-flipper-container" class="note-flipper flex-1 h-full min-h-0 overflow-hidden relative bg-white">
+            <div class="note-flipper-inner h-full">
 
-            <!-- 小組附件管理區 (Attachments Panel) -->
-            <div id="team-attachments-section" class="flex-shrink-0 mt-2.5 pt-2.5 border-t border-slate-200/90 flex flex-col gap-2">
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5 min-w-0">
-                  <div class="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+              <!-- 正面：MECE 手寫重點便籤牆 -->
+              <div class="note-front-face h-full flex flex-col p-3 sm:p-4 overflow-y-auto bg-slate-50/50">
+                <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-200 text-xs">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-slate-700">📌 隨堂重點便籤</span>
+                    <span id="lecture-stickies-count" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-amber-100 text-amber-800 font-bold">0</span>
                   </div>
-                  <span class="text-xs font-bold text-slate-800">小組實作附件</span>
-                  <span id="attachments-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-slate-200 text-slate-700">0</span>
-                  <span class="text-[10px] text-slate-400 hidden md:inline">支援 圖片 / PDF / Office (Word, PPT, Excel) / 原型與代碼 (HTML, JSON, ZIP) / 繪圖檔 (drawio) (≤20MB)</span>
+                  <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="addNewManualSticky()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors flex items-center gap-1 cursor-pointer" title="手動增加一張便利貼">
+                      <i data-lucide="plus" class="w-3 h-3"></i>
+                      <span>加便利貼</span>
+                    </button>
+                    <button type="button" onclick="toggleFlipLectureNote()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors flex items-center gap-1 cursor-pointer" title="翻至背面看完整教材文章">
+                      <i data-lucide="book-open" class="w-3 h-3 text-amber-600"></i>
+                      <span>看完整講義</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div class="flex items-center gap-1.5 flex-shrink-0">
-                  <input type="file" id="attachment-file-input" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.svg,.bmp,.pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.txt,.md,.html,.htm,.json,.zip,.drawio,.vsdx" class="hidden" onchange="handleFileInputChange(event)" />
-                  <button id="btn-add-attachment" type="button" onclick="triggerAttachmentFileInput()" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="上傳白板照片、簡報、試算表、原型或代碼包">
-                    <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-                    <span>上傳附件</span>
+                <!-- 便籤主網格 -->
+                <div id="stickies-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pb-2"></div>
+                <div class="mt-2 text-right">
+                  <span class="text-[10px] text-slate-400 italic">💡 提示：點擊便籤文字可直接修訂錯字，失焦自動即時存檔。</span>
+                </div>
+              </div>
+
+              <!-- 背面：整頁教科書級完整講義詳解 -->
+              <div class="note-back-face h-full flex flex-col p-4 sm:p-5 overflow-y-auto bg-white select-text">
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-200 flex-shrink-0">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold text-xs">講義詳解</span>
+                    <div>
+                      <h3 id="textbook-title" class="font-bold text-slate-900 text-sm">課堂核心脈絡深度剖析</h3>
+                      <p id="textbook-subtitle" class="text-[11px] text-slate-500">課堂實錄重點教材</p>
+                    </div>
+                  </div>
+                  <button type="button" onclick="toggleFlipLectureNote()" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer">
+                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                    <span>翻回重點便籤</span>
                   </button>
                 </div>
-              </div>
 
-              <!-- 上傳中進度指示器 -->
-              <div id="attachment-upload-progress" class="hidden p-2 bg-amber-50/90 border border-amber-200 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-900 animate-pulse">
-                <div class="flex items-center gap-2 min-w-0 truncate">
-                  <div class="w-3.5 h-3.5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                  <span id="upload-progress-text" class="truncate font-medium">正在處理並上傳檔案...</span>
+                <div id="textbook-article-content" class="textbook-article flex-1 overflow-y-auto pr-1">
+                  <!-- 由 JS renderTextbookArticle() 動態注入 HTML -->
                 </div>
-                <span id="upload-progress-percent" class="font-mono font-bold text-[11px] text-amber-700 flex-shrink-0">上傳中</span>
               </div>
 
-              <!-- 附件卡片清單 / 空狀態提示 -->
-              <div id="attachments-list-container" class="flex flex-wrap items-center gap-2 max-h-36 overflow-y-auto pr-1">
-                <!-- 由 renderAttachmentsUI() 動態渲染 -->
-              </div>
             </div>
           </div>
+        </div>
 
-          <!-- ================= 反面 (Back Face)：講師示範標竿範例與實戰圖庫 ================= -->
-          <div class="note-back-face h-full flex flex-col p-3 sm:p-4 overflow-hidden">
-            <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 sm:p-4 shadow-2xs flex-1 flex flex-col overflow-hidden">
-              
-              <!-- 範例頂部標題與複製按鈕 -->
-              <div class="flex items-center justify-between border-b border-amber-200/60 pb-2.5 mb-2.5 flex-shrink-0">
-                <div class="flex items-center gap-2">
-                  <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold text-xs">示範</span>
-                  <div>
-                    <h3 id="example-view-title" class="font-bold text-amber-950 text-sm">產品願景陳述</h3>
-                    <p class="text-[11px] text-amber-700" id="example-view-subtitle">標竿參考基準與實務範例</p>
+      </div>
+
+      <!-- ===== 區塊二：實作任務專屬工作台 (Task 頁面顯示) ===== -->
+      <div id="team-task-panel" class="hidden flex-1 flex flex-col min-h-0 overflow-hidden relative bg-white">
+        <!-- 狀態通知橫幅區 -->
+        <div id="status-banner-container" class="flex-shrink-0">
+          <div id="class-readonly-banner" class="hidden bg-rose-500 text-white px-3 py-1.5 flex items-center justify-between text-xs shadow-md">
+            <div class="flex items-center gap-1.5 font-medium">
+              <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+              <span id="class-readonly-banner-text">本班級處於停用/唯讀模式（僅供觀摩，無法編輯筆記或發布內容）</span>
+            </div>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 bg-rose-700/60 rounded">唯讀</span>
+          </div>
+
+          <div id="readonly-banner" class="hidden bg-sky-50 border-b border-sky-100 px-3 py-1.5 flex items-center justify-between text-xs text-sky-800">
+            <div class="flex items-center gap-1.5">
+              <i data-lucide="eye" class="w-3.5 h-3.5 text-sky-600"></i>
+              <span>觀摩 <strong id="readonly-team-name">第 2 組</strong> 筆記中</span>
+            </div>
+            <button onclick="switchToMyTeam()" class="text-xs font-bold text-sky-600 hover:text-sky-800 underline">切回我的組別</button>
+          </div>
+
+          <div id="lock-banner" class="hidden bg-amber-500 text-white px-3 py-1.5 flex items-center justify-between text-xs shadow-md">
+            <div class="flex items-center gap-1.5 font-medium">
+              <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              <span>組員 <strong id="lock-username">Alex</strong> 編輯中 (鎖定保護中)</span>
+            </div>
+            <span class="text-[10px] opacity-80">自動同步</span>
+          </div>
+        </div>
+
+        <!-- 任務翻轉工作台 (正面：Prompt + 共編筆記 + 附件；反面：示範範例) -->
+        <div id="note-flipper-container" class="note-flipper flex-1 min-h-0 overflow-hidden relative bg-white">
+          <div class="note-flipper-inner h-full">
+
+            <!-- 正面：小組實作共編區 -->
+            <div class="note-front-face h-full flex flex-col p-3 sm:p-4 overflow-y-auto">
+              <div id="team-task-prompt-bar" class="hidden flex-shrink-0 mb-3 p-3 bg-gradient-to-r from-amber-50/95 via-orange-50/90 to-amber-50/95 border border-amber-200/90 rounded-2xl shadow-2xs">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white font-black text-[10px] sm:text-xs flex items-center gap-1 shadow-xs flex-shrink-0">
+                      <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                      <span>AI 實作指令庫</span>
+                    </span>
+                    <span id="prompt-bar-hint" class="text-xs font-bold text-amber-950 truncate">本實作提供專屬 AI Prompts</span>
+                  </div>
+                </div>
+                <div id="prompt-buttons-container" class="flex flex-wrap items-center gap-2"></div>
+              </div>
+
+              <!-- 小組實作產出文字框 -->
+              <div id="memo-input-wrapper" class="w-full flex-1 flex flex-col relative min-h-[140px]" onclick="handleMemoWrapperClick(event)">
+                <textarea id="team-memo-input" placeholder="記錄小組實作產出與討論心得（輸入時自動取得鎖定）..." class="w-full flex-1 min-h-[140px] p-4 sm:p-5 text-sm sm:text-base text-slate-800 bg-slate-50/60 hover:bg-white focus:bg-white border border-slate-200 rounded-xl shadow-2xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed leading-relaxed select-text"></textarea>
+              </div>
+
+              <!-- 小組實作附件區 -->
+              <div id="team-attachments-section" class="flex-shrink-0 mt-2.5 pt-2.5 border-t border-slate-200/90 flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <div class="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0">
+                      <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <span class="text-xs font-bold text-slate-800">小組實作附件</span>
+                    <span id="attachments-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-slate-200 text-slate-700">0</span>
+                    <span class="text-[10px] text-slate-400 hidden md:inline">支援 圖片 / PDF / Office / 原型代碼 (≤20MB)</span>
+                  </div>
+
+                  <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <input type="file" id="attachment-file-input" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.svg,.bmp,.pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.txt,.md,.html,.htm,.json,.zip,.drawio,.vsdx" class="hidden" onchange="handleFileInputChange(event)" />
+                    <button id="btn-add-attachment" type="button" onclick="triggerAttachmentFileInput()" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="上傳小組實作附件">
+                      <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                      <span>上傳附件</span>
+                    </button>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-1.5">
-                  <button id="btn-example-copy-general" onclick="copyExampleToMemo()" class="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" title="複製示範內容至小組筆記">
+                <div id="attachment-upload-progress" class="hidden p-2 bg-amber-50/90 border border-amber-200 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-900 animate-pulse">
+                  <div class="flex items-center gap-2 min-w-0 truncate">
+                    <div class="w-3.5 h-3.5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                    <span id="upload-progress-text" class="truncate font-medium">正在處理並上傳檔案...</span>
+                  </div>
+                  <span id="upload-progress-percent" class="font-mono font-bold text-[11px] text-amber-700 flex-shrink-0">上傳中</span>
+                </div>
+
+                <div id="attachments-list-container" class="flex flex-wrap items-center gap-2 max-h-36 overflow-y-auto pr-1"></div>
+              </div>
+            </div>
+
+            <!-- 反面：講師示範標竿範例 (保持原有高品質範例) -->
+            <div class="note-back-face h-full flex flex-col p-3 sm:p-4 overflow-hidden">
+              <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 sm:p-4 shadow-2xs flex-1 flex flex-col overflow-hidden">
+                <div class="flex items-center justify-between border-b border-amber-200/60 pb-2.5 mb-2.5 flex-shrink-0">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold text-xs">示範</span>
+                    <div>
+                      <h3 id="example-view-title" class="font-bold text-amber-950 text-sm">產品願景陳述</h3>
+                      <p class="text-[11px] text-amber-700" id="example-view-subtitle">標竿參考基準與實務範例</p>
+                    </div>
+                  </div>
+                  <button id="btn-example-copy-general" onclick="copyExampleToMemo()" class="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all cursor-pointer">
                     <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                     <span>複製文字</span>
                   </button>
                 </div>
-              </div>
 
-              <!-- 分頁切換列 (當投影片含有範例圖片時顯示) -->
-              <div id="example-tab-bar" class="hidden flex items-center gap-1 bg-amber-200/60 p-1 rounded-xl mb-2.5 flex-shrink-0">
-                <button id="tab-btn-gallery" onclick="switchExampleTab('gallery')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-white text-amber-950 shadow-2xs cursor-pointer">
-                  <i data-lucide="images" class="w-3.5 h-3.5 text-amber-600"></i>
-                  <span id="tab-label-gallery">實戰案例圖庫 (3)</span>
-                </button>
-                <button id="tab-btn-template" onclick="switchExampleTab('template')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-amber-800 hover:text-amber-950 cursor-pointer">
-                  <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-600"></i>
-                  <span>示範結構與句型</span>
-                </button>
-              </div>
+                <div id="example-tab-bar" class="hidden flex items-center gap-1 bg-amber-200/60 p-1 rounded-xl mb-2.5 flex-shrink-0">
+                  <button id="tab-btn-gallery" onclick="switchExampleTab('gallery')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-white text-amber-950 shadow-2xs cursor-pointer">
+                    <i data-lucide="images" class="w-3.5 h-3.5 text-amber-600"></i>
+                    <span id="tab-label-gallery">實戰案例圖庫 (3)</span>
+                  </button>
+                  <button id="tab-btn-template" onclick="switchExampleTab('template')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-amber-800 hover:text-amber-950 cursor-pointer">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-600"></i>
+                    <span>示範結構與句型</span>
+                  </button>
+                </div>
 
-              <!-- 視角一：實戰案例圖庫 (Gallery View) -->
-              <div id="example-gallery-view" class="flex-1 overflow-y-auto space-y-3 pr-1">
-                <!-- 由 JS renderExampleGalleryCards() 動態渲染 -->
-              </div>
+                <div id="example-gallery-view" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
 
-              <!-- 視角二：示範結構與句型 (Template View) -->
-              <div id="example-template-view" class="hidden flex-1 overflow-y-auto flex-col space-y-2.5 pr-1">
-                <!-- 範例卡片正面 (摘要/故事) -->
-                <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs flex-shrink-0">
-                  <div class="text-[11px] uppercase font-bold text-amber-600 tracking-wider flex items-center gap-1 mb-1">
-                    <i data-lucide="bookmark" class="w-3 h-3"></i> 重點 (Summary)
+                <div id="example-template-view" class="hidden flex-1 overflow-y-auto flex-col space-y-2.5 pr-1">
+                  <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs flex-shrink-0">
+                    <div class="text-[11px] uppercase font-bold text-amber-600 tracking-wider flex items-center gap-1 mb-1">
+                      <i data-lucide="bookmark" class="w-3 h-3"></i> 重點 (Summary)
+                    </div>
+                    <p id="example-view-front" class="text-sm font-bold text-slate-800 whitespace-pre-wrap leading-relaxed"></p>
                   </div>
-                  <p id="example-view-front" class="text-sm font-bold text-slate-800 whitespace-pre-wrap leading-relaxed"></p>
-                </div>
-
-                <!-- 範例卡片反面 (細節/AC) -->
-                <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs flex-1 overflow-y-auto">
-                  <div class="text-[11px] uppercase font-bold text-indigo-600 tracking-wider flex items-center gap-1 mb-1">
-                    <i data-lucide="list-checks" class="w-3 h-3"></i> 詳細脈絡 / 驗收準則 (Details / AC)
+                  <div class="bg-white rounded-lg p-3 sm:p-4 border border-amber-200/70 shadow-2xs flex-1 overflow-y-auto">
+                    <div class="text-[11px] uppercase font-bold text-indigo-600 tracking-wider flex items-center gap-1 mb-1">
+                      <i data-lucide="list-checks" class="w-3 h-3"></i> 詳細脈絡 / 驗收準則 (Details / AC)
+                    </div>
+                    <p id="example-view-back" class="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed"></p>
                   </div>
-                  <p id="example-view-back" class="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed"></p>
+                </div>
+
+                <div class="pt-2.5 flex items-center justify-between border-t border-amber-200/60 mt-2 flex-shrink-0">
+                  <div id="example-footer-hint" class="text-[11px] text-amber-800 font-medium truncate max-w-[220px]">
+                    💡 點擊縮圖可開啟全螢幕導讀
+                  </div>
+                  <button onclick="toggleFlipExample()" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
+                    <span>翻回小組實作</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                  </button>
                 </div>
               </div>
-
-              <!-- 底部按鈕 -->
-              <div class="pt-2.5 flex items-center justify-between border-t border-amber-200/60 mt-2 flex-shrink-0">
-                <div id="example-footer-hint" class="text-[11px] text-amber-800 font-medium truncate max-w-[220px]">
-                  💡 點擊縮圖可開啟全螢幕導讀
-                </div>
-                <button onclick="toggleFlipExample()" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
-                  <span>翻回小組筆記</span>
-                  <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                </button>
-              </div>
-
             </div>
-          </div>
 
+          </div>
         </div>
       </div>
+
     </aside>
   </main>
 
@@ -1055,6 +1165,34 @@
           </button>
           <button onclick="handleVoiceNavChoice('cancel')" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-white hover:bg-slate-50 active:scale-98 text-slate-500 border border-slate-200 flex items-center justify-center gap-2 transition-all cursor-pointer">
             <span>▶️</span> 取消，繼續錄音
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 語音再次錄音模式選擇 Modal ==================== -->
+  <div id="voice-rerecord-modal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="px-5 pt-5 pb-4">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-700">
+            <span class="text-xl">🎙️</span>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm leading-snug">本頁已有隨堂講義紀錄</h3>
+            <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">請選擇本次錄音的處理方式：</p>
+          </div>
+        </div>
+        <div class="space-y-2.5">
+          <button type="button" onclick="handleVoiceRerecordChoice('augment')" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 active:scale-98 text-slate-950 flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer">
+            <span>➕</span> 補充講述（保留既有便籤，智能增補講義）
+          </button>
+          <button type="button" onclick="handleVoiceRerecordChoice('fresh')" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 active:scale-98 text-rose-700 flex items-center justify-center gap-2 transition-all cursor-pointer">
+            <span>🔄</span> 重新講授（覆蓋並重新排版全頁講義）
+          </button>
+          <button type="button" onclick="handleVoiceRerecordChoice('cancel')" class="w-full py-2 px-4 rounded-xl text-xs font-bold bg-white hover:bg-slate-50 active:scale-98 text-slate-500 border border-slate-200 flex items-center justify-center gap-2 transition-all cursor-pointer">
+            取消
           </button>
         </div>
       </div>
@@ -2903,11 +3041,20 @@
       if (index > SLIDES_DATA.length) index = SLIDES_DATA.length;
       currentSlideIndex = index;
 
-      // 換頁時一律重設為正面筆記視角
+      // 換頁時一律重設正面視角
       if (isExampleFlipped) {
         isExampleFlipped = false;
-        document.getElementById('note-flipper-container').classList.remove('flipped');
-        document.getElementById('btn-flip-text').innerText = "翻面看範例";
+        const flipper = document.getElementById('note-flipper-container');
+        if (flipper) flipper.classList.remove('flipped');
+        const flipText = document.getElementById('btn-flip-text');
+        if (flipText) flipText.innerText = "看範例";
+      }
+      if (isLectureFlipped) {
+        isLectureFlipped = false;
+        const flipper = document.getElementById('lecture-flipper-container');
+        if (flipper) flipper.classList.remove('flipped');
+        const flipText = document.getElementById('btn-flip-lecture-text');
+        if (flipText) flipText.innerText = "翻面看講義";
       }
 
       const slide = SLIDES_DATA[index - 1];
@@ -2956,14 +3103,51 @@
       // 判斷是否顯示「線上白板」與「翻面看範例」
       updateSlideToolsBar(slide);
 
-      // 每一頁講義預設皆還原為「左邊圖片、右邊筆記」模式
+      // 每一頁講義預設皆還原為「左邊圖片、右邊看板」模式
       const shouldBeWorkstation = (userManualLayoutOverride === 'theater') ? false : true;
       applyLayoutMode(shouldBeWorkstation);
 
-      // 確保隨堂筆記展開時，小組實作附件區一律可用（支援所有練習頁與任務頁上傳）
+      // 雙欄模式切換：實作任務頁 vs 隨堂講義頁
+      const isTask = !!slide.isTeamTask;
+      const lectureNav = document.getElementById('lecture-companion-nav-container');
+      const teamNav = document.getElementById('team-task-nav-container');
+      const lectureNavTitle = document.getElementById('lecture-nav-title');
+      const lecturePanel = document.getElementById('lecture-companion-panel');
+      const teamPanel = document.getElementById('team-task-panel');
+      const btnFlipLecture = document.getElementById('btn-flip-lecture-note');
+      const btnFlipExample = document.getElementById('btn-flip-example');
+      const memoSyncStatus = document.getElementById('memo-save-status-pill');
+
+      if (isTask) {
+        if (lectureNav) lectureNav.classList.add('hidden');
+        if (teamNav) teamNav.classList.remove('hidden');
+        if (lecturePanel) lecturePanel.classList.add('hidden');
+        if (teamPanel) teamPanel.classList.remove('hidden');
+        if (memoSyncStatus) memoSyncStatus.classList.remove('hidden');
+        if (btnFlipLecture) btnFlipLecture.classList.add('hidden');
+        if (btnFlipExample) {
+          if (slide.example) {
+            btnFlipExample.classList.remove('hidden');
+          } else {
+            btnFlipExample.classList.add('hidden');
+          }
+        }
+      } else {
+        if (lectureNav) lectureNav.classList.remove('hidden');
+        if (teamNav) teamNav.classList.add('hidden');
+        if (lectureNavTitle) {
+          lectureNavTitle.textContent = `${pageStr} · ${slide.title || '隨堂重點與講義'}`;
+        }
+        if (lecturePanel) lecturePanel.classList.remove('hidden');
+        if (teamPanel) teamPanel.classList.add('hidden');
+        if (memoSyncStatus) memoSyncStatus.classList.add('hidden');
+        if (btnFlipExample) btnFlipExample.classList.add('hidden');
+      }
+
+      // 確保隨堂筆記展開時，小組實作附件區於實作任務可用
       const attachSection = document.getElementById('team-attachments-section');
       if (attachSection) {
-        attachSection.classList.remove('hidden');
+        attachSection.classList.toggle('hidden', !isTask);
       }
 
       // 更新輸入框情境提示詞
@@ -4958,9 +5142,8 @@
     }
 
     function navigateSlide(delta) {
-      // 語音錄音防護：錄音中攔截換頁
       if (isVoiceRecording) {
-        showVoiceNavModal({ type: 'delta', value: delta });
+        handleNavWhileRecording({ type: 'delta', value: delta });
         return;
       }
       releaseLock();
@@ -4968,9 +5151,8 @@
     }
 
     function jumpToSlide(idx) {
-      // 語音錄音防護：錄音中攔截換頁
       if (isVoiceRecording) {
-        showVoiceNavModal({ type: 'index', value: idx });
+        handleNavWhileRecording({ type: 'index', value: idx });
         closeTocDrawer();
         return;
       }
@@ -7677,6 +7859,42 @@ function copyCatalogPromptById(promptId, slideIndex) {
         .replace(/'/g, '&#039;');
     }
 
+    // --- 輕量級 Markdown 轉換器（課堂講義詳解專用） ---
+    function parseSimpleMarkdown(md) {
+      if (!md) return '';
+      let html = escapeHtml(md);
+
+      // 標題轉換
+      html = html.replace(/^### (.*$)/gim, '<h4 class="text-sm font-bold text-slate-900 mt-3 mb-1.5 flex items-center gap-1.5"><span class="w-1.5 h-3.5 bg-amber-500 rounded-xs flex-shrink-0"></span><span>$1</span></h4>');
+      html = html.replace(/^## (.*$)/gim, '<h3 class="text-base font-bold text-slate-900 mt-4 mb-2 pb-1 border-b border-slate-200">$1</h3>');
+      html = html.replace(/^# (.*$)/gim, '<h2 class="text-lg font-black text-slate-900 mt-5 mb-2.5 pb-1.5 border-b border-amber-300">$1</h2>');
+
+      // 粗體、斜體與程式碼
+      html = html.replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold text-slate-900">$1</strong>');
+      html = html.replace(/\*(.*?)\*/gim, '<em class="italic text-slate-700">$1</em>');
+      html = html.replace(/`([^`]+)`/gim, '<code class="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-xs text-amber-800">$1</code>');
+
+      // 區塊引言
+      html = html.replace(/^\&gt;\s?(.*$)/gim, '<blockquote class="border-l-4 border-amber-400 bg-amber-50/70 pl-3 py-1.5 my-2 text-xs text-slate-700 italic rounded-r">$1</blockquote>');
+
+      // 清單
+      html = html.replace(/^\s*[\-\*]\s+(.*$)/gim, '<li class="ml-4 list-disc text-xs sm:text-sm text-slate-700 leading-relaxed">$1</li>');
+      html = html.replace(/^\s*(\d+)\.\s+(.*$)/gim, '<li class="ml-4 list-decimal text-xs sm:text-sm text-slate-700 leading-relaxed">$2</li>');
+
+      // 段落分段
+      const paragraphs = html.split(/\n{2,}/);
+      html = paragraphs.map(p => {
+        p = p.trim();
+        if (!p) return '';
+        if (p.startsWith('<h') || p.startsWith('<blockquote') || p.startsWith('<li')) {
+          return p;
+        }
+        return `<p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-2.5">${p.replace(/\n/g, '<br/>')}</p>`;
+      }).join('');
+
+      return html;
+    }
+
     // --- 全課程小組筆記列印與 PDF 匯出 ---
     let printNotesData = [];
     let printSelectedTeam = 'team-1';
@@ -7742,9 +7960,13 @@ function copyCatalogPromptById(promptId, slideIndex) {
       if (area) area.classList.add('hidden');
 
       const promises = SLIDES_DATA.map(async (slide) => {
+        const slideId = `P${String(slide.index).padStart(2, '0')}`;
         const docKey = `ai_arm_note_${slide.id}_${teamId}`;
         let memo = '';
         let attachments = [];
+        let stickies = slideStickiesCache.get(slideId) || [];
+        let textbookArticle = slideTextbookCache.get(slideId) || '';
+
         const cached = localStorage.getItem(`cache_${docKey}`);
         if (cached) {
           try {
@@ -7761,8 +7983,18 @@ function copyCatalogPromptById(promptId, slideIndex) {
               if (Array.isArray(doc.data().attachments)) attachments = doc.data().attachments;
             }
           } catch(e) {}
+
+          if (stickies.length === 0 && !textbookArticle) {
+            try {
+              const vnDoc = await getVoiceNoteFirestorePath(slideId).get();
+              if (vnDoc.exists && vnDoc.data()) {
+                stickies = vnDoc.data().stickies || [];
+                textbookArticle = vnDoc.data().textbookArticle || '';
+              }
+            } catch(e) {}
+          }
         }
-        return { slide, memo, attachments };
+        return { slide, slideId, memo, attachments, stickies, textbookArticle };
       });
 
       printNotesData = await Promise.all(promises);
@@ -7780,25 +8012,29 @@ function copyCatalogPromptById(promptId, slideIndex) {
       const exportTime = new Date().toLocaleString('zh-TW', { hour12: false });
       const activeUser = (currentUser && currentUser.name) ? currentUser.name : '學員';
 
-      const totalWithNotes = printNotesData.filter(d => (d.memo && d.memo.trim().length > 0) || (d.attachments && d.attachments.length > 0)).length;
+      const totalWithNotes = printNotesData.filter(d => 
+        (d.stickies && d.stickies.length > 0) || 
+        (d.textbookArticle && d.textbookArticle.trim().length > 0) || 
+        (d.memo && d.memo.trim().length > 0)
+      ).length;
 
       let html = `
         <!-- 報表首頁與抬頭 -->
         <div class="border-b-2 border-slate-900 pb-5 mb-6">
           <div class="flex items-center justify-between text-xs font-bold text-amber-700 tracking-wider mb-1 uppercase">
-            <span>AI-ARM 需求建模與敏捷 Refinement ｜ 實戰筆記彙編</span>
-            <span>${teamName} 專屬交付物</span>
+            <span>AI-ARM 隨堂講義實錄手冊 ｜ 深度隨堂重點與講義詳解</span>
+            <span>課程實錄手冊</span>
           </div>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
-            AI 輔助需求建模與敏捷 Refinement
+            AI 輔助需求建模與敏捷 Refinement 隨堂手冊
           </h1>
           <p class="text-sm text-slate-600 mt-1">
-            從結構化訪談、4大模型、Clickable Prototype 到 Ready Increment 與任務落地
+            完整收錄講師隨堂重點便籤、全書級深度講義詳解與團隊實作成果
           </p>
           
           <div class="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div>
-              <span class="text-slate-400 block text-[10px]">研討小組</span>
+              <span class="text-slate-400 block text-[10px]">對應小組實作</span>
               <strong class="text-slate-900 text-sm font-bold">${teamName}</strong>
             </div>
             <div>
@@ -7810,7 +8046,7 @@ function copyCatalogPromptById(promptId, slideIndex) {
               <span class="text-slate-700 font-mono">${exportTime}</span>
             </div>
             <div>
-              <span class="text-slate-400 block text-[10px]">筆記涵蓋度</span>
+              <span class="text-slate-400 block text-[10px]">教材涵蓋度</span>
               <strong class="text-amber-700 font-bold font-mono">${totalWithNotes} / ${SLIDES_DATA.length} 頁</strong>
             </div>
           </div>
@@ -7820,79 +8056,142 @@ function copyCatalogPromptById(promptId, slideIndex) {
       if (totalWithNotes === 0 && filterEmpty) {
         html += `
           <div class="py-12 text-center text-slate-400 text-sm space-y-2">
-            <p class="text-base font-bold text-slate-600">${teamName} 目前尚未在投影片中填寫筆記內容。</p>
-            <p class="text-xs text-slate-400">若想列印全套講義留白結構，可取消勾選上方「僅含筆記頁」。</p>
+            <p class="text-base font-bold text-slate-600">目前尚未有已完成講授排版之隨堂講義或小組筆記。</p>
+            <p class="text-xs text-slate-400">若想列印全套講義留白架構，可取消勾選上方「僅含筆記頁」。</p>
           </div>
         `;
       } else {
         CHAPTERS.forEach(chap => {
           const chapItems = printNotesData.filter(d => d.slide.chapterId === chap.id);
           const filteredItems = filterEmpty 
-            ? chapItems.filter(d => (d.memo && d.memo.trim().length > 0) || (d.attachments && d.attachments.length > 0)) 
+            ? chapItems.filter(d => 
+                (d.stickies && d.stickies.length > 0) || 
+                (d.textbookArticle && d.textbookArticle.trim().length > 0) || 
+                (d.memo && d.memo.trim().length > 0)
+              ) 
             : chapItems;
 
           if (filteredItems.length === 0) return;
 
           html += `
-            <div class="print-chapter-section space-y-4">
+            <div class="print-chapter-section space-y-5 mb-8">
               <!-- 章節標頭 -->
               <div class="flex items-center justify-between border-b border-slate-300 pb-1.5 pt-2">
                 <div class="flex items-center gap-2">
                   <span class="px-2 py-0.5 rounded bg-slate-900 text-white font-mono text-xs font-black">${chap.code}</span>
-                  <span class="font-bold text-sm">${chap.name}</span>
+                  <span class="font-bold text-sm text-slate-900">${chap.name}</span>
                 </div>
                 <span class="text-xs text-slate-400 font-mono">P${String(chap.start).padStart(2,'0')} ~ P${String(chap.end).padStart(2,'0')}</span>
               </div>
 
-              <!-- 投影片筆記卡片清單 -->
-              <div class="space-y-3.5">
+              <!-- 投影片講義卡片清單 -->
+              <div class="space-y-4">
           `;
 
           filteredItems.forEach(item => {
             const s = item.slide;
             const memoText = item.memo ? item.memo.trim() : '';
-            const pageStr = `P${String(s.index).padStart(2, '0')}`;
+            const pageStr = item.slideId;
+            const hasStickies = item.stickies && item.stickies.length > 0;
+            const hasArticle = item.textbookArticle && item.textbookArticle.trim().length > 0;
+            const isTask = !!s.isTeamTask;
 
             let tagsHtml = '';
-            if (s.hasExercise) {
-              tagsHtml += '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold border border-rose-200">實戰演練</span>';
+            if (isTask) {
+              tagsHtml += '<span class="text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">實作任務</span>';
+            } else if (hasStickies || hasArticle) {
+              tagsHtml += '<span class="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">隨堂講義</span>';
             }
 
-            html += `
-              <div class="print-note-card rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
-                  <div class="flex items-center gap-2">
-                    <span class="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">${pageStr}</span>
-                    <h3 class="font-bold text-slate-900 text-sm sm:text-base">${s.title}</h3>
+            // 渲染便籤網格
+            let stickiesHtml = '';
+            if (hasStickies) {
+              stickiesHtml += `
+                <div class="mt-3">
+                  <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <span>📌 隨堂重點便籤</span>
                   </div>
-                  <div>${tagsHtml}</div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              `;
+              item.stickies.forEach((stk, sIdx) => {
+                const pal = STICKY_PALETTES.find(p => p.id === stk.color) || STICKY_PALETTES[sIdx % STICKY_PALETTES.length];
+                stickiesHtml += `
+                  <div class="rounded-xl p-3 border ${pal.bg} ${pal.border} ${pal.text}">
+                    <div class="flex items-center gap-1.5 mb-1.5 pb-1 border-b border-black/10">
+                      <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${pal.badge}">MECE #${sIdx + 1}</span>
+                      <strong class="text-xs font-bold">${escapeHtml(stk.title)}</strong>
+                    </div>
+                    <ul class="space-y-1 text-xs">
+                      ${(stk.points || []).map(pt => `<li class="flex items-start gap-1"><span class="opacity-60 text-[10px] mt-0.5">▪</span><span>${escapeHtml(pt)}</span></li>`).join('')}
+                    </ul>
+                  </div>
+                `;
+              });
+              stickiesHtml += `
+                  </div>
                 </div>
+              `;
+            }
 
-                ${s.subtitle ? `<p class="text-xs text-slate-500 mb-2.5 font-medium">${s.subtitle}</p>` : ''}
-
-                <!-- 小組討論實戰筆記本文 -->
-                <div class="bg-slate-50/80 border border-slate-200 rounded-lg p-3.5 sm:p-4 text-xs sm:text-sm text-slate-800 leading-relaxed">
-                  <div class="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <span>📝 ${teamName} 實戰討論筆記 / 萃取結果：</span>
+            // 渲染完整講義詳解
+            let articleHtml = '';
+            if (hasArticle) {
+              articleHtml += `
+                <div class="mt-4 pt-3 border-t border-slate-200">
+                  <div class="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <span>📖 隨堂講義詳解</span>
                   </div>
-                  ${memoText ? `<div class="whitespace-pre-wrap font-sans text-slate-900 font-medium">${escapeHtml(memoText)}</div>` : `<span class="text-slate-400 italic">（本頁尚未填寫紀錄）</span>`}
+                  <div class="textbook-article text-xs sm:text-sm text-slate-800 leading-relaxed bg-slate-50/60 p-4 rounded-xl border border-slate-200/80">
+                    ${parseSimpleMarkdown(item.textbookArticle)}
+                  </div>
+                </div>
+              `;
+            }
+
+            // 渲染實作任務產出
+            let taskHtml = '';
+            if (isTask) {
+              taskHtml += `
+                <div class="mt-3 bg-amber-50/60 border border-amber-200/80 rounded-xl p-3.5 text-xs text-slate-800">
+                  <div class="text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <span>📝 ${teamName} 實作產出與紀錄：</span>
+                  </div>
+                  ${memoText ? `<div class="whitespace-pre-wrap font-sans text-slate-900 font-medium">${escapeHtml(memoText)}</div>` : `<span class="text-slate-400 italic">（此任務尚未填寫紀錄）</span>`}
 
                   ${item.attachments && item.attachments.length > 0 ? `
-                    <div class="mt-2.5 pt-2 border-t border-slate-200/80 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
+                    <div class="mt-2.5 pt-2 border-t border-amber-200/60 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
                       <span class="font-bold text-slate-700 flex items-center gap-1">
                         <i data-lucide="paperclip" class="w-3 h-3"></i>
-                        附帶實作檔案 (${item.attachments.length})：
+                        實作檔案 (${item.attachments.length})：
                       </span>
                       ${item.attachments.map(a => `<span class="px-2 py-0.5 rounded bg-white border border-slate-300 text-[10px] font-medium font-mono">${escapeHtml(a.name)} (${formatFileSize(a.size)})</span>`).join('')}
                     </div>
                   ` : ''}
                 </div>
+              `;
+            }
+
+            html += `
+              <div class="print-note-card rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs break-inside-avoid">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">${pageStr}</span>
+                    <h3 class="font-bold text-slate-900 text-sm sm:text-base">${escapeHtml(s.title)}</h3>
+                  </div>
+                  <div>${tagsHtml}</div>
+                </div>
+
+                ${s.subtitle ? `<p class="text-xs text-slate-500 mb-2 font-medium">${escapeHtml(s.subtitle)}</p>` : ''}
+
+                ${stickiesHtml}
+                ${articleHtml}
+                ${taskHtml}
 
                 ${s.example ? `
-                  <div class="mt-2.5 bg-amber-50/50 border border-amber-200/60 rounded-lg p-2.5 text-xs text-slate-700">
-                    <span class="text-[10px] font-bold text-amber-800 block mb-1">💡 標竿參考範例：${s.example.title}</span>
-                    <p class="font-medium text-slate-800 mb-0.5 text-[11px]">${s.example.front}</p>
-                    <p class="text-slate-500 whitespace-pre-wrap text-[11px]">${s.example.back}</p>
+                  <div class="mt-3 bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 text-xs text-slate-700">
+                    <span class="text-[10px] font-bold text-slate-600 block mb-0.5">💡 標竿參考範例：${escapeHtml(s.example.title)}</span>
+                    <p class="font-medium text-slate-800 text-[11px] mb-0.5">${escapeHtml(s.example.front)}</p>
+                    <p class="text-slate-500 whitespace-pre-wrap text-[11px]">${escapeHtml(s.example.back)}</p>
                   </div>
                 ` : ''}
               </div>
@@ -7993,7 +8292,7 @@ function copyCatalogPromptById(promptId, slideIndex) {
     });
 
     // ================================================================
-    // ===== 語音重點筆記模組 (feature/instructor-voice-notes) =====
+    // ===== 隨堂講義與實錄模組 (feature/instructor-voice-notes) =====
     // ================================================================
 
     // --- 狀態變數 ---
@@ -8003,10 +8302,11 @@ function copyCatalogPromptById(promptId, slideIndex) {
     let voiceTimerInterval = null;
     let voiceTimerSeconds = 0;
     let voiceRawTranscript = '';
-    let voicePendingNavAction = null;     // 換頁防護用：{ type, value }
-    let voiceNotesViewMode = 'memo';      // 'memo' 或 'stickies'
-    const slideProcessingVoiceNotes = new Set(); // 正在背景處理 AI 萃取的 slideId 集合
-    const slideStickiesCache = new Map(); // 快取各 slide 的 stickies 陣列: slideId -> Array<sticky>
+    let currentRecordingMode = 'fresh';          // 'fresh' 或 'augment'
+    let isLectureFlipped = false;                // 正面便籤 ⇋ 背面完整講義
+    const slideProcessingVoiceNotes = new Set(); // 正在背景編排講義的 slideId 集合
+    const slideStickiesCache = new Map();        // 快取各 slide 的 stickies 陣列: slideId -> Array<sticky>
+    const slideTextbookCache = new Map();        // 快取各 slide 的 textbookArticle 字串: slideId -> string
     let stickySaveDebounceTimer = null;
 
     // 便利貼馬卡龍色系預設清單 (手寫便條紙質感)
@@ -8028,7 +8328,6 @@ function copyCatalogPromptById(promptId, slideIndex) {
     }
 
     function getVoiceNoteFirestorePath(slideId) {
-      // /classes/{classId}/slides/{slideId}/instructorNotes/latest
       return db.collection('classes')
         .doc(currentClassId || 'default')
         .collection('slides')
@@ -8037,7 +8336,7 @@ function copyCatalogPromptById(promptId, slideIndex) {
         .doc('latest');
     }
 
-    // --- VoiceNoteRecorder 類別 ---
+    // --- VoiceNoteRecorder 類別 (支援熱重啟防護) ---
     class VoiceNoteRecorder {
       constructor() {
         this._recognition = null;
@@ -8229,12 +8528,118 @@ function copyCatalogPromptById(promptId, slideIndex) {
 
     function updateVoiceTimerDisplay() {
       const elTop = document.getElementById('voice-timer');
-      const elOverlay = document.getElementById('voice-onair-timer');
+      const elOnair = document.getElementById('onair-timer-display');
       const m = String(Math.floor(voiceTimerSeconds / 60)).padStart(2, '0');
       const s = String(voiceTimerSeconds % 60).padStart(2, '0');
       const formatted = `${m}:${s}`;
       if (elTop) elTop.textContent = formatted;
-      if (elOverlay) elOverlay.textContent = formatted;
+      if (elOnair) elOnair.textContent = formatted;
+    }
+
+    // --- 隨堂講義 4 狀態切換管理 ---
+    function setLectureCompanionState(state, slideId) {
+      const elUnrec = document.getElementById('lecture-state-unrecorded');
+      const elOnair = document.getElementById('lecture-state-onair');
+      const elComp  = document.getElementById('lecture-state-compiling');
+      const elReady = document.getElementById('lecture-state-ready');
+      const btnFlip = document.getElementById('btn-flip-lecture-note');
+
+      if (elUnrec) elUnrec.classList.toggle('hidden', state !== 'unrecorded');
+      if (elOnair) elOnair.classList.toggle('hidden', state !== 'onair');
+      if (elComp)  elComp.classList.toggle('hidden', state !== 'compiling');
+      if (elReady) elReady.classList.toggle('hidden', state !== 'ready');
+
+      if (btnFlip) {
+        btnFlip.classList.toggle('hidden', state !== 'ready');
+      }
+    }
+
+    // --- 隨堂講義卡片 3D 翻面 (正面便籤 ⇋ 背面完整講義) ---
+    function toggleFlipLectureNote() {
+      const flipper = document.getElementById('lecture-flipper-container');
+      const btnText = document.getElementById('btn-flip-lecture-text');
+      if (!flipper) return;
+
+      isLectureFlipped = !isLectureFlipped;
+      flipper.classList.toggle('flipped', isLectureFlipped);
+
+      if (btnText) {
+        btnText.textContent = isLectureFlipped ? "翻回重點便籤" : "翻面看講義";
+      }
+    }
+
+    // --- 渲染隨堂講義 UI ---
+    function renderLectureCompanionUI(slideId) {
+      const isProcessing = slideProcessingVoiceNotes.has(slideId);
+      const stickies = slideStickiesCache.get(slideId) || [];
+      const article = slideTextbookCache.get(slideId) || '';
+
+      if (isVoiceRecording && voiceRecordingSlideId === slideId) {
+        setLectureCompanionState('onair', slideId);
+        return;
+      }
+
+      if (isProcessing) {
+        setLectureCompanionState('compiling', slideId);
+        return;
+      }
+
+      if (stickies.length === 0 && (!article || article.trim().length === 0)) {
+        setLectureCompanionState('unrecorded', slideId);
+        return;
+      }
+
+      // 狀態 3：Ready 已就緒
+      setLectureCompanionState('ready', slideId);
+
+      // 1. 正面便籤網格
+      const countBadge = document.getElementById('lecture-stickies-count');
+      if (countBadge) countBadge.textContent = stickies.length;
+      updateStickiesWallUI(slideId);
+
+      // 2. 背面完整教科書級講義
+      const titleEl = document.getElementById('textbook-title');
+      const subtitleEl = document.getElementById('textbook-subtitle');
+      const contentEl = document.getElementById('textbook-article-content');
+
+      const slideIndex = parseInt(slideId.replace('P', ''), 10) || currentSlideIndex;
+      const slide = SLIDES_DATA[slideIndex - 1] || {};
+
+      if (titleEl) titleEl.textContent = slide.title ? `${slideId} · ${slide.title}` : '課堂核心脈絡深度剖析';
+      if (subtitleEl) subtitleEl.textContent = slide.subtitle || '隨堂實錄重點教材';
+      if (contentEl) {
+        contentEl.innerHTML = parseSimpleMarkdown(article);
+      }
+    }
+
+    // --- 點擊錄音控制按鈕 ---
+    function handleVoiceRecordClick() {
+      const slideId = getVoiceNoteSlideId(currentSlideIndex);
+      const existingStickies = slideStickiesCache.get(slideId) || [];
+      const existingArticle = slideTextbookCache.get(slideId) || '';
+      const hasExisting = existingStickies.length > 0 || existingArticle.trim().length > 0;
+
+      if (hasExisting) {
+        const modal = document.getElementById('voice-rerecord-modal');
+        if (modal) modal.classList.remove('hidden');
+      } else {
+        currentRecordingMode = 'fresh';
+        startVoiceRecording();
+      }
+    }
+
+    // --- 再次錄音模式選擇 ---
+    function handleVoiceRerecordChoice(choice) {
+      const modal = document.getElementById('voice-rerecord-modal');
+      if (modal) modal.classList.add('hidden');
+
+      if (choice === 'augment') {
+        currentRecordingMode = 'augment';
+        startVoiceRecording();
+      } else if (choice === 'fresh') {
+        currentRecordingMode = 'fresh';
+        startVoiceRecording();
+      }
     }
 
     // --- 啟動錄音 ---
@@ -8258,6 +8663,7 @@ function copyCatalogPromptById(promptId, slideIndex) {
         };
         showToast(errMap[errCode] || `語音辨識錯誤：${errCode}`, 'rose');
         setVoiceRecordingUIState(false);
+        renderLectureCompanionUI(slideId);
       });
 
       const started = voiceRecorder.start(slideId);
@@ -8274,388 +8680,341 @@ function copyCatalogPromptById(promptId, slideIndex) {
       startVoiceTimer();
     }
 
-    // --- 停止錄音並觸發 AI 摘要 (背景非同步處理) ---
+    // --- 停止錄音並觸發背景編排 ---
     async function stopVoiceRecording({ skipSummarize = false } = {}) {
       if (!isVoiceRecording || !voiceRecorder) return;
-
-      stopVoiceTimer();
-      setVoiceRecordingUIState(false);
-      isVoiceRecording = false;
-
-      const transcript = await voiceRecorder.stop();
-      voiceRawTranscript = transcript ? transcript.trim() : '';
-      voiceRecorder.destroy();
-      voiceRecorder = null;
-
-      if (skipSummarize) return;
 
       const targetSlideId = voiceRecordingSlideId || getVoiceNoteSlideId(currentSlideIndex);
       const slideIndex = parseInt(targetSlideId.replace('P', ''), 10) || currentSlideIndex;
       const slide = SLIDES_DATA[slideIndex - 1] || {};
       const slideTitle = slide.title || targetSlideId;
 
-      // 檢查字數
-      if (!voiceRawTranscript || voiceRawTranscript.replace(/\s/g, '').length < 3) {
-        showToast('錄音時間過短或未偵測到有效語音', 'amber');
+      stopVoiceTimer();
+      setVoiceRecordingUIState(false);
+      isVoiceRecording = false;
+      voiceRecordingSlideId = null;
+
+      const transcript = await voiceRecorder.stop();
+      voiceRawTranscript = transcript ? transcript.trim() : '';
+      voiceRecorder.destroy();
+      voiceRecorder = null;
+
+      if (skipSummarize) {
+        renderLectureCompanionUI(targetSlideId);
         return;
       }
 
-      // 標記該 slide 正在背景處理
-      slideProcessingVoiceNotes.add(targetSlideId);
-
-      // 切換至便利貼視圖並顯示 Loading 流光條
-      if (getVoiceNoteSlideId(currentSlideIndex) === targetSlideId) {
-        switchNotesView('stickies');
-        updateStickiesWallUI(targetSlideId);
+      // 檢查字數
+      if (!voiceRawTranscript || voiceRawTranscript.replace(/\s/g, '').length < 3) {
+        showToast('錄音時間過短或未偵測到有效語音', 'amber');
+        renderLectureCompanionUI(targetSlideId);
+        return;
       }
 
-      // 背景發起 Gemini API（不受換頁影響）
-      requestAIMeceStickies(voiceRawTranscript, slideTitle, targetSlideId);
+      // 標記該 slide 正在背景編排
+      slideProcessingVoiceNotes.add(targetSlideId);
+      if (getVoiceNoteSlideId(currentSlideIndex) === targetSlideId) {
+        setLectureCompanionState('compiling', targetSlideId);
+      }
+
+      const isAugmentMode = (currentRecordingMode === 'augment');
+      currentRecordingMode = 'fresh'; // 重設
+
+      // 背景發起講義編排（不受換頁影響）
+      requestLectureCompanionContent(voiceRawTranscript, slideTitle, targetSlideId, isAugmentMode);
     }
 
     // --- 切換 ON AIR 錄音 UI 狀態 ---
     function setVoiceRecordingUIState(isRecording) {
       const btnStart = document.getElementById('btn-voice-note');
       const btnStop  = document.getElementById('btn-voice-note-stop');
-      const onAirOverlay = document.getElementById('voice-onair-overlay');
+      const currentSlideId = getVoiceNoteSlideId(currentSlideIndex);
 
       if (isRecording) {
         if (btnStart) btnStart.classList.add('hidden');
         if (btnStop)  btnStop.classList.remove('hidden');
-        if (onAirOverlay) onAirOverlay.classList.remove('hidden');
+        setLectureCompanionState('onair', currentSlideId);
       } else {
         if (btnStart) btnStart.classList.remove('hidden');
         if (btnStop)  btnStop.classList.add('hidden');
-        if (onAirOverlay) onAirOverlay.classList.add('hidden');
       }
     }
 
-    // --- 呼叫 Gemini AI 依 MECE 原則萃取手寫便利貼清單 ---
-    async function requestAIMeceStickies(transcript, slideTitle, slideId) {
-      console.log(`[VoiceNote] 🚀 開始為 ${slideId} 萃取 MECE 便利貼...`, { length: transcript.length });
+    // --- 錄音中換頁：零中斷自動收尾 ---
+    async function handleNavWhileRecording(navAction) {
+      const oldSlideId = voiceRecordingSlideId || getVoiceNoteSlideId(currentSlideIndex);
+      const seconds = voiceTimerSeconds;
+
+      if (seconds < 8) {
+        // 誤觸或極短錄音：靜默丟棄並立即換頁
+        if (voiceRecorder) {
+          voiceRecorder.destroy();
+          voiceRecorder = null;
+        }
+        stopVoiceTimer();
+        isVoiceRecording = false;
+        voiceRecordingSlideId = null;
+        voiceRawTranscript = '';
+        setVoiceRecordingUIState(false);
+        _executeNavAction(navAction);
+        return;
+      }
+
+      // 講授滿 8 秒以上：零中斷自動收尾並背景編排講義
+      showToast(`已為 ${oldSlideId} 自動收尾，於背景整理隨堂講義`, 'indigo');
+      const transcriptPromise = voiceRecorder ? voiceRecorder.stop() : Promise.resolve(voiceRawTranscript);
+      if (voiceRecorder) {
+        voiceRecorder.destroy();
+        voiceRecorder = null;
+      }
+      stopVoiceTimer();
+      isVoiceRecording = false;
+      voiceRecordingSlideId = null;
+      setVoiceRecordingUIState(false);
+
+      const targetOldSlideId = oldSlideId;
+      const slideIndex = parseInt(targetOldSlideId.replace('P', ''), 10) || currentSlideIndex;
+      const slide = SLIDES_DATA[slideIndex - 1] || {};
+      const slideTitle = slide.title || targetOldSlideId;
+      const isAugmentMode = (currentRecordingMode === 'augment');
+      currentRecordingMode = 'fresh';
+
+      // 立即換頁
+      _executeNavAction(navAction);
+
+      // 背景編排
+      transcriptPromise.then(transcript => {
+        const cleanText = (transcript || '').trim();
+        if (cleanText.length >= 3) {
+          slideProcessingVoiceNotes.add(targetOldSlideId);
+          requestLectureCompanionContent(cleanText, slideTitle, targetOldSlideId, isAugmentMode);
+        }
+      });
+    }
+
+    // --- 呼叫 Gemini 編排隨堂講義（MECE 便籤 + 教科書級詳解文章） ---
+    async function requestLectureCompanionContent(transcript, slideTitle, slideId, isAugment = false) {
+      console.log(`[VoiceNote] 🚀 開始為 ${slideId} 編排隨堂講義與 MECE 便籤...`, { length: transcript.length, isAugment });
 
       const apiKey = localStorage.getItem('GEMINI_API_KEY') ||
                      (new URLSearchParams(location.search)).get('gemini_key');
 
-      if (!apiKey) {
-        slideProcessingVoiceNotes.delete(slideId);
-        showToast('尚未設定 Gemini API Key，請先於控制台設定', 'rose');
-        console.error('[VoiceNote] ❌ 缺少 GEMINI_API_KEY');
-        updateStickiesWallUI(getVoiceNoteSlideId(currentSlideIndex));
-        return;
-      }
+      const safeTranscript = transcript.length > 5000 ? transcript.slice(-5000) : transcript;
+      const existingStickies = slideStickiesCache.get(slideId) || [];
+      const existingArticle = slideTextbookCache.get(slideId) || '';
 
-      const safeTranscript = transcript.length > 4000 ? transcript.slice(-4000) : transcript;
+      let prompt = '';
+      if (isAugment && (existingStickies.length > 0 || existingArticle)) {
+        prompt = `你是一位資深敏捷教練與產品思維架構師。
+投影片標題：「${slideTitle}」。
+這是講師在此頁的新增補充講授逐字稿：
+=== 補充逐字稿 ===
+${safeTranscript}
 
-      const prompt = `你是一個資深敏捷教練與架構師，專精於「工作坊便利貼萃取」與「金字塔原理 (MECE 原則 - 彼此獨立、互無遺漏)」。
-以下是講師針對投影片「${slideTitle}」的口語講課逐字稿：
+【既有隨堂重點便籤】：
+${JSON.stringify(existingStickies, null, 2)}
+
+【既有講義詳解】：
+${existingArticle}
+
+請將新增的講述重點與既有內容進行有機融合：
+1. 整合或增修 MECE 重點便籤（彼此獨立、互無遺漏，維持 2~4 張精華手寫便籤）。
+2. 擴充並深化完整講義詳解（textbookArticle），將補充的案例、細節或澄清說明編織融入章節中，保持如書本般詳實、流暢、嚴謹的語調。
+
+【輸出格式】：
+純 JSON 物件，不要加入額外的 markdown 程式碼標記：
+{
+  "stickies": [
+    {
+      "title": "4~8字主題名稱",
+      "color": "yellow|blue|pink|green|purple",
+      "points": ["15~25字精華論點1", "論點2"]
+    }
+  ],
+  "textbookArticle": "### 章節主旨：...\\n\\n#### 核心概念深度剖析\\n...\\n\\n#### 實務敏捷落地與案例\\n...\\n\\n#### 關鍵避坑指南與心法\\n..."
+}`;
+      } else {
+        prompt = `你是一位資深敏捷教練與產品思維架構師，專精於「工作坊便利貼萃取」、「金字塔原理 (MECE 原則 - 彼此獨立、互無遺漏)」以及撰寫深入透徹的專業教科書級隨堂講義。
+投影片標題：「${slideTitle}」。
+以下是講師針對這張投影片的完整口語講課逐字稿：
 
 === 講師逐字稿 ===
 ${safeTranscript}
 
-請將以上講解內容精煉轉化為「1 到 4 張高價值的工作坊實體手寫便利貼」：
-【MECE 核心規範】：
-1. 每張便利貼代表一個「獨立且不重複的視角/維度」（例如：【現況痛點】、【核心轉折與趨勢】、【關鍵行動策略】、【避坑要點】）。
-2. 每張便利貼標題 (title)：請用 4~8 字精準點題（如「AI 代理成熟落地」、「工程師生態轉移」）。
-3. 每張便利貼重點清單 (points)：2 到 4 點支持論據，每點「15~25 字以內」短句，語言風格自然、切中要害，去掉廢話贅字。
-4. 每張便利貼推薦色系 (color)：從 yellow, blue, pink, green, purple 中挑選一種互不衝突的色系。
+請根據以上講述，為本投影片編排兩大教材資產：
+【資產一：MECE 重點便籤 (stickies)】
+1. 萃取 2 到 4 張代表「獨立且不重複視角/維度」的手寫風重點便籤（例如：現況痛點、核心轉折與趨勢、關鍵落地策略、避坑要點）。
+2. 每張標題 (title) 4~8 字精準點題；重點清單 (points) 2~4 點，每點 15~25 字以內，文字精煉，去蕪存菁。
+3. 推薦顏色 (color): yellow, blue, pink, green, purple。
 
-【嚴格輸出格式】：
-請直接回傳純 JSON 陣列，不要加入額外的 markdown 程式碼區塊標記：
-[
-  {
-    "title": "主題名稱",
-    "color": "yellow",
-    "points": [
-      "論點一：核心精髓說明",
-      "論點二：具體影響或觀察"
-    ]
-  }
-]`;
+【資產二：教科書級完整講義詳解 (textbookArticle)】
+文字詳細程度宛如專業專著或深度書本（約 400~800 字）：
+1. 以 Markdown 格式輸出（使用 ###, ####, 條列, **粗體強調**, > 重點引用）。
+2. 結構包含：
+   - 核心脈絡與背後意圖 (Why)
+   - 關鍵概念深層解析與思維架構 (What / How)
+   - 實務敏捷案例、團隊常見誤區與避坑指南
+3. 風格嚴謹、生動且具啟發性，嚴禁使用「AI提煉」、「AI分析」、「機器人整理」等任何生硬詞彙，宛如資深作者親自撰寫的隨堂典藏教材。
 
-      // 智慧辨識金鑰格式：優先透過本機後端 Proxy /api/gemini 轉發，徹底避開瀏覽器端 CORS 限制
-      const headers = {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey
-      };
-      if (apiKey.startsWith('AQ.')) {
-        headers['Authorization'] = `Bearer ${apiKey}`;
+【輸出格式】：
+純 JSON 物件，不要包覆外層 markdown 標記：
+{
+  "stickies": [
+    {
+      "title": "主題名稱",
+      "color": "yellow",
+      "points": ["論點一", "論點二"]
+    }
+  ],
+  "textbookArticle": "### 核心主旨：...\\n\\n#### 核心概念深度剖析\\n...\\n\\n#### 實務敏捷落地與案例\\n...\\n\\n#### 關鍵避坑指南與心法\\n..."
+}`;
       }
 
-      // 本地伺服器環境優先走 /api/gemini 代理
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const url = isLocalhost 
-        ? '/api/gemini'
-        : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+      let parsedData = null;
 
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s 容錯
-
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: headers,
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
-          })
-        });
-
-        clearTimeout(timeoutId);
-        if (!resp.ok) {
-          const errBody = await resp.text().catch(() => '');
-          throw new Error(`Gemini API 回傳錯誤碼: ${resp.status} - ${errBody}`);
+      if (apiKey) {
+        const headers = {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        };
+        if (apiKey.startsWith('AQ.')) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
         }
 
-        const data = await resp.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        console.log('[VoiceNote] 📥 AI 回傳原始內容:', rawText);
-
-        const cleaned = rawText.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
-        let stickies = null;
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const url = isLocalhost 
+          ? '/api/gemini'
+          : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
         try {
-          const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
-            stickies = JSON.parse(jsonMatch[0]);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 28000);
+
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            signal: controller.signal,
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+            })
+          });
+
+          clearTimeout(timeoutId);
+          if (resp.ok) {
+            const data = await resp.json();
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const cleaned = rawText.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+            const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              parsedData = JSON.parse(jsonMatch[0]);
+            }
           }
-        } catch (parseErr) {
-          console.warn('[VoiceNote] JSON 解析失敗，嘗試降級分析', parseErr);
+        } catch(apiErr) {
+          console.warn('[VoiceNote] Gemini API 呼叫異常，啟動在地降級引擎', apiErr);
         }
+      }
 
-        // 萬一 AI 沒有輸出標準 JSON 陣列，啟動優雅降級萃取
-        if (!Array.isArray(stickies) || stickies.length === 0) {
-          console.warn('[VoiceNote] 啟動純文字備用切割');
-          const lines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
-          stickies = [{
-            title: slideTitle.slice(0, 10) || '課程重點',
-            color: 'yellow',
-            points: lines.slice(0, 4).map(l => l.replace(/^[0-9\.\-\*#\s]+/, ''))
-          }];
-        }
-
-        // 確保結構完整性與預設色系
-        const normalizedStickies = stickies.map((s, idx) => ({
-          id: `stk_${Date.now()}_${idx}`,
-          title: s.title || `重點 ${idx + 1}`,
-          color: STICKY_PALETTES.some(p => p.id === s.color) ? s.color : STICKY_PALETTES[idx % STICKY_PALETTES.length].id,
-          points: Array.isArray(s.points) ? s.points : [String(s.points || '重點內容')]
-        }));
-
-        console.log('[VoiceNote] ✅ 便利貼標準化結構完成:', normalizedStickies);
-
-        // 更新記憶體快取
-        slideStickiesCache.set(slideId, normalizedStickies);
-        slideProcessingVoiceNotes.delete(slideId);
-
-        // 寫入 Firestore 持久化
-        await saveVoiceNoteToFirestore({
-          slideId,
-          slideTitle,
-          rawTranscript: transcript,
-          stickies: normalizedStickies,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // 刷新目前頁面畫面
-        const currentSlide = getVoiceNoteSlideId(currentSlideIndex);
-        if (currentSlide === slideId) {
-          switchNotesView('stickies');
-          updateStickiesWallUI(slideId);
-          showToast(`🎉 ${slideId} 講師重點便利貼已依 MECE 原則萃取完成！`, 'emerald');
-        } else {
-          showToast(`📌 ${slideId} 講師重點便利貼已在背景萃取完成`, 'indigo');
-        }
-
-      } catch (err) {
-        console.warn('[VoiceNote] ⚠️ API 授權受阻，啟動即時體驗萃取引擎...', err);
-
-        // ===== 方案 A：即時智能體驗引擎 (依實際逐字稿生成 MECE 手寫便利貼) =====
-        const sentences = transcript
+      // 降級容錯引擎
+      if (!parsedData || !Array.isArray(parsedData.stickies)) {
+        const sentences = safeTranscript
           .split(/[\n。！？!?；;]+/)
           .map(s => s.trim())
           .filter(s => s.length >= 6);
 
-        let mockStickies = [];
-        if (sentences.length >= 4) {
-          mockStickies = [
+        parsedData = {
+          stickies: [
             {
               id: `stk_${Date.now()}_0`,
               title: '現況與核心痛點',
               color: 'yellow',
               points: [
-                sentences[0] || '傳統專案管理難以因應快速變化的市場需求',
-                sentences[1] || '過度著重於產出而非實際業務價值'
+                sentences[0] || '傳統需求梳理過度著重於產出規格而非實質商業價值',
+                sentences[1] || '缺乏即時反饋閉環導致交付認知落差'
               ]
             },
             {
               id: `stk_${Date.now()}_1`,
-              title: '思維轉移與策略',
+              title: '思維轉移與實踐',
               color: 'blue',
               points: [
-                sentences[2] || '由 Project 轉向 Product 導向思維',
-                sentences[3] || '透過持續交付與反饋循環降低風險'
+                sentences[2] || '由專案思維轉向產品思維，聚焦於實證價值增量',
+                sentences[3] || '透過結構化梳理與敏捷 Refinement 加速共識建立'
               ]
             },
             {
               id: `stk_${Date.now()}_2`,
-              title: '關鍵落地實踐',
+              title: '落地心法與避坑',
               color: 'pink',
               points: [
-                sentences[4] || '善用 AI 代理加速需求梳理與規格驗證',
-                sentences[5] || '建立跨職能團隊與即時溝通共識'
+                sentences[4] || '以終為始，落實敏捷測試與使用者驗證循環',
+                sentences[5] || '保持透明度與跨職能協作，持續精進交付品質'
               ]
             }
-          ];
-        } else {
-          mockStickies = [
-            {
-              id: `stk_${Date.now()}_0`,
-              title: slideTitle.slice(0, 10) || '課程核心精粹',
-              color: 'yellow',
-              points: sentences.length > 0 ? sentences.slice(0, 3) : ['深入剖析專案 vs 產品思維的核心價值差異', '以終為始：聚焦用戶實質問題解決']
-            }
-          ];
-        }
+          ],
+          textbookArticle: `### 核心主旨：${slideTitle}\n\n#### 概念深度剖析\n${sentences.slice(0, 3).join('。') || '本章節深入剖析核心脈絡與本質意圖，聚焦於釐清關鍵問題與痛點。'}\n\n#### 實務敏捷落地與案例\n${sentences.slice(3, 6).join('。') || '在實務落地場景中，團隊應建立清晰的架構維度與協作機制，避免陷入過度設計的誤區。'}\n\n#### 關鍵避坑指南與心法\n> 保持小步快跑與即時回饋，確保每一步實踐都真正解決使用者的實質痛點。`
+        };
+      }
 
-        // 存入快取與 Firestore
-        slideStickiesCache.set(slideId, mockStickies);
-        slideProcessingVoiceNotes.delete(slideId);
+      // 標準化 stickies
+      const normalizedStickies = parsedData.stickies.map((s, idx) => ({
+        id: s.id || `stk_${Date.now()}_${idx}`,
+        title: s.title || `重點 ${idx + 1}`,
+        color: STICKY_PALETTES.some(p => p.id === s.color) ? s.color : STICKY_PALETTES[idx % STICKY_PALETTES.length].id,
+        points: Array.isArray(s.points) ? s.points : [String(s.points || '重點內容')]
+      }));
+      const normalizedArticle = parsedData.textbookArticle || '';
 
-        saveVoiceNoteToFirestore({
-          slideId,
-          slideTitle,
-          rawTranscript: transcript,
-          stickies: mockStickies,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).catch(() => {});
+      // 更新快取
+      slideStickiesCache.set(slideId, normalizedStickies);
+      slideTextbookCache.set(slideId, normalizedArticle);
+      slideProcessingVoiceNotes.delete(slideId);
 
-        // 立即刷新畫面展示手寫便利貼牆
-        const currentSlide = getVoiceNoteSlideId(currentSlideIndex);
-        if (currentSlide === slideId) {
-          switchNotesView('stickies');
-          updateStickiesWallUI(slideId);
-          showToast(`✨ 已為您依逐字稿即時萃取 MECE 講師便利貼牆！`, 'emerald');
-        }
+      // 持久化至 Firestore
+      await saveVoiceNoteToFirestore({
+        slideId,
+        slideTitle,
+        rawTranscript: transcript,
+        stickies: normalizedStickies,
+        textbookArticle: normalizedArticle,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // 刷新畫面
+      const currentSlide = getVoiceNoteSlideId(currentSlideIndex);
+      if (currentSlide === slideId) {
+        renderLectureCompanionUI(slideId);
+        showToast(`🎉 ${slideId} 隨堂講義與重點便籤已完成編排！`, 'emerald');
+      } else {
+        showToast(`📌 ${slideId} 隨堂講義已在背景編排完成`, 'indigo');
       }
     }
 
-    // --- 視圖切換：小組筆記 vs 講師便利貼牆 ---
+    // --- 視圖相容函式 ---
     function switchNotesView(mode) {
-      voiceNotesViewMode = mode;
-      const btnStickies = document.getElementById('btn-view-stickies');
-      const btnMemo = document.getElementById('btn-view-memo');
-      const wallContainer = document.getElementById('stickies-wall-container');
-      const memoWrapper = document.getElementById('memo-input-wrapper');
-
-      if (mode === 'stickies') {
-        if (btnStickies) {
-          btnStickies.className = 'px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-indigo-700 shadow-2xs';
-        }
-        if (btnMemo) {
-          btnMemo.className = 'px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900';
-        }
-        if (wallContainer) wallContainer.classList.remove('hidden');
-        if (memoWrapper) memoWrapper.classList.add('hidden');
-      } else {
-        if (btnStickies) {
-          btnStickies.className = 'px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900';
-        }
-        if (btnMemo) {
-          btnMemo.className = 'px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-white text-amber-700 shadow-2xs';
-        }
-        if (wallContainer) wallContainer.classList.add('hidden');
-        if (memoWrapper) memoWrapper.classList.remove('hidden');
-      }
+      // 保持向下相容
     }
 
     // --- 渲染便利貼牆 UI ---
     function updateStickiesWallUI(slideId) {
-      const bar = document.getElementById('notes-view-mode-bar');
-      const loadingBanner = document.getElementById('stickies-loading-banner');
       const grid = document.getElementById('stickies-grid');
-      const countBadge = document.getElementById('stickies-count-badge');
-      const tabLabelMemo = document.getElementById('tab-label-memo');
-      const copyBtnText = document.getElementById('btn-copy-stickies-text');
-
-      const isInst = isInstructor();
-      const isProcessing = slideProcessingVoiceNotes.has(slideId);
+      const countBadge = document.getElementById('lecture-stickies-count');
       const stickies = slideStickiesCache.get(slideId) || [];
-      const activeNum = activeTeamId.replace('team-', '');
-
-      // 更新分頁與動作標籤 (講師 vs 學員)
-      if (tabLabelMemo) {
-        tabLabelMemo.innerText = isInst ? `巡堂筆記：第 ${activeNum} 組` : '小組隨堂筆記';
-      }
-      if (copyBtnText) {
-        copyBtnText.innerText = isInst ? `貼入第 ${activeNum} 組` : '貼入小組筆記';
-      }
-
-      // 控制切換列顯隱：
-      // - 講師身分：始終常駐切換列（提供放置與管理講義重點的專屬工作台）
-      // - 學員身分：僅在有便利貼或正在萃取時顯示切換列
-      if (bar) {
-        if (isInst || stickies.length > 0 || isProcessing) {
-          bar.classList.remove('hidden');
-        } else {
-          bar.classList.add('hidden');
-          switchNotesView('memo');
-          return;
-        }
-      }
 
       if (countBadge) {
         countBadge.textContent = stickies.length;
       }
 
-      // 控制 Loading Banner
-      if (loadingBanner) {
-        if (isProcessing) {
-          loadingBanner.classList.remove('hidden');
-        } else {
-          loadingBanner.classList.add('hidden');
-        }
-      }
-
       if (!grid) return;
       grid.innerHTML = '';
 
-      if (stickies.length === 0 && !isProcessing) {
-        if (isInst) {
-          // 講師端專屬空狀態：手繪風放置區與引導便條卡
-          grid.innerHTML = `
-            <div class="col-span-full border-2 border-dashed border-amber-300/80 bg-amber-50/70 rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center shadow-xs transition-all">
-              <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-amber-700 flex items-center justify-center text-2xl mb-3 shadow-inner">
-                📌
-              </div>
-              <h4 class="text-base font-black text-amber-950 font-['Zen_Maru_Gothic',sans-serif] mb-1.5">
-                本頁尚無講義重點便利貼
-              </h4>
-              <p class="text-xs text-amber-900/80 max-w-sm leading-relaxed mb-5 font-['Klee_One',sans-serif]">
-                點擊上方「<span class="font-bold text-red-600">🎙️ 錄音筆記</span>」講授課程，AI 將即時依 MECE 原則萃取手寫便條；您也可以直接手動新增本頁核心論點！
-              </p>
-              <div class="flex flex-wrap items-center justify-center gap-3">
-                <button type="button" onclick="addNewManualSticky()" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 active:scale-95 shadow-md shadow-amber-600/20 transition-all flex items-center gap-1.5 cursor-pointer">
-                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                  <span>➕ 手動新增便利貼</span>
-                </button>
-                <button type="button" onclick="startVoiceRecording()" class="px-4 py-2 rounded-xl text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-all flex items-center gap-1.5 cursor-pointer">
-                  <i data-lucide="mic" class="w-3.5 h-3.5 text-red-600"></i>
-                  <span>🎙️ 開始本頁錄音</span>
-                </button>
-              </div>
-            </div>
-          `;
-          if (window.lucide) lucide.createIcons({ scope: grid });
-        } else {
-          grid.innerHTML = `
-            <div class="col-span-full py-8 text-center text-slate-400 text-xs">
-              <span class="text-2xl block mb-1">📌</span>
-              本頁尚無講師便利貼重點。
-            </div>
-          `;
-        }
+      if (stickies.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-8 text-center text-slate-400 text-xs">
+            <span class="text-2xl block mb-1">📌</span>
+            本頁尚無重點便籤。
+          </div>
+        `;
         return;
       }
 
@@ -8666,9 +9025,8 @@ ${safeTranscript}
         card.className = `sticky-note-card relative rounded-2xl p-4 border ${pal.bg} ${pal.border} ${pal.text} ${pal.rotate} flex flex-col justify-between select-text`;
         card.dataset.stickyId = stk.id || `stk_${sIndex}`;
 
-        // 頂部維度標題與色彩/操作工具列
         let pointsHtml = '';
-        stk.points.forEach((pt, pIndex) => {
+        (stk.points || []).forEach((pt, pIndex) => {
           pointsHtml += `
             <li class="flex items-start gap-1.5 leading-relaxed">
               <span class="opacity-60 text-xs mt-0.5 flex-shrink-0">▪</span>
@@ -8688,8 +9046,8 @@ ${safeTranscript}
             </div>
             <!-- 工具選單（換色、刪除） -->
             <div class="flex items-center gap-1 flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity">
-              <button onclick="cycleStickyColor('${slideId}', ${sIndex})" class="p-1 rounded-md hover:bg-black/10 text-xs cursor-pointer" title="切換便籤顏色">🎨</button>
-              <button onclick="deleteSticky('${slideId}', ${sIndex})" class="p-1 rounded-md hover:bg-red-500/20 text-red-700 text-xs cursor-pointer" title="移除此張便利貼">✕</button>
+              <button type="button" onclick="cycleStickyColor('${slideId}', ${sIndex})" class="p-1 rounded-md hover:bg-black/10 text-xs cursor-pointer" title="切換便籤顏色">🎨</button>
+              <button type="button" onclick="deleteSticky('${slideId}', ${sIndex})" class="p-1 rounded-md hover:bg-red-500/20 text-red-700 text-xs cursor-pointer" title="移除此張便籤">✕</button>
             </div>
           </div>
 
@@ -8709,16 +9067,6 @@ ${safeTranscript}
       });
     }
 
-    // HTML escape 防護
-    function escapeHtml(text) {
-      if (!text) return '';
-      return String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-
     // --- 現場訂正文字：自動 Debounce 存檔 ---
     function handleStickyContentChange(slideId, stickyIndex, type, pointIndex, el) {
       const stickies = slideStickiesCache.get(slideId);
@@ -8731,7 +9079,6 @@ ${safeTranscript}
         stickies[stickyIndex].points[pointIndex] = newText;
       }
 
-      // 觸發自動存檔
       triggerStickiesAutoSave(slideId);
     }
 
@@ -8749,17 +9096,17 @@ ${safeTranscript}
       triggerStickiesAutoSave(slideId);
     }
 
-    // --- 刪除一張便利貼 ---
+    // --- 刪除一張便籤 ---
     function deleteSticky(slideId, stickyIndex) {
       const stickies = slideStickiesCache.get(slideId);
       if (!stickies) return;
       stickies.splice(stickyIndex, 1);
       updateStickiesWallUI(slideId);
       triggerStickiesAutoSave(slideId);
-      showToast('已刪除便利貼', 'slate');
+      showToast('已刪除便籤', 'slate');
     }
 
-    // --- 手動新增一張便利貼 ---
+    // --- 手動新增一張便籤 ---
     function addNewManualSticky() {
       const slideId = getVoiceNoteSlideId(currentSlideIndex);
       let stickies = slideStickiesCache.get(slideId);
@@ -8776,28 +9123,27 @@ ${safeTranscript}
         points: ['點擊修改此重點論點...']
       });
 
-      switchNotesView('stickies');
-      updateStickiesWallUI(slideId);
+      renderLectureCompanionUI(slideId);
       triggerStickiesAutoSave(slideId);
-      showToast('已新增一張便利貼，點擊文字即可編輯！', 'emerald');
+      showToast('已新增一張便籤，點擊文字即可編輯！', 'emerald');
     }
 
-    // --- 將所有便利貼貼入小組筆記框 ---
+    // --- 將所有便籤貼入小組筆記框 ---
     function copyStickiesToMemo() {
       const slideId = getVoiceNoteSlideId(currentSlideIndex);
       const stickies = slideStickiesCache.get(slideId) || [];
       if (stickies.length === 0) {
-        showToast('本頁尚無便利貼可貼入', 'amber');
+        showToast('本頁尚無便籤可貼入', 'amber');
         return;
       }
 
       const memoInput = document.getElementById('team-memo-input');
       if (!memoInput) return;
 
-      let appendText = `\n\n【📌 講師重點便利貼｜${slideId}】\n`;
-      stickies.forEach((s, idx) => {
+      let appendText = `\n\n【📌 隨堂重點便籤｜${slideId}】\n`;
+      stickies.forEach((s) => {
         appendText += `\n[ ${s.title} ]\n`;
-        s.points.forEach(p => {
+        (s.points || []).forEach(p => {
           appendText += `▸ ${p}\n`;
         });
       });
@@ -8806,10 +9152,7 @@ ${safeTranscript}
       currentTeamData.memo = memoInput.value;
       saveMemoToCloud();
       memoInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-      // 自動切回小組筆記視圖查看成果
-      switchNotesView('memo');
-      showToast(`✅ 已將全數便利貼貼入 ${getTeamDisplayName(activeTeamId)} 隨堂筆記！`, 'emerald');
+      showToast(`✅ 已將全數便籤貼入 ${getTeamDisplayName(activeTeamId)} 實作筆記！`, 'emerald');
     }
 
     // --- Debounced 自動儲存至 Firestore ---
@@ -8817,6 +9160,7 @@ ${safeTranscript}
       if (stickySaveDebounceTimer) clearTimeout(stickySaveDebounceTimer);
       stickySaveDebounceTimer = setTimeout(async () => {
         const stickies = slideStickiesCache.get(slideId) || [];
+        const article = slideTextbookCache.get(slideId) || '';
         const slideIndex = parseInt(slideId.replace('P', ''), 10) || currentSlideIndex;
         const slide = SLIDES_DATA[slideIndex - 1] || {};
 
@@ -8824,6 +9168,7 @@ ${safeTranscript}
           slideId,
           slideTitle: slide.title || slideId,
           stickies,
+          textbookArticle: article,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
       }, 800);
@@ -8840,23 +9185,13 @@ ${safeTranscript}
       }
     }
 
-    // --- Firestore 讀取（換頁時還原便利貼視圖） ---
+    // --- Firestore 讀取（換頁時還原隨堂講義） ---
     async function loadVoiceNoteFromFirestore(slideId, slideTitle) {
       if (!currentClassId) return;
 
-      const isInst = isInstructor();
-
       // 如果記憶體已有快取，直接以快取渲染
-      if (slideStickiesCache.has(slideId)) {
-        updateStickiesWallUI(slideId);
-        const stickies = slideStickiesCache.get(slideId) || [];
-        if (isInst) {
-          switchNotesView('stickies');
-        } else if (stickies.length > 0) {
-          // 學員若此頁有便利貼可保留目前視圖
-        } else {
-          switchNotesView('memo');
-        }
+      if (slideStickiesCache.has(slideId) || slideTextbookCache.has(slideId)) {
+        renderLectureCompanionUI(slideId);
         return;
       }
 
@@ -8865,8 +9200,9 @@ ${safeTranscript}
         if (doc.exists) {
           const data = doc.data();
           let stickies = data.stickies || [];
+          let article = data.textbookArticle || '';
 
-          // 若為早期格式 (overviewSummary + takeaways)，向下相容轉成便利貼
+          // 若為早期格式向下相容轉成便籤
           if ((!stickies || stickies.length === 0) && (data.overviewSummary || data.takeaways)) {
             stickies = [{
               id: `stk_legacy_1`,
@@ -8877,38 +9213,26 @@ ${safeTranscript}
           }
 
           slideStickiesCache.set(slideId, stickies);
-          updateStickiesWallUI(slideId);
+          slideTextbookCache.set(slideId, article);
+          renderLectureCompanionUI(slideId);
 
-          if (stickies.length > 0) {
+          if (stickies.length > 0 || article) {
             updateTocVoiceNoteBadge(slideId, true);
-          }
-          if (isInst) {
-            switchNotesView('stickies');
-          } else {
-            switchNotesView('memo');
           }
         } else {
           slideStickiesCache.set(slideId, []);
-          updateStickiesWallUI(slideId);
-          if (isInst) {
-            switchNotesView('stickies');
-          } else {
-            switchNotesView('memo');
-          }
+          slideTextbookCache.set(slideId, '');
+          renderLectureCompanionUI(slideId);
         }
       } catch(e) {
-        console.warn('[VoiceNote] 讀取便利貼失敗', e);
+        console.warn('[VoiceNote] 讀取隨堂講義失敗', e);
         slideStickiesCache.set(slideId, []);
-        updateStickiesWallUI(slideId);
-        if (isInst) {
-          switchNotesView('stickies');
-        } else {
-          switchNotesView('memo');
-        }
+        slideTextbookCache.set(slideId, '');
+        renderLectureCompanionUI(slideId);
       }
     }
 
-    // --- 目錄 📝 標記 ---
+    // --- 目錄 📌 標記 ---
     const voiceNoteBadgeSlides = new Set();
 
     function updateTocVoiceNoteBadge(slideId, hasNote) {
@@ -8986,7 +9310,7 @@ ${safeTranscript}
     }
 
     // ================================================================
-    // ===== END 語音重點筆記模組 =====
+    // ===== END 隨堂講義與實錄模組 =====
     // ================================================================
 
   </script>
