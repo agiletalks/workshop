@@ -15,7 +15,7 @@ function copyFolderSync(from, to) {
     fs.mkdirSync(to, { recursive: true });
   }
   fs.readdirSync(from).forEach(element => {
-    if (element === '.git' || element === '.gitignore' || element === 'node_modules' || element === 'qa' || element === '__qa__') return;
+    if (element === '.git' || element === '.gitignore' || element === 'node_modules' || element === 'qa' || element === '__qa__' || element === 'docs' || element === 'archive') return;
     const stat = fs.lstatSync(path.join(from, element));
     if (stat.isFile()) {
       fs.copyFileSync(path.join(from, element), path.join(to, element));
