@@ -1,0 +1,75 @@
+[
+  {
+    "name": "single",
+    "input": "今天只驗證付款逾時",
+    "output": {
+      "stickies": [
+        {
+          "id": "stk_1790523423691_0",
+          "title": "課堂核心論點",
+          "color": "yellow",
+          "points": [
+            "今天只驗證付款逾時"
+          ]
+        }
+      ],
+      "textbookArticle": "### 核心主旨：QA付款流程\n\n#### 概念深度剖析\n今天只驗證付款逾時\n\n#### 實務敏捷落地與案例\n依課堂講授核心脈絡落實實務敏捷實踐。"
+    },
+    "pointsAllFromTranscript": true,
+    "containsUnsourcedProse": true
+  },
+  {
+    "name": "multi",
+    "input": "付款逾時必須保留訂單。重送請求使用相同交易代碼。完成付款後寄送收據。",
+    "output": {
+      "stickies": [
+        {
+          "id": "stk_1790523423691_0",
+          "title": "課堂核心論點",
+          "color": "yellow",
+          "points": [
+            "付款逾時必須保留訂單"
+          ]
+        },
+        {
+          "id": "stk_1790523423691_1",
+          "title": "實務落地觀察",
+          "color": "blue",
+          "points": [
+            "重送請求使用相同交易代碼"
+          ]
+        },
+        {
+          "id": "stk_1790523423691_2",
+          "title": "關鍵避坑要點",
+          "color": "pink",
+          "points": [
+            "完成付款後寄送收據"
+          ]
+        }
+      ],
+      "textbookArticle": "### 核心主旨：QA付款流程\n\n#### 概念深度剖析\n付款逾時必須保留訂單。重送請求使用相同交易代碼\n\n#### 實務敏捷落地與案例\n完成付款後寄送收據"
+    },
+    "pointsAllFromTranscript": true,
+    "containsUnsourcedProse": false
+  },
+  {
+    "name": "short_fragments",
+    "input": "甲。乙。丙。",
+    "output": {
+      "stickies": [
+        {
+          "id": "stk_1790523423691_0",
+          "title": "隨堂講述重點",
+          "color": "yellow",
+          "points": [
+            "甲。乙。丙。"
+          ]
+        }
+      ],
+      "textbookArticle": "### 核心主旨：QA付款流程\n\n#### 概念深度剖析\n甲。乙。丙。\n\n#### 實務敏捷落地與案例\n依課堂講授核心脈絡落實實務敏捷實踐。"
+    },
+    "pointsAllFromTranscript": true,
+    "containsUnsourcedProse": true
+  }
+]
