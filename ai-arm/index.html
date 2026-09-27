@@ -8950,44 +8950,43 @@ ${safeTranscript}
         }
       }
 
-      // 降級容錯引擎
+      // 降級容錯引擎（嚴格以講師實際講述逐字稿為基礎，不虛構無關通用字句）
       if (!parsedData || !Array.isArray(parsedData.stickies)) {
         const sentences = safeTranscript
           .split(/[\n。！？!?；;]+/)
           .map(s => s.trim())
-          .filter(s => s.length >= 6);
+          .filter(s => s.length >= 2);
+
+        const generatedStickies = [];
+        if (sentences.length > 0) {
+          const chunkSize = Math.max(1, Math.ceil(sentences.length / 3));
+          const titles = ['課堂核心論點', '實務落地觀察', '關鍵避坑要點', '實證總結'];
+          for (let i = 0; i < sentences.length && generatedStickies.length < 4; i += chunkSize) {
+            const chunk = sentences.slice(i, i + chunkSize);
+            const sIdx = generatedStickies.length;
+            generatedStickies.push({
+              id: `stk_${Date.now()}_${sIdx}`,
+              title: titles[sIdx] || `講授重點 #${sIdx + 1}`,
+              color: STICKY_PALETTES[sIdx % STICKY_PALETTES.length].id,
+              points: chunk
+            });
+          }
+        } else {
+          generatedStickies.push({
+            id: `stk_${Date.now()}_0`,
+            title: '隨堂講述重點',
+            color: 'yellow',
+            points: [safeTranscript || '講師已完成本頁隨堂講授']
+          });
+        }
+
+        const half = Math.ceil(sentences.length / 2);
+        const part1 = sentences.slice(0, half).join('。');
+        const part2 = sentences.slice(half).join('。');
 
         parsedData = {
-          stickies: [
-            {
-              id: `stk_${Date.now()}_0`,
-              title: '現況與核心痛點',
-              color: 'yellow',
-              points: [
-                sentences[0] || '傳統需求梳理過度著重於產出規格而非實質商業價值',
-                sentences[1] || '缺乏即時反饋閉環導致交付認知落差'
-              ]
-            },
-            {
-              id: `stk_${Date.now()}_1`,
-              title: '思維轉移與實踐',
-              color: 'blue',
-              points: [
-                sentences[2] || '由專案思維轉向產品思維，聚焦於實證價值增量',
-                sentences[3] || '透過結構化梳理與敏捷 Refinement 加速共識建立'
-              ]
-            },
-            {
-              id: `stk_${Date.now()}_2`,
-              title: '落地心法與避坑',
-              color: 'pink',
-              points: [
-                sentences[4] || '以終為始，落實敏捷測試與使用者驗證循環',
-                sentences[5] || '保持透明度與跨職能協作，持續精進交付品質'
-              ]
-            }
-          ],
-          textbookArticle: `### 核心主旨：${slideTitle}\n\n#### 概念深度剖析\n${sentences.slice(0, 3).join('。') || '本章節深入剖析核心脈絡與本質意圖，聚焦於釐清關鍵問題與痛點。'}\n\n#### 實務敏捷落地與案例\n${sentences.slice(3, 6).join('。') || '在實務落地場景中，團隊應建立清晰的架構維度與協作機制，避免陷入過度設計的誤區。'}\n\n#### 關鍵避坑指南與心法\n> 保持小步快跑與即時回饋，確保每一步實踐都真正解決使用者的實質痛點。`
+          stickies: generatedStickies,
+          textbookArticle: `### 核心主旨：${slideTitle}\n\n#### 概念深度剖析\n${part1 || safeTranscript}\n\n#### 實務敏捷落地與案例\n${part2 || '依課堂講授核心脈絡落實實務敏捷實踐。'}`
         };
       }
 
