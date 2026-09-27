@@ -1227,7 +1227,7 @@
           <!-- 僅列印有填寫筆記勾選 -->
           <label class="flex items-center gap-1.5 text-xs text-slate-700 font-medium cursor-pointer px-2 py-1 hover:bg-slate-100 rounded-lg transition-colors">
             <input type="checkbox" id="print-filter-empty" checked onchange="renderPrintNotesUI()" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer">
-            <span>僅含筆記頁</span>
+            <span>僅列印有講義／實作之頁面</span>
           </label>
 
           <!-- 立即列印按鈕 -->
@@ -9254,6 +9254,11 @@ ${safeTranscript}
       // 如果記憶體已有快取，直接以快取先立即渲染，避免換頁時白畫面閃爍
       if (slideStickiesCache.has(slideId) || slideTextbookCache.has(slideId)) {
         renderLectureCompanionUI(slideId);
+      } else {
+        // 若該頁尚未快取，先立即復位右側狀態（若未處於錄音或編排中），防止殘留前頁便籤掛在新頁標題下
+        if (!slideProcessingVoiceNotes.has(slideId) && !(isVoiceRecording && voiceRecordingSlideId === slideId)) {
+          setLectureCompanionState('unrecorded', slideId);
+        }
       }
 
       try {
