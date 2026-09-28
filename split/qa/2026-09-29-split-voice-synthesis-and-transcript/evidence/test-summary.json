@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-09-28T16:07:57.445Z",
+  "commit": "2e915bb",
+  "classId": "qa-split-test-01",
+  "slide": "slide-10",
+  "results": {
+    "tc01_ai_config_connection": {
+      "pass": true,
+      "details": "Connection test succeeded dynamically with probe result: 🟢 連線成功！(gemini-2.0-flash) Google 智囊已連線，隨堂錄音將由小編深度整理。, TopBar indicator turns ready."
+    },
+    "tc02_stop_recording_and_synthesis": {
+      "pass": true,
+      "details": "Stop recording triggered thinking animation; Gemini produced 2 MECE stickies without phonetic errors; Student received real-time push."
+    },
+    "tc03_transcript_isolation": {
+      "pass": true,
+      "details": "Instructor transcript contains cleaned, phonetically corrected text; Student strictly isolated from 4th tab."
+    },
+    "tc04_resynthesize_from_transcript": {
+      "pass": true,
+      "details": "Re-synthesis from transcript organically incorporated newly appended INVEST note, auto-switched to stickies tab."
+    }
+  },
+  "consoleErrors": {
+    "instructor": [],
+    "student": []
+  }
+}
