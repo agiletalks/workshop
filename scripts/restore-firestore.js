@@ -19,9 +19,10 @@ function restoreDoc(collectionId, docId, fields) {
         'Content-Length': Buffer.byteLength(payload)
       }
     }, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
       res.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(true);
         } else {

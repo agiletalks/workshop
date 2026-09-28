@@ -24,9 +24,10 @@ function fetchCollectionDocs(collectionId) {
         path: reqPath,
         headers: { 'Accept': 'application/json' }
       }, (res) => {
-        let body = '';
-        res.on('data', chunk => body += chunk);
+        const chunks = [];
+        res.on('data', chunk => chunks.push(chunk));
         res.on('end', () => {
+          const body = Buffer.concat(chunks).toString('utf8');
           if (res.statusCode >= 400) {
             return reject(new Error(`Failed to fetch ${collectionId} (status ${res.statusCode}): ${body}`));
           }

@@ -1,0 +1,125 @@
+{
+  "capturedAt": "2026-09-28T02:28:56.429Z",
+  "teacher": [
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:12:54.737Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "error",
+      "message": "[CS] extension is not ready yet, give up to retry",
+      "timestamp": "2026-09-28T02:12:55.607Z",
+      "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:14:30.859Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "error",
+      "message": "[CS] extension is not ready yet, give up to retry",
+      "timestamp": "2026-09-28T02:14:31.544Z",
+      "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+    }
+  ],
+  "student": [
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:14:05.416Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:15:01.931Z",
+      "url": "https://cdn.tailwindcss.com/"
+    }
+  ],
+  "historical": [
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:15:38.400Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "error",
+      "message": "[CS] extension is not ready yet, give up to retry",
+      "timestamp": "2026-09-28T02:15:39.246Z",
+      "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:16:21.507Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "error",
+      "message": "[CS] extension is not ready yet, give up to retry",
+      "timestamp": "2026-09-28T02:16:22.107Z",
+      "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+    }
+  ],
+  "historicalBoard": [
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:18:19.701Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "error",
+      "message": "[CS] extension is not ready yet, give up to retry",
+      "timestamp": "2026-09-28T02:18:19.701Z",
+      "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:18:57.164Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "error",
+      "message": "[CS] extension is not ready yet, give up to retry",
+      "timestamp": "2026-09-28T02:18:57.991Z",
+      "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+    }
+  ],
+  "qaBoard": [
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:26:45.179Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:27:47.015Z",
+      "url": "https://cdn.tailwindcss.com/"
+    }
+  ],
+  "decision": [
+    {
+      "level": "error",
+      "message": "[CS] extension is not ready yet, give up to retry",
+      "timestamp": "2026-09-28T02:20:22.063Z",
+      "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+    }
+  ],
+  "matrix": [
+    {
+      "level": "error",
+      "message": "[CS] extension is not ready yet, give up to retry",
+      "timestamp": "2026-09-28T02:20:44.042Z",
+      "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+    }
+  ]
+}

@@ -654,9 +654,13 @@
             <span class="text-base leading-none">🎙️</span>
             <span class="hidden sm:inline">錄音筆記</span>
           </button>
-          <button id="btn-voice-note-unsupported" class="hidden px-2.5 py-1 rounded-lg bg-slate-100 text-slate-400 border border-slate-200 text-xs font-semibold shadow-2xs flex items-center gap-1 cursor-not-allowed" disabled title="請使用 Chrome 或 Edge 以啟用語音辨識">
-            <span class="text-base leading-none">🎙️</span>
-            <span class="hidden sm:inline">不支援</span>
+          <button id="btn-voice-note-manual" class="hidden px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-300 text-xs font-bold shadow-2xs flex items-center gap-1 transition-all cursor-pointer" onclick="openVoiceManualInputModal()" title="手動輸入或貼上教學重點／逐字稿 (AI 智慧編排)">
+            <span class="text-base leading-none">📝</span>
+            <span class="hidden sm:inline">手動輸入</span>
+          </button>
+          <button id="btn-voice-note-unsupported" class="hidden px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-300 text-xs font-semibold shadow-2xs flex items-center gap-1 cursor-pointer transition-all" onclick="openVoiceManualInputModal()" title="瀏覽器未支援語音辨識，點此使用手動輸入文字模式">
+            <span class="text-base leading-none">📝</span>
+            <span class="hidden sm:inline">手動輸入</span>
           </button>
           <button id="btn-voice-note-stop" class="hidden px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 active:scale-95 text-white border border-red-600 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer" onclick="stopVoiceRecording()" title="結束本頁講解並編排講義">
             <span class="voice-record-dot inline-block w-2 h-2 rounded-full bg-white flex-shrink-0"></span>
@@ -766,10 +770,18 @@
                     <span class="font-bold text-slate-700">📌 隨堂重點便籤</span>
                     <span id="lecture-stickies-count" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-amber-100 text-amber-800 font-bold">0</span>
                   </div>
-                  <div class="flex items-center gap-1.5">
+                  <div class="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+                    <button id="btn-companion-paste-to-memo" type="button" onclick="copyStickiesToMemo()" class="hidden px-2 py-1 rounded-lg text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 transition-colors flex items-center gap-1 cursor-pointer" title="將本頁隨堂便籤貼入當前巡視小組實作筆記">
+                      <i data-lucide="clipboard-copy" class="w-3 h-3 text-amber-700"></i>
+                      <span>貼入小組筆記</span>
+                    </button>
                     <button id="btn-add-manual-sticky" type="button" onclick="addNewManualSticky()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors flex items-center gap-1 cursor-pointer" title="手動增加一張便利貼">
                       <i data-lucide="plus" class="w-3 h-3"></i>
-                      <span>加便利貼</span>
+                      <span>加便籤</span>
+                    </button>
+                    <button type="button" onclick="openPrintNotesModal('current')" class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer" title="單頁友善列印：僅列印本頁隨堂講義與便籤">
+                      <i data-lucide="printer" class="w-3 h-3 text-slate-600"></i>
+                      <span>列印本頁</span>
                     </button>
                     <button type="button" onclick="toggleFlipLectureNote()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors flex items-center gap-1 cursor-pointer" title="翻至背面看完整教材文章">
                       <i data-lucide="book-open" class="w-3 h-3 text-amber-600"></i>
@@ -829,7 +841,13 @@
               <i data-lucide="eye" class="w-3.5 h-3.5 text-sky-600"></i>
               <span>觀摩 <strong id="readonly-team-name">第 2 組</strong> 筆記中</span>
             </div>
-            <button onclick="switchToMyTeam()" class="text-xs font-bold text-sky-600 hover:text-sky-800 underline">切回我的組別</button>
+            <div class="flex items-center gap-2">
+              <button id="btn-patrol-paste-stickies" type="button" onclick="copyStickiesToMemo()" class="hidden px-2.5 py-0.5 rounded-lg bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-xs flex items-center gap-1 cursor-pointer transition-all" title="將本頁隨堂便籤重點貼入此小組筆記中">
+                <i data-lucide="clipboard-copy" class="w-3 h-3"></i>
+                <span>貼入小組筆記</span>
+              </button>
+              <button id="btn-switch-my-team" onclick="switchToMyTeam()" class="text-xs font-bold text-sky-600 hover:text-sky-800 underline">切回我的組別</button>
+            </div>
           </div>
 
           <div id="lock-banner" class="hidden bg-amber-500 text-white px-3 py-1.5 flex items-center justify-between text-xs shadow-md">
@@ -1199,6 +1217,42 @@
     </div>
   </div>
 
+  <!-- ==================== 手動輸入講師講述逐字稿 Modal (Fallback) ==================== -->
+  <div id="voice-manual-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-5 py-4 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">📝</span>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base leading-tight">手動輸入隨堂講授重點 (AI 智慧編排)</h3>
+            <p class="text-[11px] text-amber-100 mt-0.5" id="voice-manual-slide-hint">目前頁面：P01</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeVoiceManualInputModal()" class="w-7 h-7 rounded-lg hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-5 flex-1 overflow-y-auto space-y-3">
+        <p class="text-xs text-slate-600 leading-relaxed">
+          當前環境不支援語音辨識、無麥克風或需直接補充講義時，請在此貼入講師講課逐字稿或要點提綱。送出後將由 AI 自動為本頁編排 <strong>3~5 張 MECE 彩色隨堂便籤</strong> 與 <strong>完整講義文章</strong>。
+        </p>
+        <div>
+          <textarea id="voice-manual-input-text" rows="7" oninput="updateVoiceManualCharCount()" placeholder="請在此貼上或輸入本頁要講解的核心概念、案例情境或教學提綱..." class="w-full p-3.5 text-xs sm:text-sm text-slate-800 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none transition-all leading-relaxed"></textarea>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-500">
+          <span id="voice-manual-char-count">0 字元</span>
+          <span class="text-amber-700 font-medium">建議輸入 10 字以上以達到最佳 AI 編排效果</span>
+        </div>
+      </div>
+      <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2 flex-shrink-0">
+        <button type="button" onclick="closeVoiceManualInputModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer">取消</button>
+        <button type="button" id="btn-submit-voice-manual" onclick="submitVoiceManualInput()" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-95 shadow-xs transition-all cursor-pointer flex items-center gap-1.5">
+          <span>🚀 開始 AI 編排講義</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== 小組筆記匯出與列印預覽 Modal ==================== -->
   <div id="print-modal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
     <div id="print-modal-card" class="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
@@ -1210,12 +1264,21 @@
             <i data-lucide="printer" class="w-4 h-4"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-tight">全書級隨堂講義實錄手冊 ｜ 列印與 PDF 匯出</h3>
-            <p class="text-[11px] text-slate-500">依投影片完整收錄隨堂重點便籤、深度講義詳解與實作交付物</p>
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-tight" id="print-modal-title">隨堂講義實錄手冊 ｜ 列印與 PDF 匯出</h3>
+            <p class="text-[11px] text-slate-500" id="print-modal-subtitle">依投影片完整收錄隨堂重點便籤、深度講義詳解與實作交付物</p>
           </div>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <!-- 列印範圍切換：單頁 vs 全書 -->
+          <div class="flex items-center gap-1.5 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1">
+            <span class="text-slate-500 font-medium">範圍：</span>
+            <select id="print-scope-select" onchange="renderPrintNotesUI()" class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
+              <option value="current">📄 僅當前頁講義</option>
+              <option value="all">📚 全書實錄手冊</option>
+            </select>
+          </div>
+
           <!-- 組別切換選擇器 -->
           <div class="flex items-center gap-1.5 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1">
             <span class="text-slate-500 font-medium">組別：</span>
@@ -2438,9 +2501,16 @@
             localStorage.setItem('ai_arm_nickname', name);
           } catch (e) {}
         }
+        // 核心修復 (BUG-PROD-01)：立即同步全局當前班級變數與資料命名空間
+        currentClassId = resolvedClassId;
+        currentClassData = classDocData;
+        APP_STORAGE_KEY = `ai_arm_auth_user_${currentClassId}`;
+        lastKnownClearedAt = parseInt(localStorage.getItem(`ai_arm_${currentClassId}_cleared_at`) || '0', 10);
 
         try {
           localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
+          localStorage.setItem("ai_arm_auth_user", JSON.stringify(currentUser)); // 通用備援鍵
+          localStorage.setItem(`ai_arm_class_teams_${currentClassId}`, String(TOTAL_TEAMS));
         } catch (e) {}
 
         // 平滑更新瀏覽器網址 (帶入 ?c=代碼)，不刷新頁面
@@ -2676,6 +2746,9 @@
             loadAllNotesForPrint(printSelectedTeam).then(() => renderPrintNotesUI());
           }
           updatePermissionUI();
+          if (typeof preloadClassVoiceNoteBadges === 'function') {
+            preloadClassVoiceNoteBadges();
+          }
         }, err => {
           console.warn("班級配置即時監聽異常:", err);
           isClassConfigReady = true;
@@ -2769,7 +2842,11 @@
         return false;
       }
 
-      const saved = localStorage.getItem(APP_STORAGE_KEY);
+      APP_STORAGE_KEY = `ai_arm_auth_user_${currentClassId}`;
+      let saved = localStorage.getItem(APP_STORAGE_KEY);
+      if (!saved) {
+        saved = localStorage.getItem('ai_arm_auth_user');
+      }
       if (saved) {
         try {
           currentUser = JSON.parse(saved);
@@ -2792,6 +2869,8 @@
     function logoutToGatekeeper() {
       try {
         localStorage.removeItem(APP_STORAGE_KEY);
+        if (currentClassId) localStorage.removeItem(`ai_arm_auth_user_${currentClassId}`);
+        localStorage.removeItem('ai_arm_auth_user');
         sessionStorage.removeItem('ai_arm_admin_auth');
       } catch (e) {}
       currentUser = null;
@@ -5222,14 +5301,14 @@
           const tocSlideId = getVoiceNoteSlideId(s.index);
           btn.dataset.tocSlideId = tocSlideId;
 
-          // 📝 語音摘要標記
+          // 📌 隨堂重點與講義標記 (BUG-PROD-05 統一使用圖釘)
           const hasVoiceNote = voiceNoteBadgeSlides.has(tocSlideId);
 
           btn.innerHTML = `
             <div class="flex items-center gap-2 truncate pr-2">
               <span class="font-mono text-[10px] ${isCurrent ? 'text-white' : 'text-slate-400'} font-bold">P${String(s.index).padStart(2, '0')}</span>
               <span class="truncate">${s.title}</span>
-              ${hasVoiceNote ? `<span class="voice-note-toc-badge text-[10px]">📝</span>` : ''}
+              ${hasVoiceNote ? `<span class="voice-note-toc-badge text-[10px]">📌</span>` : ''}
             </div>
             <div class="flex items-center gap-1 flex-shrink-0">${tags}</div>
           `;
@@ -5260,6 +5339,9 @@
       renderTocDrawer();
       drawer.classList.remove('-translate-x-full');
       if (backdrop) backdrop.classList.remove('hidden');
+      if (typeof preloadClassVoiceNoteBadges === 'function') {
+        preloadClassVoiceNoteBadges();
+      }
     }
 
     function closeTocDrawer() {
@@ -5450,7 +5532,8 @@
         const teamNameEl = document.getElementById('readonly-team-name');
         if (teamNameEl) teamNameEl.innerText = getTeamDisplayName(activeTeamId);
 
-        const switchBtn = readonlyBanner.querySelector('button');
+        const pasteBtn = document.getElementById('btn-patrol-paste-stickies');
+        const switchBtn = document.getElementById('btn-switch-my-team');
         const icon = readonlyBanner.querySelector('i');
         const textSpan = readonlyBanner.querySelector('div > span');
 
@@ -5461,6 +5544,7 @@
             icon.setAttribute('data-lucide', 'crown');
           }
           if (switchBtn) switchBtn.classList.add('hidden');
+          if (pasteBtn) pasteBtn.classList.remove('hidden');
           if (textSpan) {
             textSpan.innerHTML = `👑 講師巡堂模式：正在檢視 <strong id="readonly-team-name">${getTeamDisplayName(activeTeamId)}</strong> 討論筆記`;
           }
@@ -5471,6 +5555,7 @@
             icon.setAttribute('data-lucide', 'eye');
           }
           if (switchBtn) switchBtn.classList.remove('hidden');
+          if (pasteBtn) pasteBtn.classList.add('hidden');
           if (textSpan) {
             textSpan.innerHTML = `觀摩 <strong id="readonly-team-name">${getTeamDisplayName(activeTeamId)}</strong> 筆記`;
           }
@@ -7403,12 +7488,12 @@
       {
         id: "tool-decision-table",
         name: "決策表討論助手｜選用",
-        badge: "選用討論工具",
+        badge: "獨立新分頁大畫布",
         badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
         icon: "🔲",
         url: "decision-table/decision-table.html",
         target: "_blank",
-        desc: "把條件組合與可能動作攤開，討論『這種情況應該怎麼處理？』表格是討論中的紀錄，不自動代表已核准需求。可保留分歧與待確認事項，只有明確確認的結論才帶入後續故事與 AC。",
+        desc: "把條件組合與可能動作攤開，討論『這種情況應該怎麼處理？』。以獨立新分頁全螢幕開啟，享受完整高解析度表格操作與實作空間。",
         actionText: "開啟工具 ↗",
         prompt: {
           id: "prompt-tool-decision-table",
@@ -7459,12 +7544,12 @@
       {
         id: "tool-stm",
         name: "狀態表討論助手｜選用",
-        badge: "選用討論工具",
+        badge: "獨立新分頁大畫布",
         badgeColor: "bg-indigo-100 text-indigo-800 border-indigo-200",
         icon: "🔄",
         url: "status-transition-matrix/status-transition-matrix.html",
         target: "_blank",
-        desc: "把狀態關係攤開，討論『這樣能不能轉？什麼情況可以？』表格是討論中的紀錄，不自動代表已核准需求。可保留分歧與待確認事項，只有明確確認的結論才帶入後續故事與 AC。",
+        desc: "把狀態關係攤開，討論『這樣能不能轉？什麼情況可以？』。以獨立新分頁全螢幕開啟，享受完整高解析度矩陣操作與實作空間。",
         actionText: "開啟工具 ↗",
         prompt: {
           id: "prompt-tool-status-matrix",
@@ -7508,6 +7593,56 @@
 以下是案件生命週期與業務情境說明：
 【請在此貼上業務流程說明或需求描述】`
         },
+      },
+      {
+        id: "tool-event-stormer",
+        name: "事件風暴與領域建模助手｜選用",
+        badge: "獨立新分頁大畫布",
+        badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
+        icon: "⚡",
+        url: "event-stormer/event-stormer.html",
+        target: "_blank",
+        desc: "以領域事件（橘）、使用者指令（藍）、聚合實體（黃）為核心的時間軸大畫布。建議以獨立新分頁全螢幕開啟，享受桌面級完整拖曳與跨角色領域建模工作區。",
+        actionText: "開啟工具 ↗",
+        prompt: {
+          id: "prompt-tool-event-stormer",
+          title: "Prompt｜事件風暴引導與領域事件梳理 Prompt",
+          desc: "引導小組由業務時間軸出發，梳理橘色領域事件、藍色使用者指令與黃色聚合實體，梳理複雜商業流程。",
+          content: `# 事件風暴領域建模引導 Prompt (Event Storming Discussion Prompt)
+
+你是一位資深的「領域驅動設計（DDD）顧問」與「事件風暴（Event Storming）引導者」。
+你的任務是協助團隊以時間軸為經緯，梳理出系統中的「關鍵領域事件（Domain Events）」、「使用者指令（Commands）」與「業務規則（Business Policies）」。
+
+---
+
+## 一、 分析原則
+1. 過去式事件：所有領域事件必須使用「已發生之過去式動詞」（如：已下單、已扣款、審核已駁回）。
+2. 時間軸正向排序：由左至右、由早至晚排列事件序列。
+3. 識別熱點（Hotspots）：標記業務規則不清、有爭議或未決的衝突點。
+4. 獨立新分頁操作：此工具為桌面級大畫布，建議在專屬分頁中進行自由排列與討論。
+
+---
+
+## 二、 輸出結構
+
+### 1. 核心領域事件 (Domain Events - 橘色便籤)
+- [事件 1] 名稱（例如：訂單已成立）與觸發時機
+- [事件 2] 名稱（例如：款項已支付）與觸發時機
+
+### 2. 觸發指令 (Commands - 藍色便籤) 與 執行角色
+- [指令 1] 提交訂單 ➔ 觸發角色：顧客
+- [指令 2] 審核報銷 ➔ 觸發角色：財務專員
+
+### 3. 待確認熱點與業務限制 (Hotspots - 紅/紫色便籤)
+- 列出 2~3 個在討論中需利害關係人澄清的業務規則或矛盾之處。
+
+---
+
+## 三、 開始處理
+
+以下是業務情境或使用者需求說明：
+【請在此貼上業務流程說明或需求描述】`
+        }
       },
       {
         id: "tool-whiteboard",
@@ -7902,9 +8037,17 @@ function copyCatalogPromptById(promptId, slideIndex) {
     let printNotesData = [];
     let printSelectedTeam = 'team-1';
 
-    async function openPrintNotesModal() {
+    async function openPrintNotesModal(initialScope = 'current') {
       const modal = document.getElementById('print-modal');
       if (!modal) return;
+
+      const currentSlideId = getVoiceNoteSlideId(currentSlideIndex);
+      const scopeSelect = document.getElementById('print-scope-select');
+      if (scopeSelect) {
+        scopeSelect.value = initialScope;
+        const curOpt = scopeSelect.querySelector('option[value="current"]');
+        if (curOpt) curOpt.textContent = `📄 僅當前頁講義 (${currentSlideId})`;
+      }
 
       const loader = document.getElementById('print-loading');
       const area = document.getElementById('printable-notes-area');
@@ -8012,6 +8155,23 @@ function copyCatalogPromptById(promptId, slideIndex) {
 
       const teamName = getTeamDisplayName(printSelectedTeam);
       const filterEmpty = document.getElementById('print-filter-empty').checked;
+      const scopeSelect = document.getElementById('print-scope-select');
+      const currentScope = scopeSelect ? scopeSelect.value : 'current';
+      const currentSlideId = getVoiceNoteSlideId(currentSlideIndex);
+
+      const titleEl = document.getElementById('print-modal-title');
+      const subEl = document.getElementById('print-modal-subtitle');
+      if (titleEl) {
+        titleEl.innerText = (currentScope === 'current') 
+          ? `隨堂講義單頁友善列印 ｜ ${currentSlideId}` 
+          : `全書級隨堂講義實錄手冊 ｜ 列印與 PDF 匯出`;
+      }
+      if (subEl) {
+        subEl.innerText = (currentScope === 'current')
+          ? `僅收錄當前頁（${currentSlideId}）之隨堂重點便籤、深度講義與小組討論`
+          : `依投影片完整收錄隨堂重點便籤、深度講義詳解與實作交付物`;
+      }
+
       const exportTime = new Date().toLocaleString('zh-TW', { hour12: false });
       const activeUser = (currentUser && currentUser.name) ? currentUser.name : '學員';
 
@@ -8031,14 +8191,14 @@ function copyCatalogPromptById(promptId, slideIndex) {
         <!-- 報表首頁與抬頭 -->
         <div class="border-b-2 border-slate-900 pb-5 mb-6">
           <div class="flex items-center justify-between text-xs font-bold text-amber-700 tracking-wider mb-1 uppercase">
-            <span>AI-ARM 隨堂講義實錄手冊 ｜ 深度隨堂重點與講義詳解</span>
-            <span>課程實錄手冊</span>
+            <span>AI-ARM 隨堂講義 ｜ ${currentScope === 'current' ? `單頁友善列印 (${currentSlideId})` : '全課程實錄手冊'}</span>
+            <span>${currentScope === 'current' ? '單頁列印模式' : '課程實錄手冊'}</span>
           </div>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
-            AI 輔助需求建模與敏捷 Refinement 隨堂手冊
+            ${currentScope === 'current' ? `AI-ARM 隨堂講義與精華重點 ｜ ${currentSlideId}` : 'AI 輔助需求建模與敏捷 Refinement 隨堂手冊'}
           </h1>
           <p class="text-sm text-slate-600 mt-1">
-            完整收錄講師隨堂重點便籤、全書級深度講義詳解與團隊實作成果
+            ${currentScope === 'current' ? `本頁專屬隨堂講授重點便籤與詳解手冊` : '完整收錄講師隨堂重點便籤、全書級深度講義詳解與團隊實作成果'}
           </p>
           
           <div class="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -8055,14 +8215,14 @@ function copyCatalogPromptById(promptId, slideIndex) {
               <span class="text-slate-700 font-mono">${exportTime}</span>
             </div>
             <div>
-              <span class="text-slate-400 block text-[10px]">教材涵蓋度</span>
-              <strong class="text-amber-700 font-bold font-mono">${totalWithNotes} / ${SLIDES_DATA.length} 頁</strong>
+              <span class="text-slate-400 block text-[10px]">${currentScope === 'current' ? '當前頁面' : '教材涵蓋度'}</span>
+              <strong class="text-amber-700 font-bold font-mono">${currentScope === 'current' ? currentSlideId : `${totalWithNotes} / ${SLIDES_DATA.length} 頁`}</strong>
             </div>
           </div>
         </div>
       `;
 
-      if (totalWithNotes === 0 && filterEmpty) {
+      if (totalWithNotes === 0 && filterEmpty && currentScope !== 'current') {
         html += `
           <div class="py-12 text-center text-slate-400 text-sm space-y-2">
             <p class="text-base font-bold text-slate-600">目前尚未有已完成講授排版之隨堂講義或小組筆記。</p>
@@ -8071,8 +8231,11 @@ function copyCatalogPromptById(promptId, slideIndex) {
         `;
       } else {
         CHAPTERS.forEach(chap => {
-          const chapItems = printNotesData.filter(d => d.slide.chapterId === chap.id);
-          const filteredItems = filterEmpty 
+          let chapItems = printNotesData.filter(d => d.slide.chapterId === chap.id);
+          if (currentScope === 'current') {
+            chapItems = chapItems.filter(d => d.slideId === currentSlideId);
+          }
+          const filteredItems = (filterEmpty && currentScope !== 'current') 
             ? chapItems.filter(hasPrintableContent) 
             : chapItems;
 
@@ -8522,12 +8685,17 @@ function copyCatalogPromptById(promptId, slideIndex) {
     function initVoiceNote() {
       const btnStart = document.getElementById('btn-voice-note');
       const btnUnsup = document.getElementById('btn-voice-note-unsupported');
+      const btnManual = document.getElementById('btn-voice-note-manual');
 
       if (!isInstructor()) {
         if (btnStart) btnStart.classList.add('hidden');
         if (btnUnsup) btnUnsup.classList.add('hidden');
+        if (btnManual) btnManual.classList.add('hidden');
         return; // 學員身分：維持 hidden
       }
+
+      // 講師身分：永遠提供文字備援入口 (BUG-PROD-02)
+      if (btnManual) btnManual.classList.remove('hidden');
 
       const testRecorder = new VoiceNoteRecorder();
       if (!testRecorder.isSupported()) {
@@ -8583,6 +8751,10 @@ function copyCatalogPromptById(promptId, slideIndex) {
       if (btnFlip) {
         btnFlip.classList.toggle('hidden', state !== 'ready');
       }
+      const btnCompanionPaste = document.getElementById('btn-companion-paste-to-memo');
+      if (btnCompanionPaste && state !== 'ready') {
+        btnCompanionPaste.classList.add('hidden');
+      }
     }
 
     // --- 隨堂講義卡片 3D 翻面 (正面便籤 ⇋ 背面完整講義) ---
@@ -8628,7 +8800,13 @@ function copyCatalogPromptById(promptId, slideIndex) {
       if (countBadge) countBadge.textContent = stickies.length;
       updateStickiesWallUI(slideId);
 
-      // 2. 背面完整教科書級講義
+      // 2. 貼入小組筆記按鈕支援 (BUG-PROD-03)
+      const btnCompanionPaste = document.getElementById('btn-companion-paste-to-memo');
+      if (btnCompanionPaste) {
+        btnCompanionPaste.classList.toggle('hidden', stickies.length === 0 || isClassReadOnly);
+      }
+
+      // 3. 背面完整教科書級講義
       const titleEl = document.getElementById('textbook-title');
       const subtitleEl = document.getElementById('textbook-subtitle');
       const contentEl = document.getElementById('textbook-article-content');
@@ -8763,16 +8941,77 @@ function copyCatalogPromptById(promptId, slideIndex) {
     function setVoiceRecordingUIState(isRecording) {
       const btnStart = document.getElementById('btn-voice-note');
       const btnStop  = document.getElementById('btn-voice-note-stop');
+      const btnManual = document.getElementById('btn-voice-note-manual');
       const currentSlideId = getVoiceNoteSlideId(currentSlideIndex);
 
       if (isRecording) {
         if (btnStart) btnStart.classList.add('hidden');
         if (btnStop)  btnStop.classList.remove('hidden');
+        if (btnManual) btnManual.classList.add('hidden');
         setLectureCompanionState('onair', currentSlideId);
       } else {
-        if (btnStart) btnStart.classList.remove('hidden');
+        initVoiceNote();
         if (btnStop)  btnStop.classList.add('hidden');
       }
+    }
+
+    // --- 手動輸入講授筆記 Modal (BUG-PROD-02 Fallback) ---
+    function openVoiceManualInputModal() {
+      const modal = document.getElementById('voice-manual-modal');
+      if (!modal) return;
+      const targetSlideId = getVoiceNoteSlideId(currentSlideIndex);
+      const slide = SLIDES_DATA[currentSlideIndex - 1] || {};
+      const slideTitle = slide.title || targetSlideId;
+
+      const targetEl = document.getElementById('voice-manual-target-slide');
+      if (targetEl) targetEl.textContent = `${targetSlideId} · ${slideTitle}`;
+
+      const textarea = document.getElementById('voice-manual-input-text');
+      if (textarea) textarea.value = '';
+
+      updateVoiceManualCharCount();
+      modal.classList.remove('hidden');
+      if (textarea) textarea.focus();
+    }
+
+    function closeVoiceManualInputModal() {
+      const modal = document.getElementById('voice-manual-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function updateVoiceManualCharCount() {
+      const textarea = document.getElementById('voice-manual-input-text');
+      const counter = document.getElementById('voice-manual-char-count');
+      const btn = document.getElementById('btn-submit-voice-manual');
+      const count = textarea ? textarea.value.trim().length : 0;
+      if (counter) counter.textContent = `${count} 字`;
+      if (btn) btn.disabled = (count < 3);
+    }
+
+    async function submitVoiceManualInput() {
+      const textarea = document.getElementById('voice-manual-input-text');
+      const text = textarea ? textarea.value.trim() : '';
+      if (!text || text.length < 3) {
+        showToast('請輸入至少 3 個字的講授內容或筆記', 'amber');
+        return;
+      }
+      const targetSlideId = getVoiceNoteSlideId(currentSlideIndex);
+      const slide = SLIDES_DATA[currentSlideIndex - 1] || {};
+      const slideTitle = slide.title || targetSlideId;
+
+      closeVoiceManualInputModal();
+      showToast(`已送出手動講述內容，正在為 ${targetSlideId} 排版講義...`, 'indigo');
+
+      // 標記該 slide 正在背景編排
+      slideProcessingVoiceNotes.add(targetSlideId);
+      if (getVoiceNoteSlideId(currentSlideIndex) === targetSlideId) {
+        setLectureCompanionState('compiling', targetSlideId);
+      }
+
+      // 發起講義編排（手動輸入視為增強模式或覆蓋，可根據既有筆記判定）
+      const existingStickies = slideStickiesCache.get(targetSlideId) || [];
+      const isAugment = existingStickies.length > 0;
+      requestLectureCompanionContent(text, slideTitle, targetSlideId, isAugment);
     }
 
     // --- 錄音中換頁：零中斷自動收尾 ---
@@ -9312,6 +9551,35 @@ ${safeTranscript}
 
     // --- 目錄 📌 標記 ---
     const voiceNoteBadgeSlides = new Set();
+    let isPreloadingBadges = false;
+
+    async function preloadClassVoiceNoteBadges() {
+      if (!db || !currentClassId || isPreloadingBadges) return;
+      isPreloadingBadges = true;
+      try {
+        const promises = SLIDES_DATA.map(async (slide, idx) => {
+          const slideId = getVoiceNoteSlideId(idx + 1);
+          if (voiceNoteBadgeSlides.has(slideId)) return;
+          try {
+            const vnDoc = await getVoiceNoteFirestorePath(slideId).get();
+            if (vnDoc.exists && vnDoc.data()) {
+              const data = vnDoc.data();
+              const hasStickies = Array.isArray(data.stickies) && data.stickies.length > 0;
+              const hasArticle = !!(data.textbookArticle && data.textbookArticle.trim().length > 0);
+              const hasLegacy = !!(data.overviewSummary || data.takeaways);
+              if (hasStickies || hasArticle || hasLegacy) {
+                updateTocVoiceNoteBadge(slideId, true);
+              }
+            }
+          } catch(e) {}
+        });
+        await Promise.all(promises);
+      } catch(err) {
+        console.warn('[VoiceNote] 預先載入隨堂講義標記異常', err);
+      } finally {
+        isPreloadingBadges = false;
+      }
+    }
 
     function updateTocVoiceNoteBadge(slideId, hasNote) {
       if (hasNote) {

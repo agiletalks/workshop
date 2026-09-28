@@ -1,0 +1,26 @@
+{
+  "backupDirectory": "C:/Antigravity/workshop/backups/firestore-backup-2026-09-28T02-04-22-591Z",
+  "backupManifestDocumentCount": 687,
+  "memoSample": {
+    "documentId": "ai_arm_202609-ibm_note_task-01-envision_team-1",
+    "uiPage": "P11",
+    "uiMemoLength": 2095,
+    "uiReplacementCharacterCount": 0,
+    "decodedBackupMemoLength": 2100,
+    "decodedBackupReplacementCharacterCount": 8,
+    "rawBackupReplacementCharacterCount": 8,
+    "firstDifferingIndex": 356,
+    "backupExcerpt": "受訪者��",
+    "uiExcerpt": "受訪者：",
+    "exactEquality": false,
+    "interpretation": "Backup text differs from rendered live memo. No evidence of live deletion."
+  },
+  "boardSample": {
+    "documentId": "ai-arm-202609-ibm-team-2",
+    "backupCardCount": 19,
+    "uiCardCount": 19,
+    "allCardIdsAndTextsMatchedIgnoringWhitespace": true,
+    "backupLineCount": 0,
+    "scope": "Does not verify nonzero connections, all visual properties, or all other boards."
+  }
+}
