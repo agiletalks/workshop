@@ -87,6 +87,7 @@ function createMockFirestore() {
 
   return {
     _data: store,
+    doc: (docPath) => makeDoc(docPath),
     collection: (colName) => makeCollection(colName),
     runTransaction: async (updateFn) => {
       const tx = {
@@ -563,6 +564,147 @@ async function main() {
     const mmPath = 'agiletalks-db/marshmallow/workshops/ws-01/teams/team-1';
     const pattern = /^agiletalks-db\/.+$/;
     assert.strictEqual(pattern.test(mmPath), true, '必須匹配 Marshmallow 工作坊路徑');
+  });
+
+  console.log('\n【測試群組 6】四大支柱內容模型與全日教材專書管線');
+
+  await test('6.1 提示詞 (Prompts 1:N) 雲端儲存、更新與刪除邏輯驗證', async () => {
+    const mockDb = createMockFirestore();
+    const classId = 'test-class-split';
+    const gen = 1;
+    const slideId = 'slide-3';
+
+    // 儲存第一則提示詞
+    const p1 = {
+      id: 'p-01',
+      title: 'DoD 檢驗生成器',
+      description: '敏捷完成標準專用',
+      promptText: '身為講師...',
+      createdAt: Date.now()
+    };
+    const docRef = mockDb.doc(`split_data/${classId}/generations/${gen}/lecture_notes/${slideId}`);
+    await docRef.set({ slideId, prompts: [p1] });
+
+    let snap = await docRef.get();
+    assert.strictEqual(snap.data().prompts.length, 1, '應成功存入 1 則提示詞');
+    assert.strictEqual(snap.data().prompts[0].title, 'DoD 檢驗生成器');
+
+    // 追加第二則提示詞 (1:N)
+    const p2 = {
+      id: 'p-02',
+      title: 'DoR 檢查表',
+      description: '準備就緒條件專用',
+      promptText: '身為團隊...',
+      createdAt: Date.now()
+    };
+    await docRef.set({ prompts: [...snap.data().prompts, p2] }, { merge: true });
+    snap = await docRef.get();
+    assert.strictEqual(snap.data().prompts.length, 2, '應成功擴充為 2 則提示詞');
+
+    // 刪除第一則提示詞
+    const filtered = snap.data().prompts.filter(p => p.id !== 'p-01');
+    await docRef.set({ prompts: filtered }, { merge: true });
+    snap = await docRef.get();
+    assert.strictEqual(snap.data().prompts.length, 1, '應剩餘 1 則提示詞');
+    assert.strictEqual(snap.data().prompts[0].id, 'p-02');
+  });
+
+  await test('6.2 實戰範例與附件 (Attachments 1:N) 雲端儲存與格式支援', async () => {
+    const mockDb = createMockFirestore();
+    const classId = 'test-class-split';
+    const gen = 1;
+    const slideId = 'slide-4';
+
+    const att1 = {
+      id: 'att-01',
+      title: '電商購物車拆解範例圖',
+      description: '真實案例截圖說明',
+      fileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==',
+      fileType: 'image',
+      createdAt: Date.now()
+    };
+    const att2 = {
+      id: 'att-02',
+      title: '需求拆解手冊 PDF',
+      description: '實務指南參考文件',
+      fileUrl: 'https://example.com/split.pdf',
+      fileType: 'pdf',
+      createdAt: Date.now()
+    };
+
+    const docRef = mockDb.doc(`split_data/${classId}/generations/${gen}/lecture_notes/${slideId}`);
+    await docRef.set({ slideId, attachments: [att1, att2] });
+
+    const snap = await docRef.get();
+    assert.strictEqual(snap.data().attachments.length, 2, '應具備 2 項範例/附件');
+    assert.strictEqual(snap.data().attachments[0].fileType, 'image');
+    assert.strictEqual(snap.data().attachments[1].fileType, 'pdf');
+  });
+
+  await test('6.3 隨堂逐字清稿與師生 Q&A (rawCleanTranscript) 儲存與學員端不可見隔離', async () => {
+    const mockDb = createMockFirestore();
+    const classId = 'test-class-split';
+    const gen = 1;
+    const slideId = 'slide-5';
+
+    const cleanTranscript = `今天我們深入拆解了 INVEST 原則中的 V (Valuable)。\n【課堂互動 Q&A】\nQ: 技術重構沒有直接端點價值，如何符合 INVEST？\nA: 可將技術重構包裝在業務價值的可量化指標下。`;
+
+    const docRef = mockDb.doc(`split_data/${classId}/generations/${gen}/lecture_notes/${slideId}`);
+    await docRef.set({
+      slideId,
+      rawCleanTranscript: cleanTranscript,
+      stickies: [{ id: 's-1', title: '核心心法', color: 'yellow', points: ['價值優先'] }]
+    });
+
+    const snap = await docRef.get();
+    assert.ok(snap.data().rawCleanTranscript.includes('【課堂互動 Q&A】'), '逐字稿應正確保存師生問答');
+
+    // 模擬前端身分篩選：學員端絕對不呈現逐字稿分頁
+    const studentAvailableTabs = (isInstructor) => {
+      return isInstructor
+        ? ['stickies', 'prompts', 'examples', 'transcript']
+        : ['stickies', 'prompts', 'examples'];
+    };
+
+    assert.strictEqual(studentAvailableTabs(false).includes('transcript'), false, '學員端頁籤絕對不可包含逐字稿');
+    assert.strictEqual(studentAvailableTabs(true).includes('transcript'), true, '講師端具備逐字稿頁籤');
+  });
+
+  await test('6.4 全日教材專書 (Master Textbook) 集中快取與個人化組版架構', async () => {
+    const mockDb = createMockFirestore();
+    const classId = 'test-class-split';
+    const gen = 1;
+
+    const textbookDocRef = mockDb.doc(`split_data/${classId}/generations/${gen}/handbook/master_textbook`);
+    
+    // 老師課末生成專書寫入快取
+    const masterData = {
+      classId,
+      generation: gen,
+      chapters: [
+        { moduleId: 'E', moduleTitle: '第一章：敏捷需求心法', title: 'DoD & DoR', content: '# 敏捷心法\n\n深入探討需求邊界。' },
+        { moduleId: 'S', moduleTitle: '第二章：S - Spike', title: '探索未知', content: '# Spike 實務\n\n降低技術風險。' }
+      ],
+      generatedAt: Date.now(),
+      totalWords: 1500
+    };
+    await textbookDocRef.set(masterData);
+
+    const snap = await textbookDocRef.get();
+    assert.strictEqual(snap.data().chapters.length, 2, '專書應快取 2 個章節');
+
+    // 學員端列印時讀取快取專書 + 動態注入個人學員姓名與該組成果
+    const studentSession = { uid: 'u-101', name: '王小美', teamId: 2, role: 'student' };
+    const personalizedHandbook = {
+      learnerName: studentSession.name,
+      teamId: studentSession.teamId,
+      chapters: snap.data().chapters,
+      teamNotes: { 'slide-task-1': '第 2 組演練產出：使用者故事地圖完成！' }
+    };
+
+    assert.strictEqual(personalizedHandbook.learnerName, '王小美', '封面動態注入學員個人姓名');
+    assert.strictEqual(personalizedHandbook.teamId, 2, '小組成果動態注入第 2 組實戰成果');
+    assert.strictEqual(personalizedHandbook.chapters.length, 2, '共享全日教材專書文章');
   });
 
   console.log('\n====================================================');

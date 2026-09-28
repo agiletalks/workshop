@@ -5,10 +5,17 @@ import { useVoiceNote } from "../hooks/useVoiceNote";
 import {
   subscribeLectureNote,
   saveLectureNote,
+  saveSlidePrompt,
+  deleteSlidePrompt,
+  saveSlideAttachment,
+  deleteSlideAttachment,
   type LectureNoteData,
   type LectureSticky,
-  type LectureRecordingState
+  type LectureRecordingState,
+  type SlidePromptItem,
+  type SlideAttachmentItem
 } from "../services/lectureNoteService";
+import { UnifiedResourceModal } from "./UnifiedResourceModal";
 
 interface WorkbookPanelProps {
   slide: Slide;
@@ -1004,22 +1011,28 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
 }) => {
   const response = getResponse(slide.id);
   const noteLength = response.personalNote.length;
-  const hasExamples = slide.examples && slide.examples.length > 0;
   const isTask = slide.slideKind === 'task' || !!slide.teamTask;
   const isInstructor = userSession?.role === 'instructor';
 
-  // 頁籤切換：演練頁預設小組成果筆記，講述頁直接展示重點便利貼或詳細內容
-  const [activeTab, setActiveTab] = useState<"stickies" | "article" | "note" | "example">("stickies");
+  // 頁籤切換：演練頁預設小組成果筆記，講述頁預設展示重點便利貼
+  const [activeTab, setActiveTab] = useState<"stickies" | "prompts" | "examples" | "transcript" | "note">("stickies");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- 隨堂重點狀態 ---
   const [lectureData, setLectureData] = useState<LectureNoteData | null>(null);
   const [showRerecordModal, setShowRerecordModal] = useState(false);
 
-  // --- 講師專屬隨堂重點編輯狀態 (學員不可見/不可編輯) ---
+  // --- 資源上傳與管理狀態 ---
+  const [showUnifiedModal, setShowUnifiedModal] = useState(false);
+  const [unifiedModalInitialType, setUnifiedModalInitialType] = useState<"prompt" | "attachment">("prompt");
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+
+  // --- 講師專屬逐字稿與問答編輯狀態 (學員完全隱藏) ---
+  const [transcriptText, setTranscriptText] = useState("");
+  const [isSavingTranscript, setIsSavingTranscript] = useState(false);
+
+  // --- 講師專屬隨堂重點便利貼編輯狀態 ---
   const [editingSticky, setEditingSticky] = useState<LectureSticky | null>(null);
-  const [isEditingArticle, setIsEditingArticle] = useState(false);
-  const [editingArticleText, setEditingArticleText] = useState("");
   const [isSavingLecture, setIsSavingLecture] = useState(false);
 
   const isRecordingThisSlide = Boolean(recordingState?.isRecording && recordingState.slideId === slide.id);
@@ -1029,7 +1042,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
   const lectureClassId = classMetadata?.id || userSession?.classId || 'default-split';
   const lectureGenId = classMetadata?.currentGeneration || 1;
 
-  // 監聽雲端隨堂重點 (全班即時連線同步，包含便利貼與詳細內容)
+  // 監聽雲端隨堂重點 (全班即時連線同步，包含便利貼、提示詞與附件)
   useEffect(() => {
     const unsubscribe = subscribeLectureNote(lectureClassId, lectureGenId, slide.id, (data) => {
       setLectureData(data);
@@ -1039,33 +1052,106 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
     };
   }, [slide.id, lectureClassId, lectureGenId]);
 
-  // 換頁時自動判定頁籤：TEAM TASK 頁面優先展示成果筆記，一般頁面直接展示重點便利貼
+  // 同步逐字稿純文字
+  useEffect(() => {
+    setTranscriptText(lectureData?.rawCleanTranscript || "");
+  }, [lectureData?.rawCleanTranscript, slide.id]);
+
+  // 換頁時自動判定頁籤：TEAM TASK 頁面優先展示小組成果筆記，一般頁面直接展示重點便利貼
   useEffect(() => {
     if (isTask) {
       setActiveTab("note");
     } else {
       setActiveTab("stickies");
     }
-    setIsEditingArticle(false);
     setEditingSticky(null);
   }, [slide.id, isTask]);
 
-  // 講師編輯：儲存課堂詳細內容
-  const handleSaveArticle = async (newText: string) => {
-    if (!lectureData && !newText.trim()) return;
-    setIsSavingLecture(true);
+  // 既有內建提示詞範本對應
+  const getSlideBuiltInPrompts = (slideId: string): SlidePromptItem[] => {
+    if (slideId === "slide-3") {
+      return [{
+        id: "builtin-slide-3",
+        title: "DoD & DoR 概念學習網頁生成 Prompt",
+        description: "產生 Definition of Done 與 Definition of Ready 完整深度比較與案例學習 HTML 頁面",
+        promptText: slide3Prompt,
+        createdAt: 0
+      }];
+    }
+    if (slideId === "slide-4") {
+      return [{
+        id: "builtin-slide-4",
+        title: "User Story & AC 學習生成 Prompt",
+        description: "理解 User Story、Acceptance Criteria、3C 與 INVEST 概念及案例應用",
+        promptText: slide4Prompt,
+        createdAt: 0
+      }];
+    }
+    if (slideId === "slide-16") {
+      return [{
+        id: "builtin-slide-16",
+        title: "MVP 與 MMF 概念學習網頁生成 Prompt",
+        description: "以同一產品案例深度釐清 Minimum Viable Product 與 Minimally Marketable Feature 核心差異",
+        promptText: slide16Prompt,
+        createdAt: 0
+      }];
+    }
+    return [];
+  };
+
+  const allPrompts: SlidePromptItem[] = [
+    ...getSlideBuiltInPrompts(slide.id),
+    ...(lectureData?.prompts || [])
+  ];
+  const allAttachments: SlideAttachmentItem[] = lectureData?.attachments || [];
+  const allExamples = slide.examples || [];
+
+  // 一鍵複製提示詞
+  const handleCopyPrompt = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPromptId(id);
+    setTimeout(() => {
+      setCopiedPromptId(null);
+    }, 2000);
+  };
+
+  // 講師儲存提示詞
+  const handleSavePrompt = async (promptItem: SlidePromptItem) => {
+    await saveSlidePrompt(lectureClassId, lectureGenId, slide.id, promptItem, lectureData?.prompts || []);
+  };
+
+  // 講師刪除提示詞
+  const handleDeletePrompt = async (promptId: string) => {
+    if (!window.confirm("確定要刪除這則提示詞嗎？")) return;
+    await deleteSlidePrompt(lectureClassId, lectureGenId, slide.id, promptId, lectureData?.prompts || []);
+  };
+
+  // 講師儲存附件
+  const handleSaveAttachment = async (attachmentItem: SlideAttachmentItem) => {
+    await saveSlideAttachment(lectureClassId, lectureGenId, slide.id, attachmentItem, lectureData?.attachments || []);
+  };
+
+  // 講師刪除附件
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!window.confirm("確定要刪除這項附件資源嗎？")) return;
+    await deleteSlideAttachment(lectureClassId, lectureGenId, slide.id, attachmentId, lectureData?.attachments || []);
+  };
+
+  // 講師編輯：儲存隨堂逐字稿與問答
+  const handleSaveTranscript = async () => {
+    setIsSavingTranscript(true);
     try {
       await saveLectureNote(lectureClassId, lectureGenId, slide.id, {
         slideTitle: slide.title,
         stickies: lectureData?.stickies || [],
-        textbookArticle: newText,
+        rawCleanTranscript: transcriptText,
         recordedSeconds: lectureData?.recordedSeconds || 0
       });
-      setIsEditingArticle(false);
+      alert("隨堂逐字稿與問答已儲存！");
     } catch (err: any) {
-      alert("儲存課堂詳細內容失敗：" + (err?.message || "請檢查網路連線"));
+      alert("儲存逐字稿失敗：" + (err?.message || "請檢查網路連線"));
     } finally {
-      setIsSavingLecture(false);
+      setIsSavingTranscript(false);
     }
   };
 
@@ -1241,7 +1327,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
     <div className="flex-1 flex flex-col h-full bg-white select-none overflow-hidden p-4 sm:p-5">
       {/* Title & Tabs Selector / Dynamic Actions */}
       <div className="flex justify-between items-center mb-3 shrink-0 border-b border-slate-100 pb-2.5">
-        {/* 標籤頁切換列：TEAM TASK 頁面展示小組成果筆記，講述頁直接展示重點便利貼或詳細內容 */}
+        {/* 標籤頁切換列：四大支柱內容模型 (便利貼、提示詞、範例附件、逐字稿) */}
         <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 overflow-x-auto no-scrollbar">
           {/* 團隊演練頁：優先顯示小組成果筆記 */}
           {isTask && (
@@ -1258,7 +1344,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             </button>
           )}
 
-          {/* 重點便利貼標籤 */}
+          {/* 1. 重點便利貼標籤 */}
           <button
             type="button"
             onClick={() => setActiveTab("stickies")}
@@ -1269,50 +1355,82 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             }`}
           >
             <span>📌 重點便利貼</span>
-            {hasLectureContent && (
-              <span className="bg-emerald-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                {lectureData?.stickies?.length || "✓"}
-              </span>
-            )}
+            <span className="bg-emerald-600 text-white text-[9px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center font-bold">
+              {lectureData?.stickies?.length || 0}
+            </span>
           </button>
 
-          {/* 課堂詳細內容標籤 (有講述內容時提供分頁切換) */}
-          {hasLectureContent && (
-            <button
-              type="button"
-              onClick={() => setActiveTab("article")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                activeTab === "article"
-                  ? "bg-white text-indigo-800 shadow-xs border border-slate-200/80"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <span>📖 課堂詳細內容</span>
-            </button>
-          )}
+          {/* 2. 實戰提示詞標籤 (學員與講師皆可見) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("prompts")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              activeTab === "prompts"
+                ? "bg-white text-indigo-800 shadow-xs border border-slate-200/80"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <span>💡 提示詞工具</span>
+            <span className="bg-indigo-600 text-white text-[9px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center font-bold">
+              {allPrompts.length}
+            </span>
+          </button>
 
-          {/* 補充範例標籤 (若有) */}
-          {hasExamples && (
+          {/* 3. 範例與附件標籤 (學員與講師皆可見) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("examples")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              activeTab === "examples"
+                ? "bg-white text-fubon-blue shadow-xs border border-slate-200/80"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <span>🖼️ 範例與附件</span>
+            <span className="bg-blue-600 text-white text-[9px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center font-bold">
+              {allExamples.length + allAttachments.length}
+            </span>
+          </button>
+
+          {/* 4. 講師專屬：隨堂逐字稿與師生 Q&A (學員端完全隱藏) */}
+          {isInstructor && (
             <button
               type="button"
-              onClick={() => setActiveTab("example")}
+              onClick={() => setActiveTab("transcript")}
               className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                activeTab === "example"
-                  ? "bg-white text-indigo-700 shadow-xs border border-slate-200/80"
-                  : "text-slate-600 hover:text-slate-900"
+                activeTab === "transcript"
+                  ? "bg-white text-rose-800 shadow-xs border border-slate-200/80"
+                  : "text-rose-700 hover:text-rose-900"
               }`}
             >
-              <span>💡 參考範例</span>
-              <span className="bg-rose-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                {slide.examples?.length}
-              </span>
+              <span>🎙️ 逐字稿/Q&A</span>
+              {Boolean(lectureData?.rawCleanTranscript) && (
+                <span className="bg-rose-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                  ✓
+                </span>
+              )}
             </button>
           )}
         </div>
 
         {/* 右側動態工具列 */}
         <div className="flex items-center gap-2">
-          {(activeTab === "stickies" || activeTab === "article") && (
+          {/* 講師專屬：單一共享教材資源上傳按鈕 (支援提示詞/附件) */}
+          {isInstructor && (
+            <button
+              type="button"
+              onClick={() => {
+                setUnifiedModalInitialType(activeTab === "examples" ? "attachment" : "prompt");
+                setShowUnifiedModal(true);
+              }}
+              className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
+              title="上傳本頁教材資源（AI 提示詞或範例附件）"
+            >
+              <span>➕ 上傳資源</span>
+            </button>
+          )}
+
+          {activeTab === "stickies" && (
             <div className="flex items-center gap-2">
               {/* 講述時間標籤 */}
               {hasLectureContent && lectureData?.recordedSeconds ? (
@@ -1321,31 +1439,8 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 </span>
               ) : null}
 
-              {/* 講師專屬：編輯詳細內容按鈕 */}
-              {isInstructor && activeTab === "article" && hasLectureContent && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isEditingArticle) {
-                      setIsEditingArticle(false);
-                    } else {
-                      setEditingArticleText(lectureData?.textbookArticle || "");
-                      setIsEditingArticle(true);
-                    }
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
-                    isEditingArticle
-                      ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                      : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
-                  }`}
-                  title={isEditingArticle ? "取消編輯" : "編輯課堂詳細內容"}
-                >
-                  <span>{isEditingArticle ? "✖ 取消編輯" : "✏️ 編輯詳細內容"}</span>
-                </button>
-              )}
-
               {/* 講師專屬：新增便利貼按鈕 */}
-              {isInstructor && activeTab === "stickies" && hasLectureContent && (
+              {isInstructor && hasLectureContent && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1412,12 +1507,6 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 <span>{isRecording ? "正在聆聽..." : "🎙️ 語音筆記"}</span>
               </button>
             </div>
-          )}
-
-          {activeTab === "example" && (
-            <span className="text-xs font-mono text-slate-400">
-              範例圖片模式
-            </span>
           )}
         </div>
       </div>
@@ -1631,49 +1720,142 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* 標籤頁 2：課堂詳細內容 (教科書級課堂講述完整詳解) */}
+      {/* 標籤頁 2：實戰提示詞 (1:N 提示詞庫，一鍵複製與講師維護) */}
       {/* ======================================================== */}
-      {activeTab === "article" && (
+      {activeTab === "prompts" && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          {isEditingArticle && isInstructor ? (
-            <div className="flex-1 flex flex-col overflow-hidden gap-3">
-              <div className="flex items-center justify-between shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                  <span>✏️</span>
-                  <span>正在編輯課堂詳細內容 (支援 Markdown 標題與條列格式)</span>
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingArticle(false)}
-                    className="px-3 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          {allPrompts.length > 0 ? (
+            <div className="flex-1 overflow-y-auto pr-1 space-y-4 pb-6">
+              {allPrompts.map((p) => {
+                const isCopied = copiedPromptId === p.id;
+                const isBuiltin = p.id.startsWith("builtin-");
+                return (
+                  <div
+                    key={p.id}
+                    className="p-5 rounded-3xl bg-slate-50/80 border border-slate-200/80 hover:border-indigo-300 transition-all shadow-xs flex flex-col gap-3 group"
                   >
-                    取消
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSavingLecture}
-                    onClick={() => handleSaveArticle(editingArticleText)}
-                    className="px-3.5 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-black transition-all shadow-sm cursor-pointer active:scale-95"
-                  >
-                    {isSavingLecture ? "儲存中..." : "💾 儲存並同步給全班"}
-                  </button>
-                </div>
-              </div>
-              <textarea
-                value={editingArticleText}
-                onChange={(e) => setEditingArticleText(e.target.value)}
-                className="flex-1 w-full p-4 rounded-2xl bg-white border border-indigo-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 leading-relaxed text-xs sm:text-sm text-slate-800 font-sans outline-none resize-none shadow-inner"
-                placeholder="輸入課堂講述詳細內容..."
-              />
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 font-black text-xs flex items-center justify-center">
+                            💡
+                          </span>
+                          <h4 className="font-black text-sm text-slate-900">
+                            {p.title}
+                          </h4>
+                          {isBuiltin ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-600 font-bold">
+                              課堂官方
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold">
+                              講師即時補充
+                            </span>
+                          )}
+                        </div>
+                        {p.description && (
+                          <p className="text-xs text-slate-500 mt-1 pl-8 font-medium">
+                            {p.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPrompt(p.id, p.promptText)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 ${
+                            isCopied
+                              ? "bg-emerald-600 text-white shadow-emerald-500/20"
+                              : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20"
+                          }`}
+                          title="點擊複製完整提示詞至剪貼簿"
+                        >
+                          <span>{isCopied ? "✓" : "📋"}</span>
+                          <span>{isCopied ? "已複製!" : "一鍵複製"}</span>
+                        </button>
+                        {isInstructor && !isBuiltin && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePrompt(p.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="刪除此提示詞"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 提示詞文字預覽 (優雅折疊高度與等寬字型) */}
+                    <div className="bg-white p-3.5 rounded-2xl border border-slate-200 text-xs font-mono text-slate-700 leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto selection:bg-indigo-100">
+                      {p.promptText}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto pr-1 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-100 leading-relaxed text-xs sm:text-sm text-slate-700 whitespace-pre-line font-medium pb-6">
-              {lectureData?.textbookArticle}
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 mb-3 text-2xl shadow-inner">
+                💡
+              </div>
+              <h4 className="text-sm font-black text-slate-800 mb-1">本頁尚未設定專屬提示詞</h4>
+              <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                {isInstructor
+                  ? "點擊右上角「➕ 上傳資源」，即可為學員新增本頁專用的 AI 實戰提示詞範本。"
+                  : "講師尚未在此頁提供專用提示詞，可配合課堂引導進行操作。"}
+              </p>
+              {isInstructor && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnifiedModalInitialType("prompt");
+                    setShowUnifiedModal(true);
+                  }}
+                  className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black shadow-md transition-all cursor-pointer active:scale-95"
+                >
+                  ➕ 新增提示詞範本
+                </button>
+              )}
             </div>
           )}
         </div>
       )}
+
+      {/* ======================================================== */}
+      {/* 標籤頁：隨堂逐字稿與師生 Q&A (僅講師可見/可編輯，課末生成專書之原料) */}
+      {/* ======================================================== */}
+      {isInstructor && activeTab === "transcript" && (
+        <div className="flex-1 flex flex-col overflow-hidden gap-3">
+          <div className="flex items-center justify-between shrink-0 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+            <div>
+              <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                <span>🎙️</span>
+                <span>隨堂語音逐字稿與問答 (去贅字錯字修潤)</span>
+              </span>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                🔒 此分頁僅講師可見，學員端完全隱藏。課末將以此為原料，滾動生成出版級教材專書。
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={isSavingTranscript}
+              onClick={handleSaveTranscript}
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5"
+            >
+              <span>{isSavingTranscript ? "儲存中..." : "💾 儲存逐字稿"}</span>
+            </button>
+          </div>
+          <textarea
+            value={transcriptText}
+            onChange={(e) => setTranscriptText(e.target.value)}
+            className="flex-1 w-full p-4 rounded-2xl bg-white border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 leading-relaxed text-xs sm:text-sm text-slate-800 font-mono outline-none resize-none shadow-inner"
+            placeholder="此處將在您錄音講授後，由小編自動填入去除贅字口誤並整理師生問答的逐字清稿。您也可以在此手動增修與備註..."
+          />
+        </div>
+      )}
+
 
       {/* ======================================================== */}
       {/* 標籤頁 2：小組筆記 (原隨堂筆記與租約鎖協作) */}
@@ -1945,49 +2127,152 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* 標籤頁 3：補充參考範例 */}
+      {/* 標籤頁 3：實戰範例與附件 (1:N 範例與講師附件庫) */}
       {/* ======================================================== */}
-      {activeTab === "example" && (
-        <div className="flex-1 overflow-y-auto space-y-6 pr-1">
-          {slide.examples?.map((ex, index) => {
-            const exUrl = getImageUrl(ex.image);
-            return (
-              <div key={index} className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-fubon-green rounded-full" />
-                    {ex.title}
-                  </h4>
-                  <span className="text-[10px] text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200/50 font-mono">
-                    範例 {index + 1}
-                  </span>
-                </div>
-
-                {ex.description && (
-                  <p className="text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-100 font-medium">
-                    {ex.description}
-                  </p>
-                )}
-
-                {ex.image && (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 group cursor-zoom-in">
-                    <img
-                      src={exUrl}
-                      alt={ex.title}
-                      onClick={() => onImageClick?.(exUrl)}
-                      className="w-full object-contain max-h-[350px] transition-transform duration-300 group-hover:scale-[1.01]"
-                    />
-                    <div className="absolute bottom-2 right-2 bg-slate-900/60 text-white text-[9px] px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
-                      </svg>
-                      點擊放大
+      {activeTab === "examples" && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {(allExamples.length > 0 || allAttachments.length > 0) ? (
+            <div className="flex-1 overflow-y-auto space-y-5 pr-1 pb-6">
+              {/* 1. 課堂內建投影片範例 */}
+              {allExamples.map((ex, index) => {
+                const exUrl = getImageUrl(ex.image);
+                return (
+                  <div key={`builtin-ex-${index}`} className="bg-slate-50/80 rounded-3xl border border-slate-200/80 p-4 sm:p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-slate-800 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full" />
+                        <span>{ex.title}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200/70 text-slate-600 font-bold">
+                          官方範例
+                        </span>
+                      </h4>
+                      <span className="text-[10px] text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200/50 font-mono">
+                        範例 #{index + 1}
+                      </span>
                     </div>
+
+                    {ex.description && (
+                      <p className="text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-2xl border border-slate-100 font-medium">
+                        {ex.description}
+                      </p>
+                    )}
+
+                    {ex.image && (
+                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 group cursor-zoom-in">
+                        <img
+                          src={exUrl}
+                          alt={ex.title}
+                          onClick={() => onImageClick?.(exUrl)}
+                          className="w-full object-contain max-h-[380px] transition-transform duration-300 group-hover:scale-[1.01]"
+                        />
+                        <div className="absolute bottom-2 right-2 bg-slate-900/70 text-white text-[10px] px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none font-bold">
+                          <span>🔍 點擊放大燈箱</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                );
+              })}
+
+              {/* 2. 講師雲端上傳附件/範例 */}
+              {allAttachments.map((att) => {
+                const isImg = att.fileType === 'image';
+                return (
+                  <div key={att.id} className="bg-slate-50/80 rounded-3xl border border-slate-200/80 p-4 sm:p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-indigo-500 rounded-full" />
+                        <h4 className="text-xs font-black text-slate-800">
+                          {att.title}
+                        </h4>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">
+                          講師直傳資源
+                        </span>
+                      </div>
+                      {isInstructor && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAttachment(att.id)}
+                          className="text-xs text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="刪除此附件資源"
+                        >
+                          🗑️ 刪除
+                        </button>
+                      )}
+                    </div>
+
+                    {att.description && (
+                      <p className="text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-2xl border border-slate-100 font-medium">
+                        {att.description}
+                      </p>
+                    )}
+
+                    {isImg ? (
+                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 group cursor-zoom-in">
+                        <img
+                          src={att.fileUrl}
+                          alt={att.title}
+                          onClick={() => onImageClick?.(att.fileUrl)}
+                          className="w-full object-contain max-h-[380px] transition-transform duration-300 group-hover:scale-[1.01]"
+                        />
+                        <div className="absolute bottom-2 right-2 bg-slate-900/70 text-white text-[10px] px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none font-bold">
+                          <span>🔍 點擊放大燈箱</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
+                            {att.fileType.toUpperCase()}
+                          </span>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900">
+                              {att.title}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              文件資源 (PDF / 文件)
+                            </div>
+                          </div>
+                        </div>
+                        <a
+                          href={att.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1"
+                        >
+                          <span>開啟/下載</span>
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-3 text-2xl shadow-inner">
+                📎
               </div>
-            );
-          })}
+              <h4 className="text-sm font-black text-slate-800 mb-1">本頁尚未提供範例或補充附件</h4>
+              <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                {isInstructor
+                  ? "點擊右上角「➕ 上傳資源」，即可為全班上傳本頁實務範例圖片或參考文件。"
+                  : "講師尚未提供本頁參考範例或附件。"}
+              </p>
+              {isInstructor && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnifiedModalInitialType("attachment");
+                    setShowUnifiedModal(true);
+                  }}
+                  className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md transition-all cursor-pointer active:scale-95"
+                >
+                  ➕ 上傳範例或附件
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -2186,6 +2471,20 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
           </div>
         </div>
       )}
+
+      {/* 講師專屬：統一教材資源上傳彈窗 (提示詞 vs 附件) */}
+      {isInstructor && (
+        <UnifiedResourceModal
+          isOpen={showUnifiedModal}
+          onClose={() => setShowUnifiedModal(false)}
+          slideId={slide.id}
+          slideTitle={slide.title}
+          initialType={unifiedModalInitialType}
+          onSavePrompt={handleSavePrompt}
+          onSaveAttachment={handleSaveAttachment}
+        />
+      )}
     </div>
   );
 };
+
