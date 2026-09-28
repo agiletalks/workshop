@@ -285,14 +285,56 @@ export interface CompileLectureOptions {
   existingData?: LectureNoteData | null;
 }
 
-// 呼叫小編整理服務（整合 Gemini 深度前後文提煉與在地純文字容錯引擎）
+// 安全 JSON 解析與修復輔助函式
+function extractAndParseJSON(rawText: string): any {
+  if (!rawText) return null;
+  const trimmed = rawText.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch (_) {}
+
+  // 去除 markdown 標籤
+  const stripped = trimmed
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  try {
+    return JSON.parse(stripped);
+  } catch (_) {}
+
+  // 擷取外層大括號 { ... }
+  const firstBrace = stripped.indexOf('{');
+  const lastBrace = stripped.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const jsonStr = stripped.slice(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(jsonStr);
+    } catch (_) {}
+  }
+
+  // 嘗試修補截斷的 JSON
+  if (firstBrace !== -1) {
+    const partial = stripped.slice(firstBrace);
+    const suffixes = ['}', '"}', '"]}', '"}]}', '"}]}}'];
+    for (const suffix of suffixes) {
+      try {
+        return JSON.parse(partial + suffix);
+      } catch (_) {}
+    }
+  }
+
+  return null;
+}
+
+// 呼叫小編整理服務（整合 Gemini 深度前後文提煉與專業逐字清稿）
 export async function compileLectureContent(
   optionsOrTranscript: string | CompileLectureOptions,
   slideTitleArg = '',
   _slideId?: string,
   isAugmentArg = false,
   existingDataArg: LectureNoteData | null = null
-): Promise<{ stickies: LectureSticky[]; textbookArticle: string; rawCleanTranscript?: string }> {
+): Promise<{ stickies: LectureSticky[]; textbookArticle: string; rawCleanTranscript?: string; error?: string }> {
   let transcript = '';
   let slideTitle = '';
   let moduleTitle = '';
@@ -316,7 +358,7 @@ export async function compileLectureContent(
     existingData = existingDataArg;
   }
 
-  const safeTranscript = transcript.length > 5000 ? transcript.slice(-5000) : transcript;
+  const safeTranscript = transcript.length > 15000 ? transcript.slice(-15000) : transcript;
   
   // 檢查是否有 Gemini 金鑰（支援 localStorage 與網址列參數，自動安全抹除）
   let apiKey = typeof localStorage !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
@@ -335,82 +377,94 @@ export async function compileLectureContent(
     }
   }
 
-  // 提示詞建置（前後文脈絡鏈 + 語音錯字智慧校正 + 嚴禁出現任何 AI / 機器人字眼）
+  // 提示詞建置（深入全文研讀 + 敏捷語境語音錯字智慧校正 + 精萃 MECE 便利貼 + 零 AI 機器人字眼）
   let prompt = '';
   if (isAugment && existingData && (existingData.stickies.length > 0 || existingData.textbookArticle)) {
-    prompt = `你是一位專業的敏捷實戰教練與隨堂速記小編。
+    prompt = `你是一位資深的敏捷教練與實務工作坊隨堂速記小編。
 【課程單元】：${moduleTitle || 'SPLIT 需求拆解實戰'} (第 ${pageNumber} 頁)
 【投影片主題】：「${slideTitle}」。
 
-${previousNotesSummary ? `【前情脈絡（前面章節已提煉之重點便籤）】：\n${previousNotesSummary}\n\n` : ''}
-這是講師在課堂中補充講授的最新語音紀錄：
+${previousNotesSummary ? `【前情脈絡（前續頁面已提煉之重點便籤）】：\n${previousNotesSummary}\n\n` : ''}
+這是講師在課堂中補充講授的最新語音紀錄（請完整閱讀）：
 === 補充口語講述內容 ===
 ${safeTranscript}
 
-【目前已有重點便利貼】：
+【目前本頁已有重點便利貼】：
 ${JSON.stringify(existingData.stickies, null, 2)}
 
-【目前已有詳細解說內容】：
-${existingData.textbookArticle}
+【目前本頁已有詳細解說長文】：
+${existingData.textbookArticle || '（無）'}
 
-【整理指引】：
-1. 口語辨識逐字稿可能包含同音錯別字或雜訊（例如語音辨識誤植、贅詞口頭禪等），請依據敏捷開發、需求拆解專業語境智慧修復，絕不照抄荒謬錯字。
-2. 請將新增的講述重點與既有內容進行有機融合：
-   - 整理或增修重點便利貼（維持 2~5 張精華便利貼，模擬學員手寫筆記重點）。
-   - 擴充並豐富詳細解說內容（textbookArticle），將補充的案例、故事、細節或澄清說明編入其中，保持條理分明、親切易讀。
-3. 嚴禁使用「AI提煉」、「AI分析」、「機器人整理」等任何冰冷技術字眼。
+【核心任務與深度思索要求】：
+請完整研讀補充口語講述，經過敏捷心法深度消化思索後，輸出高品質的有機融合成果：
+1. 【語音同音錯字全面校正】：語音辨識常有同音錯字或雜訊（例如「姍姍來遲」誤為「三酸來吃」、「無縫銜接」誤為「無奉前見」等），請依軟體工程、敏捷開發與 AI 工具的專業語境智慧修復，絕不照抄荒謬錯字，並去除「呃、然後、這個」等贅詞。
+2. 【資產一：重點便利貼 (stickies)】：
+   - 將補充內容與既有便利貼進行有機融合或增修（維持 2~4 張精華便利貼，嚴禁生硬切割零碎句子！）。
+   - 每張便利貼均需有清爽主題標題 (title: 4~8 字) 與凝練之核心觀念要點 (points: 2~3 點，每點 15~30 字)。
+3. 【資產二：有機融合修潤逐字稿與問答 (rawCleanTranscript)】：
+   - 將新補充內容與原逐字稿平順銜接修潤，保留完整論述邏輯與原意，並標註問答（若有）。
+4. 【資產三：詳細解說長文 (textbookArticle)】：
+   - 擴充並豐富詳細解說內容，融入補充案例與細節，保持條理分明。
+   - 全文嚴禁出現「AI分析」、「機器人整理」等冰冷字眼。
 
 【輸出格式】：
-純 JSON 物件，不要加入 markdown 程式碼標籤：
+純 JSON 物件：
 {
   "stickies": [
     {
       "title": "4~8字主題標題",
       "color": "yellow|blue|pink|green|purple",
-      "points": ["15~25字核心重點1", "核心重點2"]
+      "points": ["核心重點1", "核心重點2"]
     }
   ],
+  "rawCleanTranscript": "有機融合並修潤之完整逐字稿與問答整理...",
   "textbookArticle": "### 章節重點：...\\n\\n#### 核心概念解析\\n...\\n\\n#### 實務案例與小組落地\\n...\\n\\n#### 關鍵提醒與避坑心得\\n..."
 }`;
   } else {
-    prompt = `你是一位專業的敏捷實戰教練與隨堂速記小編，專精於整理實體工作坊手寫便利貼與隨堂手冊。
+    prompt = `你是一位資深的敏捷教練與實務工作坊隨堂速記小編，專精於提煉課堂精華便利貼與出版級教材專書。
 【課程單元】：${moduleTitle || 'SPLIT 需求拆解實戰'} (第 ${pageNumber} 頁)
 【投影片主題】：「${slideTitle}」。
 
-${previousNotesSummary ? `【前情脈絡（前面章節已提煉之重點便籤）】：\n${previousNotesSummary}\n\n` : ''}
-以下是講師針對這張投影片的口語講述逐字稿：
-
-=== 講師口語講述內容 ===
+${previousNotesSummary ? `【前情脈絡（前續頁面已提煉之重點便籤）】：\n${previousNotesSummary}\n\n` : ''}
+以下是講師針對這張投影片的完整口語講述逐字稿（由語音辨識直接錄製，請完整研讀）：
+=== 講師完整口語講述內容 ===
 ${safeTranscript}
 
-【整理指引與專業要求】：
-1. 【前後文理解與脈絡承接】：請結合前情脈絡與本頁最新講授，理清因果邏輯與觀念承先啟後。
-2. 【智慧錯字校正】：口語辨識逐字稿可能出現同音錯別字（例如「and硬手術」可能是軟硬體術語或口誤；口頭禪、語病等），請基於敏捷需求拆解（SPLIT、User Story、Impact Mapping 等）的專業知識進行語意修正與潤飾，嚴禁照抄不合理的錯字。
-3. 【資產一：重點便利貼 (stickies)】：
-   - 整理出 2 到 4 張代表不同維度且彼此獨立 (MECE) 的重點便利貼（如：現況痛點、核心觀念、實務操作手法、關鍵避坑點）。
-   - 每張標題 (title) 4~8 字清楚點題；重點清單 (points) 2~3 點，每點 15~25 字以內，文字精煉，模擬課堂上手寫便利貼的重點。
-   - 推薦色彩 (color): yellow, blue, pink, green, purple。
-4. 【資產二：純淨修潤逐字稿與問答 (rawCleanTranscript)】：
-   - 請去除贅字、口頭禪、重複結巴，修正專業術語錯別字。
-   - 若講授中有師生問答或課堂互動，請標明：
-     【課堂互動 Q&A】
+【核心任務與深度思索要求】：
+⚠️ 請務必看完整段稿子，透過敏捷專業心法深度思索後，提煉出真正有洞察的重點，絕非粗淺截切句子！時間稍微長沒有關係，品質與深度最重要！
+
+1. 【語音同音錯字全面校正】：
+   口語辨識逐字稿常出現大量同音錯字（例如將「姍姍來遲」辨識為「三酸來吃」、「無縫銜接」辨識為「無奉前見」、「Windsurf/Cursor」辨識為「穩定折器/口罩」、「PRD」辨識為「PAC/皮卡丘」等）。請結合敏捷開發、AI 輔助工程與需求拆解專業語境，進行全面性的智慧校正，修復錯字並濾除「呃、然後、這個呢」等贅字。
+
+2. 【資產一：深度思索重點便利貼 (stickies)】：
+   - ⚠️ 嚴禁直接摘錄或生硬切分講述句子當作便利貼！
+   - 請以敏捷教練的高度，提煉出 2 到 4 張彼此獨立且涵蓋核心 (MECE) 的重點便利貼（例如：工具選型演進、Prompt 提示工程、無縫遷移策略、關鍵避坑點）。
+   - 每張便利貼須具備：
+     * title: 4~8 字精煉明確的主題標題。
+     * color: yellow | blue | pink | green | purple
+     * points: 2~3 點真正經過思索、條理化歸納的核心學習要點（每點 15~30 字，文字凝練、富有實戰指引價值）。
+
+3. 【資產二：純淨修潤逐字稿與課堂問答 (rawCleanTranscript)】：
+   - 去除結巴贅詞，校正同音錯字，保留講師講述原意與生動語調。
+   - 若講述中有師生問答或課堂互動，請標明：
+     【課堂問答 Q&A】
      Q: 學員問題...
      A: 講師答覆...
-   - 若無問答，則整理為一段語意連貫、通暢的口語講述清稿。
-5. 【資產三：詳細解說內容 (textbookArticle)】：
-   - 詳細還原上課過程，文字約 400~800 字。
-   - 以 Markdown 格式輸出（使用 ###, ####, 條列項目, **粗體強調**, > 重點提醒）。
-   - 結構完整包含：Why (核心意圖與為什麼這樣做) + What & How (關鍵概念、步驟作法與實務案例) + 常見誤區與避坑心法。
-   - 語氣生動、務實且具啟發性，嚴禁使用任何「AI」、「人工智慧」、「機器人」等詞彙。
+   - 若無問答，則整理為段落清晰、流暢通達的口語講述清稿。
+
+4. 【資產三：詳細教材專書長文 (textbookArticle)】：
+   - 詳細還原上課精華，文字約 400~1000 字，採出版級 Markdown 格式（使用 ###, ####, 條列項目, **粗體強調**, > 重點提醒）。
+   - 結構完整包含：Why (核心意圖與背景) + What & How (關鍵概念、步驟作法與實務案例) + 常見誤區與避坑心法。
+   - 嚴格規範：全文嚴禁使用「AI提煉」、「AI分析」、「機器人整理」等冰冷字眼，以課堂教練筆記口吻呈現。
 
 【輸出格式】：
-純 JSON 物件，不要包覆外層 markdown 標籤：
+純 JSON 物件：
 {
   "stickies": [
     {
-      "title": "主題名稱",
+      "title": "4~8字主題標題",
       "color": "yellow",
-      "points": ["重點一", "重點二"]
+      "points": ["核心觀念重點1", "核心觀念重點2"]
     }
   ],
   "rawCleanTranscript": "純淨修潤之逐字稿全文與問答整理...",
@@ -419,23 +473,23 @@ ${safeTranscript}
   }
 
   let parsedData: any = null;
+  let lastError = '';
 
   if (apiKey) {
-    // 優先採用 gemini-3.5-flash-lite / 3.1-flash-lite 等最新架構，向下相容舊版模型
+    // 依序使用 Google 官方正式支援之主流模型，避免無效型號造成 404 與逾時
     const models = [
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
-      'gemini-flash-lite-latest',
       'gemini-2.5-flash',
       'gemini-2.0-flash',
-      'gemini-1.5-flash'
+      'gemini-1.5-flash',
+      'gemini-1.5-pro'
     ];
+
     for (const model of models) {
       if (parsedData) break;
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       };
-      let url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       if (apiKey.startsWith('ya29.')) {
         headers['Authorization'] = `Bearer ${apiKey}`;
       } else {
@@ -444,7 +498,8 @@ ${safeTranscript}
 
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 28000);
+        // 給予充裕的思考與長文產出時間（60秒）
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
 
         const resp = await fetch(url, {
           method: 'POST',
@@ -452,7 +507,11 @@ ${safeTranscript}
           signal: controller.signal,
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 8192,
+              responseMimeType: 'application/json'
+            }
           })
         });
 
@@ -460,83 +519,52 @@ ${safeTranscript}
         if (resp.ok) {
           const resJson = await resp.json();
           const rawText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          const cleaned = rawText.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
-          const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            parsedData = JSON.parse(jsonMatch[0]);
+          const parsed = extractAndParseJSON(rawText);
+          if (parsed && Array.isArray(parsed.stickies) && parsed.stickies.length > 0) {
+            parsedData = parsed;
             break;
+          } else {
+            lastError = 'AI 回傳格式非完整 JSON 物件';
           }
         } else {
           const errRes = await resp.json().catch(() => null);
-          console.warn(`[LectureNote] Gemini ${model} returned status ${resp.status}:`, errRes?.error?.message);
+          const errMsg = errRes?.error?.message || `HTTP ${resp.status}`;
+          lastError = `${model}: ${errMsg}`;
+          console.warn(`[LectureNote] Gemini ${model} returned status ${resp.status}:`, errMsg);
         }
-      } catch (apiErr) {
+      } catch (apiErr: any) {
+        lastError = `${model}: ${apiErr?.message || '請求逾時或連線失敗'}`;
         console.warn(`[LectureNote] Gemini ${model} fetch failed:`, apiErr);
       }
     }
+  } else {
+    lastError = '尚未設定 GEMINI_API_KEY，請於右上角『小編設定』填入金鑰';
   }
 
-  // 本機在地小編備援（僅在未設定金鑰或網路斷線時啟動）
+  // 若未設定金鑰或連線失敗：嚴格貫徹「寧可保存原始稿待後續處理，絕不產出 3 秒粗淺截切的假便利貼」
   if (!parsedData || !Array.isArray(parsedData.stickies) || parsedData.stickies.length === 0) {
-    const sentences = safeTranscript
-      .split(/[\n。！？!?；;]+/)
-      .map((s) => s.trim())
-      .filter((s) => s.length >= 2);
-
-    const colors: ('yellow' | 'blue' | 'pink' | 'green' | 'purple')[] = ['yellow', 'green', 'blue', 'pink', 'purple'];
-    const generatedStickies: LectureSticky[] = [];
-
-    if (sentences.length > 0) {
-      const titles = ['課堂核心觀念', '實務拆解心法', '常見盲點提醒', '小組落地行動'];
-      const chunkSize = Math.max(1, Math.ceil(sentences.length / 3));
-
-      for (let i = 0; i < sentences.length && generatedStickies.length < 4; i += chunkSize) {
-        const chunk = sentences.slice(i, i + chunkSize);
-        const idx = generatedStickies.length;
-        generatedStickies.push({
-          id: `sticky_${Date.now()}_${idx}`,
-          title: titles[idx] || `核心重點 ${idx + 1}`,
-          color: colors[idx % colors.length],
-          points: chunk.slice(0, 3)
-        });
-      }
-    } else {
-      generatedStickies.push({
-        id: `sticky_${Date.now()}_0`,
-        title: '課堂隨堂筆記',
-        color: 'yellow',
-        points: [safeTranscript.slice(0, 35) || '隨堂講述重點記錄']
-      });
-    }
-
-    const defaultArticle = `### 課堂主旨：${slideTitle}
-
-#### 講述內容重點整理
-${sentences.map((s) => `- ${s}`).join('\n')}
-
-#### 實務落地建議
-在實務需求拆解過程中，請依照課堂討論之原則，與小組成員共同對齊標準並釐清邊界條件。
-
-> 💡 隨堂提醒：可將重點便利貼作為小組討論與撰寫 User Story 時的實體參考對照。`;
-
+    console.warn('[LectureNote] 無法取得 AI 深度提煉結果:', lastError);
     return {
-      stickies: generatedStickies,
+      stickies: existingData?.stickies || [],
       rawCleanTranscript: safeTranscript,
-      textbookArticle: defaultArticle
+      textbookArticle: existingData?.textbookArticle || '',
+      error: lastError
     };
   }
 
   const validatedStickies: LectureSticky[] = parsedData.stickies.map((s: any, idx: number) => ({
     id: s.id || `sticky_${Date.now()}_${idx}`,
-    title: s.title || `重點 ${idx + 1}`,
+    title: String(s.title || `重點 ${idx + 1}`).trim().slice(0, 20),
     color: ['yellow', 'blue', 'pink', 'green', 'purple'].includes(s.color) ? s.color : 'yellow',
-    points: Array.isArray(s.points) ? s.points : [String(s.points || '')]
+    points: Array.isArray(s.points)
+      ? s.points.map((p: any) => String(p).trim()).filter(Boolean)
+      : [String(s.points || '').trim()].filter(Boolean)
   }));
 
   return {
     stickies: validatedStickies,
-    rawCleanTranscript: parsedData.rawCleanTranscript || parsedData.textbookArticle || safeTranscript,
-    textbookArticle: parsedData.textbookArticle || parsedData.rawCleanTranscript || ''
+    rawCleanTranscript: parsedData.rawCleanTranscript || safeTranscript,
+    textbookArticle: parsedData.textbookArticle || ''
   };
 }
 
@@ -637,12 +665,10 @@ ${combinedRaw.slice(0, 10000)}
 請直接輸出章節 Markdown 內容，不要包含多餘的對話或外層程式碼標籤。`;
 
       const models = [
-        'gemini-3.5-flash-lite',
-        'gemini-3.1-flash-lite',
-        'gemini-flash-lite-latest',
         'gemini-2.5-flash',
         'gemini-2.0-flash',
-        'gemini-1.5-flash'
+        'gemini-1.5-flash',
+        'gemini-1.5-pro'
       ];
       for (const model of models) {
         if (chapterMarkdown) break;
@@ -656,14 +682,14 @@ ${combinedRaw.slice(0, 10000)}
 
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 35000);
+          const timeoutId = setTimeout(() => controller.abort(), 60000);
           const resp = await fetch(url, {
             method: 'POST',
             headers,
             signal: controller.signal,
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.35, maxOutputTokens: 3500 }
+              generationConfig: { temperature: 0.35, maxOutputTokens: 6000 }
             })
           });
           clearTimeout(timeoutId);

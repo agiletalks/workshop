@@ -717,12 +717,17 @@ function App() {
       await saveLectureNote(classId, genId, targetSlideId, {
         stickies: compiled.stickies,
         textbookArticle: compiled.textbookArticle,
+        rawCleanTranscript: compiled.rawCleanTranscript || transcript,
         recordedSeconds: recordedSec,
         instructorName: userSession?.name || '講師'
       });
-    } catch (err) {
+
+      if (compiled.error) {
+        alert(`隨堂錄音逐字稿已妥善保存至「🎙️ 逐字稿/Q&A」分頁！\n\n小編提示：AI 深度思索提煉未完成（${compiled.error}）。\n請至右上角『小編設定』檢查 Gemini 金鑰與連線狀態。`);
+      }
+    } catch (err: any) {
       console.error('[LectureRecord] 小編整理失敗:', err);
-      alert("小編整理筆記時遇到問題，請稍候重試。");
+      alert(`小編整理筆記時遇到問題（${err?.message || '請稍候重試'}），原始逐字稿已保留。`);
     } finally {
       setLectureRecording((prev) => ({
         ...prev,

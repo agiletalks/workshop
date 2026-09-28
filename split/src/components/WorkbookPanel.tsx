@@ -1609,19 +1609,25 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             )
           )}
 
-          {/* 3. 小編工作中 (提煉整理狀態) */}
+          {/* 3. 小編深度思索提煉中 (提煉整理狀態) */}
           {isCompilingThisSlide && (
             <div className="p-8 sm:p-12 rounded-3xl bg-slate-50 border border-slate-200 text-center flex flex-col items-center justify-center my-auto animate-in fade-in duration-300">
               <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl mb-4 animate-bounce">
-                ☕
+                🧠
               </div>
-              <h3 className="text-base font-black text-slate-900 mb-1">小編工作中...</h3>
-              <p className="text-xs text-slate-500 max-w-xs mb-6">
-                小編正在為大家整理剛才的課堂重點，請稍候片刻...
+              <h3 className="text-base font-black text-slate-900 mb-1">隨堂小編深度思索提煉中...</h3>
+              <p className="text-xs text-slate-600 max-w-sm mb-6 leading-relaxed">
+                小編正在完整研讀講述逐字稿，校正語音錯字並深度思索提煉核心觀念便利貼與教材長文（請稍候約 10~25 秒）...
               </p>
               <div className="w-full max-w-sm space-y-3">
-                <div className="h-14 bg-slate-200/60 rounded-2xl animate-pulse" />
-                <div className="h-14 bg-slate-200/40 rounded-2xl animate-pulse" />
+                <div className="h-14 bg-slate-200/60 rounded-2xl animate-pulse flex items-center px-4 gap-3">
+                  <div className="w-6 h-6 rounded-full bg-amber-400/40 animate-ping" />
+                  <div className="h-3 bg-slate-300/80 rounded w-3/4" />
+                </div>
+                <div className="h-14 bg-slate-200/40 rounded-2xl animate-pulse flex items-center px-4 gap-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-400/40" />
+                  <div className="h-3 bg-slate-300/60 rounded w-1/2" />
+                </div>
               </div>
             </div>
           )}
