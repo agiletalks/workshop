@@ -722,10 +722,22 @@ function App() {
         instructorName: userSession?.name || '講師'
       });
 
+      // 先解除編譯狀態，再彈出通知，避免畫面卡在編譯骨架造成誤會
+      setLectureRecording((prev) => ({
+        ...prev,
+        isCompiling: false,
+        compilingSlideId: null
+      }));
+
       if (compiled.error) {
-        alert(`隨堂錄音逐字稿已妥善保存至「🎙️ 逐字稿/Q&A」分頁！\n\n小編提示：AI 深度思索提煉未完成（${compiled.error}）。\n請至右上角『小編設定』檢查 Gemini 金鑰與連線狀態。`);
+        alert(`隨堂錄音逐字稿已妥善保存至「🎙️ 逐字稿/Q&A」分頁！\n\n小編提示：AI 深度思索提煉未完成（${compiled.error}）。\n請至右上角『小編設定』檢查 Gemini 金鑰與連線狀態。\n\n提示：您無須重新錄音，可於「🎙️ 逐字稿/Q&A」分頁點擊『讓小編依此稿思索便利貼』重新提煉。`);
       }
     } catch (err: any) {
+      setLectureRecording((prev) => ({
+        ...prev,
+        isCompiling: false,
+        compilingSlideId: null
+      }));
       console.error('[LectureRecord] 小編整理失敗:', err);
       alert(`小編整理筆記時遇到問題（${err?.message || '請稍候重試'}），原始逐字稿已保留。`);
     } finally {

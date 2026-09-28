@@ -9,6 +9,7 @@ import {
   deleteSlidePrompt,
   saveSlideAttachment,
   deleteSlideAttachment,
+  compileLectureContent,
   type LectureNoteData,
   type LectureSticky,
   type LectureRecordingState,
@@ -1155,6 +1156,46 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
     }
   };
 
+  const [isCompilingFromTranscript, setIsCompilingFromTranscript] = useState(false);
+
+  // 講師主動觸發：依當前逐字稿全文，讓小編重新深度提煉重點便利貼與教材長文
+  const handleSynthesizeFromTranscript = async () => {
+    if (!transcriptText.trim()) {
+      alert("目前尚無逐字稿內容，請先錄音講述或填寫內容。");
+      return;
+    }
+    setIsCompilingFromTranscript(true);
+    try {
+      const compiled = await compileLectureContent({
+        transcript: transcriptText,
+        slideTitle: slide.title,
+        slideId: slide.id,
+        moduleTitle: slide.moduleId || 'SPLIT 需求拆解實戰',
+        pageNumber: slide.page || 1,
+        existingData: lectureData
+      });
+
+      await saveLectureNote(lectureClassId, lectureGenId, slide.id, {
+        stickies: compiled.stickies,
+        textbookArticle: compiled.textbookArticle,
+        rawCleanTranscript: compiled.rawCleanTranscript || transcriptText,
+        recordedSeconds: lectureData?.recordedSeconds || 0,
+        instructorName: userSession?.name || '講師'
+      });
+
+      if (compiled.error) {
+        alert(`小編提煉提示：${compiled.error}\n請至右上角『小編設定』檢查 Gemini 金鑰與連線。`);
+      } else {
+        alert("🎉 隨堂小編已完成深度思索！已成功提煉重點便利貼與教材文章。");
+        setActiveTab("stickies");
+      }
+    } catch (err: any) {
+      alert(`小編整理失敗：${err?.message || '請稍候重試'}`);
+    } finally {
+      setIsCompilingFromTranscript(false);
+    }
+  };
+
   // 講師編輯：儲存重點便利貼 (新增或修改)
   const handleSaveSticky = async (stickyToSave: LectureSticky) => {
     if (!stickyToSave.title.trim()) {
@@ -1844,14 +1885,25 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 🔒 此分頁僅講師可見，學員端完全隱藏。課末將以此為原料，滾動生成出版級教材專書。
               </p>
             </div>
-            <button
-              type="button"
-              disabled={isSavingTranscript}
-              onClick={handleSaveTranscript}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5"
-            >
-              <span>{isSavingTranscript ? "儲存中..." : "💾 儲存逐字稿"}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={isSavingTranscript || isCompilingFromTranscript || !transcriptText.trim()}
+                onClick={handleSynthesizeFromTranscript}
+                className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 text-slate-950 rounded-xl text-xs font-black transition-all shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5"
+                title="無須重新錄音，直接讓小編研讀當前逐字稿全文並提煉重點便利貼與教材長文"
+              >
+                <span>{isCompilingFromTranscript ? "🧠 小編思索中..." : "🧠 讓小編依此稿思索便利貼"}</span>
+              </button>
+              <button
+                type="button"
+                disabled={isSavingTranscript || isCompilingFromTranscript}
+                onClick={handleSaveTranscript}
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5"
+              >
+                <span>{isSavingTranscript ? "儲存中..." : "💾 儲存逐字稿"}</span>
+              </button>
+            </div>
           </div>
           <textarea
             value={transcriptText}

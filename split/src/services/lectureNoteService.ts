@@ -285,6 +285,52 @@ export interface CompileLectureOptions {
   existingData?: LectureNoteData | null;
 }
 
+// 動態取得當前金鑰可用之 Google Gemini 模型清單（自動向 ModelService.ListModels 查詢真實支援名單）
+export async function getAvailableGeminiModels(apiKey: string): Promise<string[]> {
+  try {
+    let url = 'https://generativelanguage.googleapis.com/v1beta/models';
+    const headers: Record<string, string> = {};
+    if (apiKey.startsWith('ya29.')) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    } else {
+      url += `?key=${encodeURIComponent(apiKey)}`;
+      headers['x-goog-api-key'] = apiKey;
+    }
+    const resp = await fetch(url, { headers });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data.models)) {
+        const supported = data.models
+          .filter((m: any) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+          .map((m: any) => m.name.replace(/^models\//, ''));
+        if (supported.length > 0) {
+          // 優先排列 flash 系列（速度快、token 上限大），次之為 pro
+          return supported.sort((a: string, b: string) => {
+            const score = (name: string) => {
+              if (name.includes('flash')) return 1;
+              if (name.includes('pro')) return 2;
+              return 3;
+            };
+            return score(a) - score(b);
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[LectureNote] ListModels failed, using fallback list:', e);
+  }
+  return [
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-exp',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash-001',
+    'gemini-1.5-flash-002',
+    'gemini-1.5-pro',
+    'gemini-1.5-pro-latest'
+  ];
+}
+
 // 安全 JSON 解析與修復輔助函式
 function extractAndParseJSON(rawText: string): any {
   if (!rawText) return null;
@@ -476,23 +522,19 @@ ${safeTranscript}
   let lastError = '';
 
   if (apiKey) {
-    // 依序使用 Google 官方正式支援之主流模型，避免無效型號造成 404 與逾時
-    const models = [
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro'
-    ];
+    // 向 Google ModelService 動態取得支援之真實模型清單
+    const models = await getAvailableGeminiModels(apiKey);
 
     for (const model of models) {
       if (parsedData) break;
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       };
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      let url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       if (apiKey.startsWith('ya29.')) {
         headers['Authorization'] = `Bearer ${apiKey}`;
       } else {
+        url += `?key=${encodeURIComponent(apiKey)}`;
         headers['x-goog-api-key'] = apiKey;
       }
 
@@ -509,8 +551,7 @@ ${safeTranscript}
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
               temperature: 0.3,
-              maxOutputTokens: 8192,
-              responseMimeType: 'application/json'
+              maxOutputTokens: 8192
             }
           })
         });
@@ -664,19 +705,15 @@ ${combinedRaw.slice(0, 10000)}
 
 請直接輸出章節 Markdown 內容，不要包含多餘的對話或外層程式碼標籤。`;
 
-      const models = [
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
-      ];
+      const models = await getAvailableGeminiModels(apiKey);
       for (const model of models) {
         if (chapterMarkdown) break;
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        let url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
         if (apiKey.startsWith('ya29.')) {
           headers['Authorization'] = `Bearer ${apiKey}`;
         } else {
+          url += `?key=${encodeURIComponent(apiKey)}`;
           headers['x-goog-api-key'] = apiKey;
         }
 

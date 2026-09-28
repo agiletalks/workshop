@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getAvailableGeminiModels } from '../services/lectureNoteService';
 
 interface AiConfigModalProps {
   isOpen: boolean;
@@ -36,17 +37,12 @@ export const AiConfigModal: React.FC<AiConfigModalProps> = ({
     }
 
     setTestStatus('testing');
-    setTestMessage('正在測試 Google Gemini 連線...');
+    setTestMessage('正在測試 Google Gemini 連線 (查詢 ModelService)...');
 
     try {
       let lastError = '';
       let isSuccess = false;
-      const models = [
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
-      ];
+      const models = await getAvailableGeminiModels(keyToTest);
 
       for (const model of models) {
         if (isSuccess) break;
@@ -58,6 +54,7 @@ export const AiConfigModal: React.FC<AiConfigModalProps> = ({
         if (keyToTest.startsWith('ya29.')) {
           headers['Authorization'] = `Bearer ${keyToTest}`;
         } else {
+          url += `?key=${encodeURIComponent(keyToTest)}`;
           headers['x-goog-api-key'] = keyToTest;
         }
 
