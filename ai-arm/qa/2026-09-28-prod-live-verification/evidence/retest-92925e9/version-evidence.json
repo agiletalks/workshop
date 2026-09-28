@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-09-28T02:59:12.224Z",
+  "targetCommit": "92925e9",
+  "scope": "Three entry HTML files only; not proof of complete deployment provenance.",
+  "results": [
+    {
+      "file": "index.html",
+      "url": "https://agiletalks-workshop.web.app/workshop/ai-arm/index.html",
+      "status": 200,
+      "liveSha256": "286efff907c1bfd03d5a483f7e5f2fc76e3f57ae0ca067dab1919e248da06226",
+      "commitSha256": "dcadff86c2defc5bf97ee7551e15db9b92ff214bf65926c2f4f16778155fee44",
+      "normalizedLiveSha256": "dcadff86c2defc5bf97ee7551e15db9b92ff214bf65926c2f4f16778155fee44",
+      "normalizedCommitSha256": "dcadff86c2defc5bf97ee7551e15db9b92ff214bf65926c2f4f16778155fee44",
+      "equalIgnoringCRLF": true
+    },
+    {
+      "file": "board.html",
+      "url": "https://agiletalks-workshop.web.app/workshop/ai-arm/board.html",
+      "status": 200,
+      "liveSha256": "19150a95d372ff35a50fec208ff45be8448a78e857d843e98636cec0ed240e4e",
+      "commitSha256": "aa8c8431ce5986338cd58b95d90c3163539de7a5d52a7728148637857168c71b",
+      "normalizedLiveSha256": "aa8c8431ce5986338cd58b95d90c3163539de7a5d52a7728148637857168c71b",
+      "normalizedCommitSha256": "aa8c8431ce5986338cd58b95d90c3163539de7a5d52a7728148637857168c71b",
+      "equalIgnoringCRLF": true
+    },
+    {
+      "file": "admin.html",
+      "url": "https://agiletalks-workshop.web.app/workshop/ai-arm/admin.html",
+      "status": 200,
+      "liveSha256": "50a8195509e5a24a6bd7e8f3e17fd1c3ac49d27025dc4a27ef277796c8011b08",
+      "commitSha256": "7214ee9e195980a81c3315ef88269dc38e1f22bd74e3d6a4866856c8913c95ca",
+      "normalizedLiveSha256": "7214ee9e195980a81c3315ef88269dc38e1f22bd74e3d6a4866856c8913c95ca",
+      "normalizedCommitSha256": "7214ee9e195980a81c3315ef88269dc38e1f22bd74e3d6a4866856c8913c95ca",
+      "equalIgnoringCRLF": true
+    }
+  ]
+}

@@ -1355,7 +1355,7 @@
             <button id="btn-assets-tab-tools" onclick="switchAssetsTab('tools')" class="px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-600 hover:text-slate-900">
               <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
               <span>輔助工具箱</span>
-              <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-mono">3 工具</span>
+              <span id="assets-tools-count-badge" class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-mono">4 工具</span>
             </button>
           </div>
 
@@ -2475,6 +2475,7 @@
             name: name,
             team: null,
             role: 'instructor',
+            classId: resolvedClassId,
             loggedInAt: Date.now()
           };
           activeTeamId = 'team-1'; // 巡堂預設檢視第 1 組筆記
@@ -2489,6 +2490,7 @@
             name: name,
             team: rawTeamVal,
             role: 'student',
+            classId: resolvedClassId,
             loggedInAt: Date.now()
           };
           activeTeamId = rawTeamVal;
@@ -2845,11 +2847,26 @@
       APP_STORAGE_KEY = `ai_arm_auth_user_${currentClassId}`;
       let saved = localStorage.getItem(APP_STORAGE_KEY);
       if (!saved) {
-        saved = localStorage.getItem('ai_arm_auth_user');
+        // 嚴格隔離政策 (AUTH-REVIEW-01)：
+        // 通用備援鍵僅在明確標註為當前班級時才可沿用，嚴防跨班（如從測試班冒領至正式客戶班）串聯！
+        const fallback = localStorage.getItem('ai_arm_auth_user');
+        if (fallback) {
+          try {
+            const parsedFallback = JSON.parse(fallback);
+            if (parsedFallback && parsedFallback.classId === currentClassId) {
+              saved = fallback;
+            }
+          } catch(e) {}
+        }
       }
       if (saved) {
         try {
-          currentUser = JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          // 若保存的身分標註之 classId 與當前班級不符，嚴禁跨班恢復，強制回門禁報到
+          if (parsed && parsed.classId && parsed.classId !== currentClassId) {
+            return false;
+          }
+          currentUser = parsed;
           if (currentUser && currentUser.name && (currentUser.team || currentUser.role === 'instructor')) {
             activeTeamId = currentUser.team || 'team-1';
             applyUserIdentityUI();
@@ -2946,6 +2963,8 @@
       currentUser = {
         name: name,
         team: team,
+        role: currentUser?.role || 'student',
+        classId: currentClassId,
         loggedInAt: currentUser?.loggedInAt || Date.now()
       };
       localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
@@ -7667,6 +7686,8 @@
     function openAssetsModal(initialTab = 'prompts') {
       const modal = document.getElementById('assets-modal');
       if (!modal) return;
+      const toolsBadge = document.getElementById('assets-tools-count-badge');
+      if (toolsBadge) toolsBadge.textContent = `${AI_ARM_TOOLS_CATALOG.length} 工具`;
       switchAssetsTab(initialTab);
       modal.classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
@@ -8963,8 +8984,8 @@ function copyCatalogPromptById(promptId, slideIndex) {
       const slide = SLIDES_DATA[currentSlideIndex - 1] || {};
       const slideTitle = slide.title || targetSlideId;
 
-      const targetEl = document.getElementById('voice-manual-target-slide');
-      if (targetEl) targetEl.textContent = `${targetSlideId} · ${slideTitle}`;
+      const targetEl = document.getElementById('voice-manual-slide-hint') || document.getElementById('voice-manual-target-slide');
+      if (targetEl) targetEl.textContent = `目前頁面：${targetSlideId} · ${slideTitle}`;
 
       const textarea = document.getElementById('voice-manual-input-text');
       if (textarea) textarea.value = '';

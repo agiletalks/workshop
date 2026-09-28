@@ -1,0 +1,36 @@
+{
+  "teacher": [
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T02:59:35.931Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T03:00:09.681Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "log",
+      "message": "[VoiceNote] 🚀 開始為 P05 編排隨堂講義與 MECE 便籤... Object",
+      "timestamp": "2026-09-28T03:00:34.225Z",
+      "url": "https://agiletalks-workshop.web.app/workshop/ai-arm/?c=2026-test"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T03:02:58.927Z",
+      "url": "https://cdn.tailwindcss.com/"
+    }
+  ],
+  "eventTool": [
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T03:03:33.096Z",
+      "url": "https://cdn.tailwindcss.com/"
+    }
+  ]
+}
