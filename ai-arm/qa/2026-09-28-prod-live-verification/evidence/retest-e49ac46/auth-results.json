@@ -1,0 +1,23 @@
+{
+  "teacherOtherClass": {
+    "code": "202609-ibm",
+    "gateVisible": true,
+    "url": "https://agiletalks-workshop.web.app/workshop/ai-arm/?c=202609-ibm",
+    "user": "第 1 組\n|\n學員"
+  },
+  "teacherReturn": {
+    "gateVisible": false,
+    "user": "👑 講師\n|\nQAe49講師 (巡堂模式)"
+  },
+  "studentOtherClass": {
+    "code": "202609-ibm",
+    "gateVisible": true,
+    "url": "https://agiletalks-workshop.web.app/workshop/ai-arm/?c=202609-ibm",
+    "user": "第 1 組\n|\n學員"
+  },
+  "studentReturn": {
+    "gateVisible": false,
+    "url": "https://agiletalks-workshop.web.app/workshop/ai-arm/?c=2026-test",
+    "user": "第 2 組\n|\nQAe49學員"
+  }
+}
