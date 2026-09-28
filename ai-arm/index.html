@@ -2002,6 +2002,18 @@
       localStorage.removeItem(GATEKEEPER_LOCK_KEY);
     } catch (e) {}
 
+    // 安全防護：若網址含有 gemini_key，立即存入 localStorage 並從 URL 清除，防止投影螢幕、截圖或瀏覽歷史洩漏金鑰
+    try {
+      const initUrlParams = new URLSearchParams(window.location.search);
+      if (initUrlParams.has('gemini_key')) {
+        const keyVal = initUrlParams.get('gemini_key');
+        if (keyVal) localStorage.setItem('GEMINI_API_KEY', keyVal);
+        initUrlParams.delete('gemini_key');
+        const cleanQuery = initUrlParams.toString() ? `?${initUrlParams.toString()}` : '';
+        window.history.replaceState({}, '', `${window.location.pathname}${cleanQuery}`);
+      }
+    } catch (e) {}
+
     function getGatekeeperLockState() {
       clearGatekeeperFailures();
       return { isLocked: false, remainingMs: 0, failCount: 0 };
@@ -9091,8 +9103,19 @@ function copyCatalogPromptById(promptId, slideIndex) {
     async function requestLectureCompanionContent(transcript, slideTitle, slideId, isAugment = false) {
       console.log(`[VoiceNote] 🚀 開始為 ${slideId} 編排隨堂講義與 MECE 便籤...`, { length: transcript.length, isAugment });
 
-      const apiKey = localStorage.getItem('GEMINI_API_KEY') ||
-                     (new URLSearchParams(location.search)).get('gemini_key');
+      let apiKey = localStorage.getItem('GEMINI_API_KEY');
+      const urlKey = (new URLSearchParams(location.search)).get('gemini_key');
+      if (urlKey) {
+        apiKey = urlKey;
+        try {
+          localStorage.setItem('GEMINI_API_KEY', urlKey);
+          // 安全防護：立即從網址列抹除 gemini_key 參數，防止講師投影螢幕、截圖或瀏覽器歷史洩漏金鑰
+          const urlParams = new URLSearchParams(location.search);
+          urlParams.delete('gemini_key');
+          const cleanQuery = urlParams.toString() ? `?${urlParams.toString()}` : '';
+          window.history.replaceState({}, '', `${window.location.pathname}${cleanQuery}`);
+        } catch(e) {}
+      }
 
       const safeTranscript = transcript.length > 5000 ? transcript.slice(-5000) : transcript;
       const existingStickies = slideStickiesCache.get(slideId) || [];
