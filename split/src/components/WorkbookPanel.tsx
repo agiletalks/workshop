@@ -1893,7 +1893,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 text-slate-950 rounded-xl text-xs font-black transition-all shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5"
                 title="無須重新錄音，直接讓小編研讀當前逐字稿全文並提煉重點便利貼與教材長文"
               >
-                <span>{isCompilingFromTranscript ? "🧠 小編思索中..." : "🧠 讓小編依此稿思索便利貼"}</span>
+                <span>{isCompilingFromTranscript ? "🧠 小編整理中..." : "🧠 小編整理"}</span>
               </button>
               <button
                 type="button"
