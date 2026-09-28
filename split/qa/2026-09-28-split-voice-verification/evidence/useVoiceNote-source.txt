@@ -1,0 +1,73 @@
+import { useState, useEffect, useCallback } from 'react';
+import { voiceRecorder } from '../services/voiceRecorder';
+
+export function useVoiceNote(onAppendText?: (text: string) => void) {
+  const [isRecording, setIsRecording] = useState(false);
+  const [interimText, setInterimText] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const isSupported = voiceRecorder.isSupported();
+
+  const handleStop = useCallback(() => {
+    if (!isRecording) return;
+    const finalResult = voiceRecorder.stop();
+    setIsRecording(false);
+    setInterimText('');
+    if (finalResult && onAppendText) {
+      onAppendText(finalResult);
+    }
+  }, [isRecording, onAppendText]);
+
+  const handleStart = useCallback(() => {
+    setErrorMessage(null);
+    setInterimText('');
+
+    const started = voiceRecorder.start({
+      onInterim: (interim) => {
+        setInterimText(interim);
+      },
+      onFinal: (finalChunk) => {
+        if (onAppendText && finalChunk.trim()) {
+          onAppendText(finalChunk);
+        }
+      },
+      onError: (err) => {
+        setErrorMessage(err);
+        setIsRecording(false);
+        setInterimText('');
+      }
+    });
+
+    if (started) {
+      setIsRecording(true);
+    } else {
+      setIsRecording(false);
+    }
+  }, [onAppendText]);
+
+  const toggleRecording = useCallback(() => {
+    if (isRecording) {
+      handleStop();
+    } else {
+      handleStart();
+    }
+  }, [isRecording, handleStart, handleStop]);
+
+  // 元件卸載時自動關閉錄音
+  useEffect(() => {
+    return () => {
+      if (isRecording) {
+        voiceRecorder.stop();
+      }
+    };
+  }, [isRecording]);
+
+  return {
+    isRecording,
+    interimText,
+    isSupported,
+    errorMessage,
+    startRecording: handleStart,
+    stopRecording: handleStop,
+    toggleRecording
+  };
+}

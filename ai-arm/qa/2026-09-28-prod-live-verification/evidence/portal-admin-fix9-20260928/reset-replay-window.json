@@ -1,0 +1,64 @@
+{
+  "at": "2026-09-28T07:52:45.649Z",
+  "classId": "qa-split-retest",
+  "method": "Real production adapter; QA wrapper probes before releaseWriteLease; no product changes",
+  "probeBodyFields": [
+    "name"
+  ],
+  "authorizationHeader": false,
+  "before": {
+    "status": "active",
+    "generation": "7"
+  },
+  "beforeProbe": {
+    "at": "2026-09-28T07:52:46.982Z",
+    "status": 403
+  },
+  "publicLeaseFields": [],
+  "duringProbe": {
+    "at": "2026-09-28T07:52:51.477Z",
+    "status": 403
+  },
+  "timestampSource": "Unauthenticated public class GET: updatedAt; no secret read or adapter lease return used",
+  "auditReplay": {
+    "status": 403,
+    "documentId": "qa-fix9-replay-1790581971679",
+    "authorizationHeader": false,
+    "bodyFields": [
+      "type",
+      "classId",
+      "clientRequestId",
+      "fromGeneration",
+      "toGeneration",
+      "reason",
+      "timestamp"
+    ]
+  },
+  "resetRequestReplay": {
+    "status": 403,
+    "documentId": "qa-fix9-replay-1790581971679",
+    "authorizationHeader": false,
+    "bodyFields": [
+      "clientRequestId",
+      "classId",
+      "generation",
+      "reason",
+      "createdAt"
+    ]
+  },
+  "releaseFinished": true,
+  "operation": {
+    "success": true,
+    "newGeneration": 8,
+    "isDuplicate": false
+  },
+  "afterProbe": {
+    "at": "2026-09-28T07:52:53.591Z",
+    "status": 403
+  },
+  "after": {
+    "status": "active",
+    "generation": "8",
+    "nameUnchanged": true
+  }
+}

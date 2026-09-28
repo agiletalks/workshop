@@ -1,0 +1,22 @@
+ M firebase.json
+ M index.html
+ M scripts/build-all.js
+ M scripts/serve.js
+ M split/package.json
+ M split/src/App.tsx
+ M split/src/components/PasswordGate.tsx
+ M split/src/components/TopBar.tsx
+ M split/src/components/WorkbookPanel.tsx
+ M split/src/data/app-config.ts
+ M split/vite.config.ts
+?? adapters/
+?? admin.html
+?? ai-arm/qa/2026-09-28-prod-live-verification/QA_RETEST_REQUEST_PORTAL_ADMIN_20260928.md
+?? scripts/scan-collections.js
+?? split/public/board.html
+?? split/qa/
+?? split/scratch/
+?? split/src/components/QuestionsDrawer.tsx
+?? split/src/hooks/useVoiceNote.ts
+?? split/src/services/
+?? tests/

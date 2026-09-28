@@ -1,0 +1,42 @@
+{
+  "at": "2026-09-28T05:24:47.764Z",
+  "files": [
+    {
+      "path": "index.html",
+      "status": 200,
+      "served": "4da4314811e0a97951817ad13dbb55dcb5cc581d6eb8dd0b9420c0b1abb1f4f4",
+      "disk": "4da4314811e0a97951817ad13dbb55dcb5cc581d6eb8dd0b9420c0b1abb1f4f4",
+      "match": true
+    },
+    {
+      "path": "admin.html",
+      "status": 200,
+      "served": "283a13dddac6577e0b0b844db4cf0926d208c45d0178eeb8dea3919703ffdd01",
+      "disk": "283a13dddac6577e0b0b844db4cf0926d208c45d0178eeb8dea3919703ffdd01",
+      "match": true
+    },
+    {
+      "path": "adapters/split-adapter.js",
+      "status": 200,
+      "served": "37471d06951c074470c5f46b9df1e2505eb761a0caf81ae4d2f834b3a3b9daea",
+      "disk": "37471d06951c074470c5f46b9df1e2505eb761a0caf81ae4d2f834b3a3b9daea",
+      "match": true
+    },
+    {
+      "path": "split/index.html",
+      "status": 200,
+      "served": "2b6d147dde97e3e8e0de25b4e319b4593bfc99b27434377f10373e07978c24b1",
+      "disk": "2b6d147dde97e3e8e0de25b4e319b4593bfc99b27434377f10373e07978c24b1",
+      "match": true
+    }
+  ],
+  "unauthSecret": {
+    "status": 200,
+    "fieldNames": [
+      "adminPasswordHash",
+      "updatedAt",
+      "classId",
+      "studentPasscode"
+    ]
+  }
+}

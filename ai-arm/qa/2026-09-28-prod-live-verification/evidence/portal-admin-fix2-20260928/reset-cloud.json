@@ -1,0 +1,81 @@
+{
+  "at": "2026-09-28T05:26:13.942Z",
+  "classStatus": 200,
+  "classFields": {
+    "name": {
+      "stringValue": "QA Portal Admin 複測專用"
+    },
+    "status": {
+      "stringValue": "active"
+    },
+    "createdAt": {
+      "integerValue": "1790571882937"
+    },
+    "currentGeneration": {
+      "integerValue": "3"
+    },
+    "notes": {
+      "stringValue": ""
+    },
+    "lastClearedAt": {
+      "integerValue": "1790573116924"
+    },
+    "id": {
+      "stringValue": "qa-split-retest"
+    },
+    "teamCount": {
+      "integerValue": "6"
+    },
+    "lastResetReason": {
+      "stringValue": "QA 20260928 複測：確認自訂重設原因持久化"
+    },
+    "updatedAt": {
+      "integerValue": "1790573116924"
+    }
+  },
+  "auditStatus": 200,
+  "audits": [
+    {
+      "type": {
+        "stringValue": "CLASS_RESET_GENERATION"
+      },
+      "classId": {
+        "stringValue": "qa-split-retest"
+      },
+      "fromGeneration": {
+        "integerValue": "1"
+      },
+      "toGeneration": {
+        "integerValue": "2"
+      },
+      "timestamp": {
+        "integerValue": "1790571967800"
+      }
+    },
+    {
+      "type": {
+        "stringValue": "CLASS_RESET_GENERATION"
+      },
+      "classId": {
+        "stringValue": "qa-split-retest"
+      },
+      "fromGeneration": {
+        "integerValue": "2"
+      },
+      "toGeneration": {
+        "integerValue": "3"
+      },
+      "reason": {
+        "stringValue": "QA 20260928 複測：確認自訂重設原因持久化"
+      },
+      "timestamp": {
+        "integerValue": "1790573116924"
+      }
+    }
+  ],
+  "wrongPasswordTest": {
+    "classId": "qa-split-test-01",
+    "secretStatus": 200,
+    "enteredMatchesConfigured": false
+  }
+}

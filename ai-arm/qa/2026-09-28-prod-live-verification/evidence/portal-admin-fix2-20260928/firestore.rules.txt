@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // 1. SPLIT 課程資料架構
+    // ==========================================
+
+    // 機密憑證：絕對禁止未授權讀取 (阻擋外部 REST 及未授權直接讀取)
+    match /split_class_secrets/{classId} {
+      allow read: if false;
+      allow write: if true;
+    }
+
+    // 公開班級清單 (不含密碼)
+    match /split_classes/{classId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // 冪等性重設請求與審計日誌
+    match /split_reset_requests/{requestId} {
+      allow read, write: if true;
+    }
+    match /split_audit_logs/{logId} {
+      allow read, write: if true;
+    }
+
+    // 世代演練筆記與提問抽屜
+    match /split_data/{classId}/generations/{genId}/notes/{noteId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /split_data/{classId}/questions/{questionId} {
+      allow read, write: if true;
+    }
+
+    // ==========================================
+    // 2. AI-ARM 與 AI-Align 既有相容路徑 (100% 舊相容)
+    // ==========================================
+
+    match /ai_arm_classes/{classId} {
+      allow read, write: if true;
+    }
+
+    match /classes/{classId}/slides/{slideId}/instructorNotes/{docId} {
+      allow read, write: if true;
+    }
+
+    match /aigile_boards/{boardId} {
+      allow read, write: if true;
+    }
+
+    match /ai_arm_presence/{presenceId} {
+      allow read, write: if true;
+    }
+
+    // ==========================================
+    // 3. 棉花糖挑戰等既有專案集合
+    // ==========================================
+
+    match /agiletalks-db/{doc=**} {
+      allow read, write: if true;
+    }
+  }
+}

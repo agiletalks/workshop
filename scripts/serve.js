@@ -123,7 +123,7 @@ const server = http.createServer((req, res) => {
   }
 
   // 2. 短路徑相容別名自動重定向 (例如 /ai-arm/, /ai-align/, /marshmallow/, /hook/, /split/)
-  const workshopAliases = ['ai-arm', 'ai-align', 'marshmallow', 'hook'];
+  const workshopAliases = ['ai-arm', 'ai-align', 'marshmallow', 'hook', 'split'];
   for (const name of workshopAliases) {
     if (reqPath === `/${name}` || reqPath.startsWith(`/${name}/`)) {
       const rest = reqPath.slice(name.length + 1);
@@ -132,14 +132,6 @@ const server = http.createServer((req, res) => {
       res.end();
       return;
     }
-  }
-
-  if (reqPath === '/split' || reqPath.startsWith('/split/')) {
-    const rest = reqPath.slice(6);
-    const target = `/hangout/split${rest}${queryString}`;
-    res.writeHead(302, { 'Location': target });
-    res.end();
-    return;
   }
 
   let filePath = path.join(ROOT_DIR, reqPath);
@@ -159,8 +151,8 @@ const server = http.createServer((req, res) => {
     filePath = path.join(ROOT_DIR, 'workshop', 'marshmallow', 'index.html');
   }
 
-  if (!fs.existsSync(filePath) && reqPath.startsWith('/hangout/split')) {
-    filePath = path.join(ROOT_DIR, 'hangout', 'split', 'index.html');
+  if (!fs.existsSync(filePath) && (reqPath.startsWith('/workshop/split') || reqPath.startsWith('/hangout/split'))) {
+    filePath = path.join(ROOT_DIR, 'workshop', 'split', 'index.html');
   }
 
   // 5. 檔案回應
@@ -188,7 +180,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`👉 AI-Align 工作坊:    http://localhost:${PORT}/workshop/ai-align/`);
   console.log(`👉 AI-ARM 工作坊:      http://localhost:${PORT}/workshop/ai-arm/`);
   console.log(`👉 棉花糖挑戰:         http://localhost:${PORT}/workshop/marshmallow/`);
-  console.log(`👉 需求拆解 (Split):   http://localhost:${PORT}/hangout/split/`);
+  console.log(`👉 需求拆解 (Split):   http://localhost:${PORT}/workshop/split/`);
   console.log(`👉 HOOK 模組:          http://localhost:${PORT}/workshop/hook/`);
   console.log(`======================================================\n`);
 });

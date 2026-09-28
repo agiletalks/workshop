@@ -1,0 +1,25 @@
+{
+  "step1_login": true,
+  "step2_onAirExperience": true,
+  "step3_stickiesAndRealtimeSync": false,
+  "step4_flipDetailedArticle": false,
+  "step5_copyStickyToTeamNote": false,
+  "step6_navCancelUnder8s": false,
+  "step6_navSaveOver8s": false,
+  "step7_rerecordModalOptions": false,
+  "step8_printHandbookModal": true,
+  "step9_zeroAiWordingAudit": false,
+  "defectsFound": [
+    {
+      "id": "BUG-SPLIT-VOICE-01",
+      "title": "Firestore 安全規則缺失 lecture_notes 集合權限，導致重點便利貼與詳細內容存檔與全班同步完全被阻斷 (Missing or insufficient permissions)",
+      "severity": "P0"
+    },
+    {
+      "id": "BUG-SPLIT-VOICE-02",
+      "title": "換頁 >= 8 秒保護邏輯中，recordingSlideIdRef.current 在呼叫 handleStopLectureRecord 前被先覆寫為新投影片 ID，導致錄音產生的重點被錯存至下一頁",
+      "severity": "P1"
+    }
+  ],
+  "details": {}
+}

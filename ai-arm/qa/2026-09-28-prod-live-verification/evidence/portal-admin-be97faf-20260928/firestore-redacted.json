@@ -1,0 +1,49 @@
+{
+  "readMethod": "Unauthenticated REST, own QA class only",
+  "publicFields": [
+    "updatedAt",
+    "notes",
+    "lastClearedAt",
+    "name",
+    "status",
+    "createdAt",
+    "currentGeneration",
+    "id",
+    "teamCount"
+  ],
+  "currentGeneration": {
+    "integerValue": "2"
+  },
+  "publicContainsPassword": false,
+  "secretFields": [
+    "studentPasscode",
+    "adminPasswordHash",
+    "updatedAt",
+    "classId"
+  ],
+  "secretReadableWithoutAuth": true,
+  "secretMatchesRequested": true,
+  "notePath": "projects/marshmallow-agile-3b4b/databases/(default)/documents/split_data/qa-split-retest/generations/2/notes/slide-1_team_1",
+  "memo": {
+    "stringValue": "QA Portal 20260928 Gen2 同步驗證"
+  },
+  "audit": [
+    {
+      "type": {
+        "stringValue": "CLASS_RESET_GENERATION"
+      },
+      "classId": {
+        "stringValue": "qa-split-retest"
+      },
+      "fromGeneration": {
+        "integerValue": "1"
+      },
+      "toGeneration": {
+        "integerValue": "2"
+      },
+      "timestamp": {
+        "integerValue": "1790571967800"
+      }
+    }
+  ]
+}

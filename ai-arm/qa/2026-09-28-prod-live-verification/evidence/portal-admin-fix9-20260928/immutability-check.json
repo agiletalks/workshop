@@ -1,0 +1,33 @@
+{
+  "at": "2026-09-28T07:52:58.835Z",
+  "tests": [
+    {
+      "target": "split_audit_logs",
+      "operation": "UPDATE (PATCH)",
+      "status": 403,
+      "expectedStatus": 403,
+      "pass": true
+    },
+    {
+      "target": "split_audit_logs",
+      "operation": "DELETE",
+      "status": 403,
+      "expectedStatus": 403,
+      "pass": true
+    },
+    {
+      "target": "split_reset_requests",
+      "operation": "UPDATE (PATCH)",
+      "status": 403,
+      "expectedStatus": 403,
+      "pass": true
+    },
+    {
+      "target": "split_reset_requests",
+      "operation": "DELETE",
+      "status": 403,
+      "expectedStatus": 403,
+      "pass": true
+    }
+  ]
+}

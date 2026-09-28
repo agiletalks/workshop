@@ -1,0 +1,30 @@
+[
+  {
+    "id": "19",
+    "providerTabId": "b3045c8a-cce6-4e37-9b8b-514feb6ac45f",
+    "title": "SPLIT 小組線上雲端白板 - 需求分解實戰共創",
+    "url": "http://localhost:5173/board.html?c=qa-split-test-01&team=team-1&type=wbs",
+    "browserId": "1"
+  },
+  {
+    "id": "20",
+    "providerTabId": "baaf86a3-6e05-46f6-baae-c3fb7893f991",
+    "title": "SPLIT 小組線上雲端白板 - 需求分解實戰共創",
+    "url": "http://localhost:5173/board.html?c=qa-split-test-01&team=team-1&type=impact-map",
+    "browserId": "1"
+  },
+  {
+    "id": "21",
+    "providerTabId": "0584f546-9bba-4322-b1fe-596712e55160",
+    "title": "SPLIT 小組線上雲端白板 - 需求分解實戰共創",
+    "url": "http://localhost:5173/board.html?c=qa-split-test-01&team=team-1&type=story-map",
+    "browserId": "1"
+  },
+  {
+    "id": "22",
+    "providerTabId": "8f2700e3-7bb3-4514-8199-592b997c4214",
+    "title": "SPLIT 小組線上雲端白板 - 需求分解實戰共創",
+    "url": "http://localhost:5173/board.html?c=qa-split-test-01&team=team-1&type=decision-table",
+    "browserId": "1"
+  }
+]

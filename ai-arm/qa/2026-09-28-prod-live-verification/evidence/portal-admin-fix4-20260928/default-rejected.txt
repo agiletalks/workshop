@@ -1,0 +1,24 @@
+- heading "SPLIT 需求拆解實戰工作坊" [level=2]
+- paragraph: 請輸入班級與組別資訊以開啟個人與小組協作筆記
+- generic: 班級代碼 (Class Code)
+- textbox "例如：202610-split": qa-split-retest
+- generic: 我的小組
+- combobox:
+  - option "第 1 組" [selected]
+  - option "第 2 組"
+  - option "第 3 組"
+  - option "第 4 組"
+  - option "第 5 組"
+  - option "第 6 組"
+  - option "第 7 組"
+  - option "第 8 組"
+  - option "第 9 組"
+  - option "第 10 組"
+  - option "第 11 組"
+  - option "第 12 組"
+- generic: 我的姓名 / 暱稱
+- textbox "例如：Alex": QA-Fourth-Alice
+- generic: 進班驗證密碼
+- textbox "預設：split-2026": <redacted>
+- paragraph: ⚠️ 驗證密碼不符，請重新確認
+- button "進入工作坊講義與小組筆記 →"

@@ -1,0 +1,14 @@
+[
+  {
+    "level": "warn",
+    "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+    "timestamp": "2026-09-28T06:01:08.660Z",
+    "url": "https://cdn.tailwindcss.com/"
+  },
+  {
+    "level": "warn",
+    "message": "[2026-09-28T06:02:21.107Z]  @firebase/firestore: Firestore (10.8.0): RestConnection RPC 'Commit' 0x319bdb30 failed with error:  {\"code\":\"permission-denied\",\"name\":\"FirebaseError\"} url:  https://firestore.googleapis.com/v1/projects/marshmallow-agile-3b4b/databases/(default)/documents:commit request: {\"writes\":[{\"update\":{\"name\":\"projects/marshmallow-agile-3b4b/databases/(default)/documents/split_class_secrets/qa-split-retest\",\"fields\":{\"adminToken\":{\"stringValue\":\"<redacted>\"},\"updatedAt\":{\"integerValue\":\"1790575340219\"}}},\"updateMask\":{\"fieldPaths\":[\"adminToken\",\"updatedAt\"]}},{\"update\":{\"name\":\"projects/marshmallow-agile-3b4b/databases/(default)/documents/split_reset_requests/reset_qa-split-retest_1790575338932_okzrrs\",\"fields\":{\"clientRequestId\":{\"stringValue\":\"reset_qa-split-retest_1790575338932_okzrrs\"},\"classId\":{\"stringValue\":\"qa-split-retest\"},\"generation\":{\"integerValue\":\"5\"},\"reason\":{\"stringValue\":\"QA 第四輪：授權後世代重設回歸\"},\"adminToken\":{\"stringValue\":\"<redacted>\"},\"createdAt\":{\"integerValue\":\"1790575340219\"}}},\"currentDocument\":{\"exists\":false}},{\"update\":{\"name\":\"projects/marshmallow-agile-3b4b/databases/(default)/documents/split_classes/qa-split-retest\",\"fields\":{\"currentGeneration\":{\"integerValue\":\"5\"},\"lastClearedAt\":{\"integerValue\":\"1790575340219\"},\"lastResetReason\":{\"stringValue\":\"QA 第四輪：授權後世代重設回歸\"},\"updatedAt\":{\"integerValue\":\"1790575340219\"}}},\"updateMask\":{\"fieldPaths\":[\"currentGeneration\",\"lastClearedAt\",\"lastResetReason\",\"updatedAt\"]},\"currentDocument\":{\"updateTime\":\"2026-09-28T05:54:29.487912000Z\"}},{\"update\":{\"name\":\"projects/marshmallow-agile-3b4b/databases/(default)/documents/split_audit_logs/pw4fnYUwjaShS2gddEYj\",\"fields\":{\"type\":{\"stringValue\":\"CLASS_RESET_GENERATION\"},\"classId\":{\"stringValue\":\"qa-split-retest\"},\"clientRequestId\":{\"stringValue\":\"reset_qa-split-retest_1790575338932_okzrrs\"},\"fromGeneration\":{\"integerValue\":\"4\"},\"toGeneration\":{\"integerValue\":\"5\"},\"reason\":{\"stringValue\":\"QA 第四輪：授權後世代重設回歸\"},\"adminToken\":{\"stringValue\":\"<redacted>\"},\"timestamp\":{\"integerValue\":\"1790575340219\"}}}}]}",
+    "timestamp": "2026-09-28T06:02:21.107Z",
+    "url": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"
+  }
+]

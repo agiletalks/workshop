@@ -1,0 +1,42 @@
+{
+  "at": "2026-09-28T04:41:33.252Z",
+  "head": "be97fafd8a5564b8ee13b4ce6a7077d4358a7001",
+  "sourceSha256": "e9a22396067338e3c7636c3fcffada5426b82a59e00365c5278e80482d0b2b1c",
+  "distSha256": "e9a22396067338e3c7636c3fcffada5426b82a59e00365c5278e80482d0b2b1c",
+  "scripts": [
+    {
+      "startLine": 160,
+      "result": "PARSE PASS"
+    },
+    {
+      "startLine": 214,
+      "result": "PARSE PASS"
+    },
+    {
+      "startLine": 1034,
+      "result": "PARSE FAIL",
+      "message": "Unexpected end of input",
+      "stack": "split/public/board.html:6511\n  \n  \n\nSyntaxError: Unexpected end of input\n    at new Script (node:vm:117:7)\n    at C:\\VIBE\\ai-arm\\qa-split-board-20260928\\audit-board.cjs:14:10\n    at Object.<anonymous> (C:\\VIBE\\ai-arm\\qa-split-board-20260928\\audit-board.cjs:24:3)\n    at Module._compile (node:internal/modules/cjs/loader:1730:14)\n    at Object..js (node:internal/modules/cjs/loader:1895:10)\n    at Module.load (node:internal/modules/cjs/loader:1465:32)\n    at Function._load (node:internal/modules/cjs/loader:1282:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)"
+    }
+  ],
+  "served": [
+    {
+      "url": "http://localhost:5000/workshop/split/board.html?c=qa-split-test-01&team=team-1&type=wbs",
+      "status": 200,
+      "sha256": "e9a22396067338e3c7636c3fcffada5426b82a59e00365c5278e80482d0b2b1c",
+      "matchesSource": true
+    },
+    {
+      "url": "http://localhost:5173/board.html?c=qa-split-test-01&team=team-1&type=wbs",
+      "status": 200,
+      "sha256": "e9a22396067338e3c7636c3fcffada5426b82a59e00365c5278e80482d0b2b1c",
+      "matchesSource": true
+    }
+  ],
+  "contract": {
+    "expectedBoardId": "wbs_team_1",
+    "actualExpressionResult": "wbs_team-1",
+    "legacyCollectionNamePresent": false,
+    "initialGenerationLiteral": true
+  }
+}

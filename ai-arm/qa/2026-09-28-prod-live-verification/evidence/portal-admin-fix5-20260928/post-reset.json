@@ -1,0 +1,73 @@
+{
+  "at": "2026-09-28T06:24:02.360Z",
+  "requestQueryStatus": 200,
+  "requests": [
+    {
+      "fields": [
+        "clientRequestId",
+        "classId",
+        "generation",
+        "createdAt"
+      ],
+      "adminTokenPublic": false,
+      "generation": {
+        "integerValue": "2"
+      }
+    },
+    {
+      "fields": [
+        "clientRequestId",
+        "classId",
+        "generation",
+        "reason",
+        "createdAt"
+      ],
+      "adminTokenPublic": false,
+      "generation": {
+        "integerValue": "3"
+      },
+      "reason": {
+        "stringValue": "QA 20260928 複測：確認自訂重設原因持久化"
+      }
+    },
+    {
+      "fields": [
+        "clientRequestId",
+        "reason",
+        "classId",
+        "generation",
+        "createdAt"
+      ],
+      "adminTokenPublic": false,
+      "generation": {
+        "integerValue": "4"
+      },
+      "reason": {
+        "stringValue": "QA 第三輪驗證 clientRequestId 與原因"
+      }
+    },
+    {
+      "fields": [
+        "clientRequestId",
+        "classId",
+        "generation",
+        "reason",
+        "createdAt"
+      ],
+      "adminTokenPublic": false,
+      "generation": {
+        "integerValue": "5"
+      },
+      "reason": {
+        "stringValue": "QA 第五輪：驗證合法重設與租約隔離"
+      }
+    }
+  ],
+  "generation": {
+    "integerValue": "5"
+  },
+  "lastResetReason": {
+    "stringValue": "QA 第五輪：驗證合法重設與租約隔離"
+  },
+  "afterOperationUnauthPatch": 403
+}

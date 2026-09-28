@@ -1,0 +1,49 @@
+- banner:
+  - heading "AgileTalks" [level=1]
+  - paragraph: Workshops Portal
+  - link "管理後台 (Admin) →":
+    - /url: ./admin.html
+    - generic: 管理後台 (Admin)
+    - generic: →
+  - generic: v1.4.0
+- main:
+  - link "完整班級管理 · Active Course Management SPLIT：需求拆解與用戶故事實戰 班級開班建立、1~12 組數設定、學生進班驗證碼、演練世代遞增重設 (Gen+1) 與快照復原。 進入 SPLIT 管理後台 →":
+    - /url: ./admin.html?course=split
+    - generic: 完整班級管理 · Active
+    - generic: Course Management
+    - heading "SPLIT：需求拆解與用戶故事實戰" [level=3]
+    - paragraph: 班級開班建立、1~12 組數設定、學生進班驗證碼、演練世代遞增重設 (Gen+1) 與快照復原。
+    - generic: 進入 SPLIT 管理後台 →
+  - link "唯讀管理模式 · Active Course Management AI-ARM：AI 需求建模與敏捷 Refinement 從 WHY 目標到 HOW 行為與 WHAT 交付物。班級列表查詢、專屬講義網址與小組白板連結檢視。 進入 AI-ARM 管理後台 →":
+    - /url: ./admin.html?course=ai-arm
+    - generic: 唯讀管理模式 · Active
+    - generic: Course Management
+    - heading "AI-ARM：AI 需求建模與敏捷 Refinement" [level=3]
+    - paragraph: 從 WHY 目標到 HOW 行為與 WHAT 交付物。班級列表查詢、專屬講義網址與小組白板連結檢視。
+    - generic: 進入 AI-ARM 管理後台 →
+  - generic: 本期籌備中 · Inactive
+  - generic: Courseware
+  - heading "AI-Align：跨部門溝通萃取需求" [level=3]
+  - paragraph: 從 WHY 目標出發，走過 WHO 行為者、HOW 分析流程，直達 WHAT 原型對齊共識。整合 40 頁簡報導讀與即時分組 Tab 協作筆記。
+  - generic: 課程管理暫未開放
+  - link "講義預覽 ↗":
+    - /url: ./ai-align/
+    - generic: 講義預覽 ↗
+  - generic: 獨立教具 · Inactive
+  - generic: Interactive Web App
+  - heading "棉花糖挑戰" [level=3]
+  - paragraph: 一個包含引導大螢幕與小組填寫端的實時連線看板。透過經典的棉花糖挑戰，親身體驗 MVP（最小可行性產品）與快速反覆迭代的精髓。
+  - generic: 課程管理暫未開放
+  - link "活動看板 ↗":
+    - /url: ./marshmallow/
+    - generic: 活動看板 ↗
+  - generic: 工具箱 · Inactive
+  - generic: Toolkit
+  - heading "HOOKED 互動講義" [level=3]
+  - paragraph: 引導學員進行情緒覺察、掛鉤/脫鉤與主客觀詮釋的對話卡片與引導工具箱。包含 Kiki/Bouba 實驗與多項實踐練習。
+  - generic: 課程管理暫未開放
+  - link "工具箱 ↗":
+    - /url: ./hook/
+    - generic: 工具箱 ↗
+- contentinfo:
+  - paragraph: © 2026 AgileTalks Workshops Portal. All rights reserved.

@@ -1,0 +1,76 @@
+{
+  "at": "2026-09-28T04:48:09.119Z",
+  "method": "actual TS service and hook transpiled into VM; minimal deterministic hook lifecycle + fake SpeechRecognition; not real browser/audio/React integration",
+  "hashes": {
+    "service": "51b29de8ba3e140609d17677e8d87130971d7f5af1547fc6f5bbfb92149665f2",
+    "hook": "2d9c5e861cfb72983d8d24dc080b12e17dafdc62ad95cf002efd7206876b685e",
+    "panel": "8816523cfa82cc1c895c0107502cf759e9e64b567d833de9d668e4b48b521945"
+  },
+  "results": [
+    {
+      "id": "V01 recognition config",
+      "result": "PASS",
+      "evidence": {
+        "lang": "zh-TW",
+        "continuous": true,
+        "interimResults": true
+      }
+    },
+    {
+      "id": "V02 interim and finalized chunk",
+      "result": "PASS",
+      "evidence": {
+        "chunks": [
+          "完整一句"
+        ]
+      }
+    },
+    {
+      "id": "V03 stop must not append already-finalized text again",
+      "result": "FAIL",
+      "error": "actual append calls: [\"敏捷需求分解\",\"敏捷需求分解\"]"
+    },
+    {
+      "id": "V04 successive finals preserve both chunks",
+      "result": "FAIL",
+      "error": "actual writes: [{\"id\":\"slide-3\",\"text\":\"原筆記\\n第一句\"},{\"id\":\"slide-3\",\"text\":\"原筆記\\n第二句\"}]"
+    },
+    {
+      "id": "V05 page switch must not append prior-page aggregate into new page on stop",
+      "result": "FAIL",
+      "error": "actual writes: [{\"page\":3,\"text\":\"第三頁講述\"},{\"page\":4,\"text\":\"第三頁講述\"}]"
+    },
+    {
+      "id": "V06 active recording must respect new readonly callback",
+      "result": "FAIL",
+      "error": "actual old callback still invoked: [\"切成唯讀後才完成辨識\"]"
+    },
+    {
+      "id": "V07 onend restart and explicit stop cancel restart",
+      "result": "PASS",
+      "evidence": {
+        "recognizers": 2,
+        "noRestartAfterStop": true
+      }
+    },
+    {
+      "id": "V08 unmount stops recorder",
+      "result": "PASS",
+      "evidence": {
+        "stopCalls": 1
+      }
+    },
+    {
+      "id": "V09 retriable no-speech/audio-capture/network create new recognizer",
+      "result": "PASS",
+      "evidence": {
+        "events": [
+          "no-speech",
+          "audio-capture",
+          "network"
+        ],
+        "timing": "fake timers; not real elapsed time"
+      }
+    }
+  ]
+}

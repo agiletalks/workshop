@@ -27,7 +27,13 @@
                 <p class="text-xs text-amber-500 font-bold tracking-widest uppercase">Workshops Portal</p>
             </div>
         </div>
-        <span class="text-xs px-2.5 py-1 bg-slate-800 rounded-full text-slate-400 font-mono border border-slate-700">v1.3.0</span>
+        <div class="flex items-center gap-3">
+            <a href="./admin.html" class="text-xs px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold rounded-xl border border-amber-500/30 flex items-center gap-1.5 transition-colors">
+                <span>管理後台 (Admin)</span>
+                <span class="text-[10px] text-amber-500">→</span>
+            </a>
+            <span class="text-xs px-2.5 py-1 bg-slate-800 rounded-full text-slate-400 font-mono border border-slate-700">v1.4.0</span>
+        </div>
     </header>
 
     <!-- Main Content -->
@@ -35,75 +41,109 @@
         <!-- Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-5xl mx-auto w-full">
             
-            <!-- Card 1: AI-Align (AI 賦能敏捷：跨部門溝通萃取需求) -->
-            <a href="./ai-align/" class="group bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 hover:border-amber-500/50 rounded-2xl p-6 shadow-xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 relative overflow-hidden">
+            <!-- Card 1: SPLIT (需求拆解與用戶故事實戰工作坊) [ACTIVE] -->
+            <a href="./admin.html?course=split" class="group bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 hover:border-emerald-500/50 rounded-2xl p-6 shadow-xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 relative overflow-hidden ring-1 ring-emerald-500/20">
                 <div class="absolute top-0 right-0">
-                    <span class="bg-amber-500 text-slate-900 text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider">NEW 最新發佈</span>
+                    <span class="bg-emerald-500 text-slate-950 text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider">完整班級管理 · Active</span>
                 </div>
                 <div>
                   <div class="flex items-start justify-between mb-4">
-                      <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono">Interactive Courseware</span>
+                      <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">Course Management</span>
                   </div>
-                  <h3 class="text-xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">AI 賦能敏捷：跨部門溝通萃取需求</h3>
+                  <h3 class="text-xl font-bold text-white mb-2 group-hover:text-emerald-400 transition-colors">SPLIT：需求拆解與用戶故事實戰</h3>
                   <p class="text-slate-400 text-sm leading-relaxed mb-6">
-                      從 WHY 目標出發，走過 WHO 行為者、HOW 分析流程，直達 WHAT 原型對齊共識。整合 40 頁簡報導讀、即時分組 Tab 協作筆記與 Firebase 防覆寫鎖定機制。
+                      班級開班建立、1~12 組數設定、學生進班驗證碼、演練世代遞增重設 (Gen+1) 與快照復原。
                   </p>
                 </div>
-                <div class="flex items-center text-xs font-bold text-amber-500 group-hover:translate-x-1.5 transition-transform duration-300 gap-1 mt-auto">
-                    進入課程工作坊 →
+                <div class="flex items-center text-xs font-bold text-emerald-400 group-hover:translate-x-1.5 transition-transform duration-300 gap-1 mt-auto pt-2 border-t border-slate-800/60">
+                    進入 SPLIT 管理後台 →
                 </div>
             </a>
 
-            <!-- Card 2: AI-ARM (AI 輔助需求建模與敏捷 Refinement) -->
-            <a href="./ai-arm/" class="group bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 hover:border-indigo-500/50 rounded-2xl p-6 shadow-xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 relative overflow-hidden">
+            <!-- Card 2: AI-ARM (AI 輔助需求建模與敏捷 Refinement) [ACTIVE] -->
+            <a href="./admin.html?course=ai-arm" class="group bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 hover:border-indigo-500/50 rounded-2xl p-6 shadow-xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 relative overflow-hidden ring-1 ring-indigo-500/20">
                 <div class="absolute top-0 right-0">
-                    <span class="bg-indigo-500 text-white text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider">NEW 最新發佈</span>
+                    <span class="bg-indigo-500 text-white text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider">唯讀管理模式 · Active</span>
                 </div>
                 <div>
                   <div class="flex items-start justify-between mb-4">
-                      <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-mono">Interactive Courseware & Tools</span>
+                      <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-mono">Course Management</span>
                   </div>
                   <h3 class="text-xl font-bold text-white mb-2 group-hover:text-indigo-400 transition-colors">AI-ARM：AI 需求建模與敏捷 Refinement</h3>
                   <p class="text-slate-400 text-sm leading-relaxed mb-6">
-                      從 WHY 目標到 HOW 行為與 WHAT 交付物。整合 46 頁互動教材導讀、即時小組共享白板 (8000px 大畫布) 與三大需求建模工具（決策表、狀態轉換矩陣、Event Stormer）。
+                      從 WHY 目標到 HOW 行為與 WHAT 交付物。班級列表查詢、專屬講義網址與小組白板連結檢視。
                   </p>
                 </div>
-                <div class="flex items-center text-xs font-bold text-indigo-500 group-hover:translate-x-1.5 transition-transform duration-300 gap-1 mt-auto">
-                    進入課程工作坊 →
+                <div class="flex items-center text-xs font-bold text-indigo-400 group-hover:translate-x-1.5 transition-transform duration-300 gap-1 mt-auto pt-2 border-t border-slate-800/60">
+                    進入 AI-ARM 管理後台 →
                 </div>
             </a>
 
-            <!-- Card 3: Marshmallow Workshop -->
-            <a href="./marshmallow/" class="group bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 hover:border-sky-500/50 rounded-2xl p-6 shadow-xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1">
+            <!-- Card 3: AI-Align (AI 賦能敏捷：跨部門溝通萃取需求) [INACTIVE] -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-lg flex flex-col justify-between relative overflow-hidden opacity-75">
+                <div class="absolute top-0 right-0">
+                    <span class="bg-slate-800 text-slate-400 border-b border-l border-slate-700 text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">本期籌備中 · Inactive</span>
+                </div>
                 <div>
-                  <div class="flex items-start justify-end mb-4">
-                      <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-500/20 text-sky-400 font-mono">Interactive Web App</span>
+                  <div class="flex items-start justify-between mb-4">
+                      <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">Courseware</span>
                   </div>
-                  <h3 class="text-xl font-bold text-white mb-2 group-hover:text-sky-400 transition-colors">棉花糖挑戰</h3>
-                  <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                  <h3 class="text-xl font-bold text-slate-300 mb-2">AI-Align：跨部門溝通萃取需求</h3>
+                  <p class="text-slate-500 text-sm leading-relaxed mb-6">
+                      從 WHY 目標出發，走過 WHO 行為者、HOW 分析流程，直達 WHAT 原型對齊共識。整合 40 頁簡報導讀與即時分組 Tab 協作筆記。
+                  </p>
+                </div>
+                <div class="flex items-center justify-between text-xs text-slate-500 mt-auto pt-2 border-t border-slate-800/40">
+                    <span>課程管理暫未開放</span>
+                    <a href="./ai-align/" target="_blank" class="text-slate-400 hover:text-amber-400 underline flex items-center gap-1">
+                      <span>講義預覽 ↗</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Card 4: 棉花糖挑戰 [INACTIVE] -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-lg flex flex-col justify-between relative overflow-hidden opacity-75">
+                <div class="absolute top-0 right-0">
+                    <span class="bg-slate-800 text-slate-400 border-b border-l border-slate-700 text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">獨立教具 · Inactive</span>
+                </div>
+                <div>
+                  <div class="flex items-start justify-between mb-4">
+                      <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">Interactive Web App</span>
+                  </div>
+                  <h3 class="text-xl font-bold text-slate-300 mb-2">棉花糖挑戰</h3>
+                  <p class="text-slate-500 text-sm leading-relaxed mb-6">
                       一個包含引導大螢幕與小組填寫端的實時連線看板。透過經典的棉花糖挑戰，親身體驗 MVP（最小可行性產品）與快速反覆迭代的精髓。
                   </p>
                 </div>
-                <div class="flex items-center text-xs font-bold text-sky-500 group-hover:translate-x-1.5 transition-transform duration-300 gap-1 mt-auto">
-                    進入 →
+                <div class="flex items-center justify-between text-xs text-slate-500 mt-auto pt-2 border-t border-slate-800/40">
+                    <span>課程管理暫未開放</span>
+                    <a href="./marshmallow/" target="_blank" class="text-slate-400 hover:text-sky-400 underline flex items-center gap-1">
+                      <span>活動看板 ↗</span>
+                    </a>
                 </div>
-            </a>
+            </div>
 
-            <!-- Card 4: HOOKED Interactive Lecture Notes -->
-            <a href="./hook/" class="group bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 hover:border-teal-500/50 rounded-2xl p-6 shadow-xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1">
+            <!-- Card 5: HOOKED Interactive Lecture Notes [INACTIVE] -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-lg flex flex-col justify-between relative overflow-hidden opacity-75">
+                <div class="absolute top-0 right-0">
+                    <span class="bg-slate-800 text-slate-400 border-b border-l border-slate-700 text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">工具箱 · Inactive</span>
+                </div>
                 <div>
-                  <div class="flex items-start justify-end mb-4">
-                      <span class="text-xs font-semibold px-2 py-0.5 rounded bg-teal-500/20 text-teal-400 font-mono">Toolkit</span>
+                  <div class="flex items-start justify-between mb-4">
+                      <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">Toolkit</span>
                   </div>
-                  <h3 class="text-xl font-bold text-white mb-2 group-hover:text-teal-400 transition-colors">HOOKED 互動講義</h3>
-                  <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                  <h3 class="text-xl font-bold text-slate-300 mb-2">HOOKED 互動講義</h3>
+                  <p class="text-slate-500 text-sm leading-relaxed mb-6">
                       引導學員進行情緒覺察、掛鉤/脫鉤與主客觀詮釋的對話卡片與引導工具箱。包含 Kiki/Bouba 實驗與多項實踐練習。
                   </p>
                 </div>
-                <div class="flex items-center text-xs font-bold text-teal-500 group-hover:translate-x-1.5 transition-transform duration-300 gap-1 mt-auto">
-                    進入 →
+                <div class="flex items-center justify-between text-xs text-slate-500 mt-auto pt-2 border-t border-slate-800/40">
+                    <span>課程管理暫未開放</span>
+                    <a href="./hook/" target="_blank" class="text-slate-400 hover:text-teal-400 underline flex items-center gap-1">
+                      <span>工具箱 ↗</span>
+                    </a>
                 </div>
-            </a>
+            </div>
 
         </div>
     </main>

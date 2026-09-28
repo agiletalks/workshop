@@ -37,6 +37,10 @@
       {
         "source": "/workshop/marshmallow/**",
         "destination": "/workshop/marshmallow/index.html"
+      },
+      {
+        "source": "/workshop/split/**",
+        "destination": "/workshop/split/index.html"
       }
     ]
   }

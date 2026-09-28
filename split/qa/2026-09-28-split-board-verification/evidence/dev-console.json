@@ -1,0 +1,26 @@
+[
+  {
+    "level": "error",
+    "message": "Electron sandboxed_renderer.bundle.js script failed to run",
+    "timestamp": "2026-09-28T04:40:06.678Z",
+    "url": "node:electron/js2c/sandbox_bundle"
+  },
+  {
+    "level": "error",
+    "message": "TypeError: object null is not iterable (cannot read property Symbol(Symbol.iterator))\n    at Object.invokeSync (node:electron/js2c/sandbox_bundle:2:98647)\n    at node:electron/js2c/sandbox_bundle:2:135685\n    at node:electron/js2c/sandbox_bundle:2:137005\n    at ___electron_webpack_init__ (node:electron/js2c/sandbox_bundle:2:137009)\n    at node:electron/js2c/sandbox_bundle:2:137132",
+    "timestamp": "2026-09-28T04:40:06.678Z",
+    "url": "node:electron/js2c/sandbox_bundle"
+  },
+  {
+    "level": "warn",
+    "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+    "timestamp": "2026-09-28T04:40:06.678Z",
+    "url": "https://cdn.tailwindcss.com/"
+  },
+  {
+    "level": "error",
+    "message": "SyntaxError: Unexpected end of input",
+    "timestamp": "2026-09-28T04:40:06.678Z",
+    "url": "http://localhost:5173/board.html?c=qa-split-test-01&team=team-1&type=wbs"
+  }
+]

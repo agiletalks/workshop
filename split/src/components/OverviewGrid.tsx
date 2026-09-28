@@ -1,15 +1,20 @@
 import { useState } from "react";
-import { slides } from "../data/slides";
-import type { SlideResponse } from "../data/slides";
+import { slides as defaultSlides } from "../data/slides";
+import type { Slide, SlideResponse } from "../data/slides";
 
 interface OverviewGridProps {
+  slides?: Slide[];
   onSelectSlide: (slideId: string) => void;
   getResponse: (slideId: string) => SlideResponse;
 }
 
-type FilterType = "all" | "completed" | "incomplete" | "hasNote" | "core" | "comparison";
+type FilterType = "all" | "completed" | "incomplete" | "hasNote" | "core" | "comparison" | "practice";
 
-export const OverviewGrid: React.FC<OverviewGridProps> = ({ onSelectSlide, getResponse }) => {
+export const OverviewGrid: React.FC<OverviewGridProps> = ({
+  slides = defaultSlides,
+  onSelectSlide,
+  getResponse
+}) => {
   const [filter, setFilter] = useState<FilterType>("all");
 
   const getImageUrl = (imageName: string) => {

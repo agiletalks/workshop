@@ -1,0 +1,65 @@
+- banner:
+  - link "AgileTalks Central Admin":
+    - /url: ./
+    - generic: AgileTalks
+    - generic: Central Admin
+  - combobox:
+    - option "SPLIT：需求拆解與用戶故事實戰工作坊 (完整管理)" [selected]
+    - option "AI-ARM：AI 需求建模與敏捷 Refinement (唯讀檢視)"
+    - option "AI-Align：AI 賦能敏捷跨部門溝通 (通用模式 - Inactive)"
+  - generic: SPLIT 獨立隔離管理
+  - button "重新載入班級資料":
+  - button "登出管理員權限":
+  - link "返回首頁":
+    - /url: ./
+    - generic: 返回首頁
+- main:
+  - generic: 目前課程班級數
+  - generic: "3"
+  - generic: 啟用中班級
+  - generic: "2"
+  - generic: 總配置組數
+  - generic: "18"
+  - generic: 底層隔離集合
+  - generic: split_classes (可寫入)
+  - textbox "搜尋班級名稱或班級代碼...": qa-split-retest
+  - button "建立新班級":
+    - generic: 建立新班級
+  - generic: 啟用中
+  - generic: 6 組
+  - generic "當前資料世代": Gen 4
+  - button "停用":
+    - generic: 停用
+  - heading "QA Portal Admin 複測專用" [level=3]
+  - 'button "報到代碼: qa-split-retest"':
+    - text: "報到代碼:"
+    - strong: qa-split-retest
+  - generic: "建立: 9月28日 下午01:04"
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/split/?c=qa-split-retest
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/split/?c=qa-split-retest
+    - generic: 進入
+  - button "重設演練 (世代+1)":
+    - generic: 重設演練 (世代+1)
+  - button "快照復原":
+    - generic: 快照復原
+- heading "班級演練世代重設 (Generation + 1)" [level=3]
+- paragraph:
+  - text: 確定要為
+  - strong: 【QA Portal Admin 複測專用】
+  - text: 進行世代遞增嗎？
+- generic: 目前世代編號：
+- generic: Generation 4
+- generic: 重設後新世代：
+- generic: Generation 5
+- generic: 重設原因 (記錄於審計日誌)：
+- textbox "例如：進入第 2 回合切片實戰演練": QA 第四輪：授權後世代重設回歸
+- paragraph:
+  - text: ⚡
+  - strong: 即時平滑切換：
+  - text: 學員畫面將即刻載入空白隨堂筆記，歷史世代資料仍妥善保存在雲端歷史路徑中，絕不物理覆蓋。
+- button "取消"
+- button "確認重設世代"

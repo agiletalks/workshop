@@ -1,0 +1,71 @@
+- banner:
+  - heading "第 1 組專屬【需求分解】線上白板" [level=1]:
+    - generic: 第 1 組專屬【需求分解】線上白板
+  - generic: 全組即時協作中
+  - generic: 學員
+  - generic "點擊切換查看不同小組的線上白板":
+    - combobox:
+      - option "第 1 組白板"
+      - option "第 2 組白板" [selected]
+      - option "第 3 組白板"
+      - option "第 4 組白板"
+      - option "第 5 組白板"
+      - option "第 6 組白板"
+      - option "第 7 組白板"
+      - option "第 8 組白板"
+      - option "第 9 組白板"
+      - option "第 10 組白板"
+      - option "第 11 組白板"
+      - option "第 12 組白板"
+  - button "新增便利貼":
+    - generic: 新增便利貼
+  - button "上傳圖片":
+    - generic: 上傳圖片
+  - button "白板背景":
+    - generic: 白板背景
+  - button "批量匯入":
+    - generic: 批量匯入
+  - button "檔案匯出":
+    - generic: 檔案匯出
+  - generic "在線成員：點擊頭像即可跟隨該成員視角"
+  - button "視角置中"
+  - button "操作說明與快捷鍵"
+  - button "釘住工具列"
+- generic: 工具列
+- 'button "縮小 (快捷鍵: -)"'
+- generic: 100%
+- 'button "放大 (快捷鍵: +)"'
+- button "觸控板": 觸控板
+- button "滑鼠": 滑鼠
+- generic: 兩指滑動平移 | 捏合縮放
+- generic "點擊展開/收合小地圖":
+  - generic: 畫布導航
+  - button
+- generic: "卡片數量:"
+- generic: "0"
+- generic: 便利貼詳細資訊
+- heading "便利貼內容 (Text)" [level=4]
+- paragraph
+- heading "驗收條件 / 備註 (Acceptance Criteria)" [level=4]
+- paragraph
+- text: 已選取
+- generic: "0"
+- text: 張卡片
+- button "橫向排列": 橫向排列
+- button "縱向排列": 縱向排列
+- button "網格對齊": 網格對齊
+- button "變更色彩": 變更色彩
+- button "字體縮放": 字體縮放
+- button "文字黑白": 文字黑白
+- button "刪除": 刪除
+- button "改字": 改字
+- button "反轉": 反轉
+- 'button "起: 右"':
+  - generic: "起:"
+  - generic: 右
+- 'button "終: 左"':
+  - generic: "終:"
+  - generic: 左
+- button "2.5px":
+  - generic: 2.5px
+- button "刪除連線"

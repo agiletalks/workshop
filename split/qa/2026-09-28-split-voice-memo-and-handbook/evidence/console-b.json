@@ -1,0 +1,10 @@
+[
+  {
+    "type": "verbose",
+    "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"current-password\"): (More info: https://www.chromium.org/developers/design-documents/create-amazing-password-forms) %o"
+  },
+  {
+    "type": "warning",
+    "text": "[LectureNote] 訂閱異常 (slide-1): FirebaseError: Missing or insufficient permissions."
+  }
+]

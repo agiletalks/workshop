@@ -1,0 +1,72 @@
+{
+  "at": "2026-09-28T05:39:55.357Z",
+  "method": "actual TS service and hook transpiled into VM; minimal deterministic hook lifecycle + fake SpeechRecognition; not real browser/audio/React integration",
+  "hashes": {
+    "service": "8a804e8369fd56e96264e6455acdbec81b321d1f77869379640b7dada55a99e9",
+    "hook": "7426a44bd141abe70a30cfa0614bdee3aa3275f4a84422a9836b92bfde6402c2",
+    "panel": "b7f4bb1942a56bfb5889500ab53bc60ddbaeadb32df5646f214def9340ef629a"
+  },
+  "results": [
+    {
+      "id": "V01 recognition config",
+      "result": "PASS",
+      "evidence": {
+        "lang": "zh-TW",
+        "continuous": true,
+        "interimResults": true
+      }
+    },
+    {
+      "id": "V02 interim and finalized chunk",
+      "result": "PASS",
+      "evidence": {
+        "chunks": [
+          "完整一句"
+        ]
+      }
+    },
+    {
+      "id": "V03 stop must not append already-finalized text again",
+      "result": "PASS"
+    },
+    {
+      "id": "V04 successive finals preserve both chunks",
+      "result": "PASS"
+    },
+    {
+      "id": "V05 page switch must not append prior-page aggregate into new page on stop",
+      "result": "PASS"
+    },
+    {
+      "id": "V06 active recording must respect new readonly callback",
+      "result": "PASS"
+    },
+    {
+      "id": "V07 onend restart and explicit stop cancel restart",
+      "result": "PASS",
+      "evidence": {
+        "recognizers": 2,
+        "noRestartAfterStop": true
+      }
+    },
+    {
+      "id": "V08 unmount stops recorder",
+      "result": "PASS",
+      "evidence": {
+        "stopCalls": 1
+      }
+    },
+    {
+      "id": "V09 retriable no-speech/audio-capture/network create new recognizer",
+      "result": "PASS",
+      "evidence": {
+        "events": [
+          "no-speech",
+          "audio-capture",
+          "network"
+        ],
+        "timing": "fake timers; not real elapsed time"
+      }
+    }
+  ]
+}

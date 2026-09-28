@@ -52,3 +52,7 @@ backups/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Scratch and temp verification files
+scratch/
+*/scratch/

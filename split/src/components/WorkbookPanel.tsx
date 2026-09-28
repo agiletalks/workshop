@@ -1,5 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Slide, SlideResponse } from "../data/slides";
+import type { UserSession, TeamNote, NoteAttachment, ClassMetadata } from "../services/notesService";
+import { useVoiceNote } from "../hooks/useVoiceNote";
+import {
+  subscribeLectureNote,
+  saveLectureNote,
+  type LectureNoteData,
+  type LectureSticky,
+  type LectureRecordingState
+} from "../services/lectureNoteService";
 
 interface WorkbookPanelProps {
   slide: Slide;
@@ -8,6 +17,20 @@ interface WorkbookPanelProps {
   updateInteractionData: (slideId: string, data: any) => void;
   toggleCompleted: (slideId: string) => void;
   onImageClick?: (imageUrl: string) => void;
+  activeTeamId?: number;
+  userSession?: UserSession | null;
+  teamNote?: TeamNote | null;
+  isClassReadOnly?: boolean;
+  onAcquireLock?: () => Promise<boolean>;
+  onReleaseLock?: () => void;
+  onAddAttachment?: (file: File) => Promise<void>;
+  onRemoveAttachment?: (attId: string) => Promise<void>;
+  onSwitchToMyTeam?: () => void;
+  classMetadata?: ClassMetadata | null;
+  recordingState?: LectureRecordingState;
+  onStartLectureRecord?: (targetSlideId: string, targetSlideTitle: string, targetSlidePage?: number, mode?: 'fresh' | 'augment') => void;
+  onStopLectureRecord?: () => void;
+  onNavigateToSlide?: (slideId: string) => void;
 }
 
 const slide3Prompt = `你是一位熟悉 Scrum、Agile 與產品開發的專業講師。請協助我研究並理解 Definition of Done（DoD）與 Definition of Ready（DoR），最後將研究結果製作成一份可以直接在瀏覽器開啟閱讀的完整 HTML 網頁。
@@ -963,18 +986,236 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
   slide,
   getResponse,
   updateNote,
-  onImageClick
+  onImageClick,
+  activeTeamId = 1,
+  userSession = null,
+  teamNote = null,
+  isClassReadOnly = false,
+  onAcquireLock,
+  onReleaseLock,
+  onAddAttachment,
+  onRemoveAttachment,
+  onSwitchToMyTeam,
+  classMetadata = null,
+  recordingState,
+  onStartLectureRecord,
+  onStopLectureRecord,
+  onNavigateToSlide
 }) => {
   const response = getResponse(slide.id);
   const noteLength = response.personalNote.length;
   const hasExamples = slide.examples && slide.examples.length > 0;
-  const hasWhiteboard = ["slide-7", "slide-8", "slide-9", "slide-22"].includes(slide.id);
+  const isTask = slide.slideKind === 'task' || !!slide.teamTask;
+  const isInstructor = userSession?.role === 'instructor';
 
-  const [activeTab, setActiveTab] = useState<"note" | "example">("note");
+  // 頁籤切換：演練頁預設小組成果筆記，講述頁直接展示重點便利貼或詳細內容
+  const [activeTab, setActiveTab] = useState<"stickies" | "article" | "note" | "example">("stickies");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset tab to note when slide changes
+  // --- 隨堂重點狀態 ---
+  const [lectureData, setLectureData] = useState<LectureNoteData | null>(null);
+  const [showRerecordModal, setShowRerecordModal] = useState(false);
+
+  // --- 講師專屬隨堂重點編輯狀態 (學員不可見/不可編輯) ---
+  const [editingSticky, setEditingSticky] = useState<LectureSticky | null>(null);
+  const [isEditingArticle, setIsEditingArticle] = useState(false);
+  const [editingArticleText, setEditingArticleText] = useState("");
+  const [isSavingLecture, setIsSavingLecture] = useState(false);
+
+  const isRecordingThisSlide = Boolean(recordingState?.isRecording && recordingState.slideId === slide.id);
+  const isRecordingOtherSlide = Boolean(recordingState?.isRecording && recordingState.slideId !== slide.id);
+  const isCompilingThisSlide = Boolean(recordingState?.isCompiling && recordingState.compilingSlideId === slide.id);
+
+  const lectureClassId = classMetadata?.id || userSession?.classId || 'default-split';
+  const lectureGenId = classMetadata?.currentGeneration || 1;
+
+  // 監聽雲端隨堂重點 (全班即時連線同步，包含便利貼與詳細內容)
   useEffect(() => {
-    setActiveTab("note");
+    const unsubscribe = subscribeLectureNote(lectureClassId, lectureGenId, slide.id, (data) => {
+      setLectureData(data);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [slide.id, lectureClassId, lectureGenId]);
+
+  // 換頁時自動判定頁籤：TEAM TASK 頁面優先展示成果筆記，一般頁面直接展示重點便利貼
+  useEffect(() => {
+    if (isTask) {
+      setActiveTab("note");
+    } else {
+      setActiveTab("stickies");
+    }
+    setIsEditingArticle(false);
+    setEditingSticky(null);
+  }, [slide.id, isTask]);
+
+  // 講師編輯：儲存課堂詳細內容
+  const handleSaveArticle = async (newText: string) => {
+    if (!lectureData && !newText.trim()) return;
+    setIsSavingLecture(true);
+    try {
+      await saveLectureNote(lectureClassId, lectureGenId, slide.id, {
+        slideTitle: slide.title,
+        stickies: lectureData?.stickies || [],
+        textbookArticle: newText,
+        recordedSeconds: lectureData?.recordedSeconds || 0
+      });
+      setIsEditingArticle(false);
+    } catch (err: any) {
+      alert("儲存課堂詳細內容失敗：" + (err?.message || "請檢查網路連線"));
+    } finally {
+      setIsSavingLecture(false);
+    }
+  };
+
+  // 講師編輯：儲存重點便利貼 (新增或修改)
+  const handleSaveSticky = async (stickyToSave: LectureSticky) => {
+    if (!stickyToSave.title.trim()) {
+      alert("請填寫便籤主題名稱");
+      return;
+    }
+    const filteredPoints = stickyToSave.points.map((p) => p.trim()).filter(Boolean);
+    if (filteredPoints.length === 0) {
+      alert("請至少填寫一項重點條列");
+      return;
+    }
+
+    const payloadSticky: LectureSticky = {
+      ...stickyToSave,
+      points: filteredPoints
+    };
+
+    const existingStickies = lectureData?.stickies || [];
+    const exists = existingStickies.some((s) => s.id === payloadSticky.id);
+    const updated = exists
+      ? existingStickies.map((s) => s.id === payloadSticky.id ? payloadSticky : s)
+      : [...existingStickies, payloadSticky];
+
+    setIsSavingLecture(true);
+    try {
+      await saveLectureNote(lectureClassId, lectureGenId, slide.id, {
+        slideTitle: slide.title,
+        stickies: updated,
+        textbookArticle: lectureData?.textbookArticle || '',
+        recordedSeconds: lectureData?.recordedSeconds || 0
+      });
+      setEditingSticky(null);
+    } catch (err: any) {
+      alert("儲存重點便利貼失敗：" + (err?.message || "請檢查網路連線"));
+    } finally {
+      setIsSavingLecture(false);
+    }
+  };
+
+  // 講師編輯：刪除重點便利貼
+  const handleDeleteSticky = async (stickyId: string) => {
+    if (!window.confirm("確定要刪除這張重點便利貼嗎？")) return;
+    const updated = (lectureData?.stickies || []).filter((s) => s.id !== stickyId);
+    setIsSavingLecture(true);
+    try {
+      await saveLectureNote(lectureClassId, lectureGenId, slide.id, {
+        slideTitle: slide.title,
+        stickies: updated,
+        textbookArticle: lectureData?.textbookArticle || '',
+        recordedSeconds: lectureData?.recordedSeconds || 0
+      });
+      setEditingSticky(null);
+    } catch (err: any) {
+      alert("刪除重點便利貼失敗：" + (err?.message || "請檢查網路連線"));
+    } finally {
+      setIsSavingLecture(false);
+    }
+  };
+
+  // 碼錶計時器格式化 (mm:ss)
+  const formatTimer = (sec: number) => {
+    const m = String(Math.floor(sec / 60)).padStart(2, '0');
+    const s = String(sec % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  // 觀摩模式：一般學員切換至非自己組別時唯讀；講師具全域指導權限，不受組別觀摩唯讀限制
+  const isObservationMode = isInstructor ? false : (userSession ? activeTeamId !== userSession.teamId : false);
+  const isLockedByOther = isInstructor ? false : Boolean(teamNote?.lock?.isLocked && teamNote.lock.holderUid !== userSession?.uid);
+  const isHeldByMe = isInstructor ? true : Boolean(teamNote?.lock?.isLocked && teamNote.lock.holderUid === userSession?.uid);
+  const isInputDisabled = isObservationMode || isClassReadOnly || isLockedByOther;
+
+  const handleAppendVoiceText = (text: string) => {
+    if (!text || isInputDisabled) return;
+    const currentMemo = teamNote ? teamNote.memo : response.personalNote;
+    const separator = currentMemo && !currentMemo.endsWith("\n") ? "\n" : "";
+    const newMemo = currentMemo ? `${currentMemo}${separator}${text}` : text;
+    updateNote(slide.id, newMemo);
+  };
+
+  const {
+    isRecording,
+    interimText,
+    isSupported: isVoiceSupported,
+    errorMessage: voiceErrorMessage,
+    toggleRecording,
+    stopRecording
+  } = useVoiceNote(handleAppendVoiceText);
+
+  // 換頁或切換為唯讀時，立即自動結束錄音，避免跨頁串音
+  useEffect(() => {
+    if (isRecording) {
+      stopRecording();
+    }
+  }, [slide.id, isInputDisabled]);
+
+  const handleToggleVoice = async () => {
+    if (!isRecording) {
+      if (isInputDisabled) return;
+      if (onAcquireLock && !isHeldByMe && !isInstructor) {
+        const acquired = await onAcquireLock();
+        if (!acquired) {
+          alert("目前已有其他組員正在編輯筆記，暫無法啟動語音。");
+          return;
+        }
+      }
+      toggleRecording();
+    } else {
+      stopRecording();
+    }
+  };
+
+  const [grabStatus, setGrabStatus] = useState<string | null>(null);
+
+  const handleGrabLock = async () => {
+    if (!onAcquireLock) return;
+    const success = await onAcquireLock();
+    if (success) {
+      setGrabStatus("🎉 取得成功！您已可開始編輯隨堂筆記。");
+      setTimeout(() => setGrabStatus(null), 3000);
+    } else {
+      const holder = teamNote?.lock?.holderName || "同組學員";
+      alert(`⚠️ 爭取失敗：【${holder}】正在積極輸入中（35 秒租約鎖定保護中）。`);
+    }
+  };
+
+  const handleDownloadAttachment = (att: NoteAttachment) => {
+    if (!att.dataUrl) return;
+    const a = document.createElement("a");
+    a.href = att.dataUrl;
+    a.download = att.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onAddAttachment) {
+      await onAddAttachment(file);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // 換頁時預設優先展示課堂重點
+  useEffect(() => {
+    // 保持目前選取的 tab，或若未設定則保持在 lecture
   }, [slide.id]);
 
   const getImageUrl = (imageName: string) => {
@@ -983,72 +1224,487 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
     return `${baseUrl}assets/${imageName}`;
   };
 
+  const getStickyBgColor = (color: string) => {
+    switch (color) {
+      case 'yellow': return 'bg-amber-100/90 border-amber-300 text-amber-950 shadow-amber-200/40';
+      case 'green': return 'bg-emerald-100/90 border-emerald-300 text-emerald-950 shadow-emerald-200/40';
+      case 'blue': return 'bg-sky-100/90 border-sky-300 text-sky-950 shadow-sky-200/40';
+      case 'pink': return 'bg-rose-100/90 border-rose-300 text-rose-950 shadow-rose-200/40';
+      case 'purple': return 'bg-purple-100/90 border-purple-300 text-purple-950 shadow-purple-200/40';
+      default: return 'bg-amber-100/90 border-amber-300 text-amber-950 shadow-amber-200/40';
+    }
+  };
+
+  const hasLectureContent = Boolean(lectureData && (lectureData.stickies.length > 0 || lectureData.textbookArticle));
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-white select-none overflow-hidden p-5">
-      {/* Title & Tabs Selector / Word Count */}
-      <div className="flex justify-between items-center mb-3 shrink-0 border-b border-slate-100 pb-2">
-        {hasExamples ? (
-          <div className="flex gap-2">
+    <div className="flex-1 flex flex-col h-full bg-white select-none overflow-hidden p-4 sm:p-5">
+      {/* Title & Tabs Selector / Dynamic Actions */}
+      <div className="flex justify-between items-center mb-3 shrink-0 border-b border-slate-100 pb-2.5">
+        {/* 標籤頁切換列：TEAM TASK 頁面展示小組成果筆記，講述頁直接展示重點便利貼或詳細內容 */}
+        <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 overflow-x-auto no-scrollbar">
+          {/* 團隊演練頁：優先顯示小組成果筆記 */}
+          {isTask && (
             <button
+              type="button"
               onClick={() => setActiveTab("note")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
                 activeTab === "note"
-                  ? "bg-fubon-blue text-white shadow-sm shadow-fubon-blue/15"
-                  : "text-slate-500 hover:bg-slate-50"
+                  ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              📝 個人隨堂筆記
+              <span>📝 小組成果筆記</span>
             </button>
+          )}
+
+          {/* 重點便利貼標籤 */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("stickies")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              activeTab === "stickies"
+                ? "bg-white text-emerald-800 shadow-xs border border-slate-200/80"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <span>📌 重點便利貼</span>
+            {hasLectureContent && (
+              <span className="bg-emerald-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                {lectureData?.stickies?.length || "✓"}
+              </span>
+            )}
+          </button>
+
+          {/* 課堂詳細內容標籤 (有講述內容時提供分頁切換) */}
+          {hasLectureContent && (
             <button
-              onClick={() => setActiveTab("example")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                activeTab === "example"
-                  ? "bg-fubon-blue text-white shadow-sm shadow-fubon-blue/15"
-                  : "text-slate-500 hover:bg-slate-50"
+              type="button"
+              onClick={() => setActiveTab("article")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                activeTab === "article"
+                  ? "bg-white text-indigo-800 shadow-xs border border-slate-200/80"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              💡 補充參考範例
-              <span className="bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                {slide.examples?.length || 0}
+              <span>📖 課堂詳細內容</span>
+            </button>
+          )}
+
+          {/* 補充範例標籤 (若有) */}
+          {hasExamples && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("example")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                activeTab === "example"
+                  ? "bg-white text-indigo-700 shadow-xs border border-slate-200/80"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <span>💡 參考範例</span>
+              <span className="bg-rose-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                {slide.examples?.length}
               </span>
             </button>
-          </div>
-        ) : (
-          <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
-            <span className="w-1.5 h-3 bg-fubon-blue rounded-full" />
-            個人隨堂筆記
-          </h3>
-        )}
-        <span className="text-xs font-mono text-slate-400">
-          {activeTab === "note" ? `${noteLength} / 10,000 字` : "範例圖片模式"}
-        </span>
+          )}
+        </div>
+
+        {/* 右側動態工具列 */}
+        <div className="flex items-center gap-2">
+          {(activeTab === "stickies" || activeTab === "article") && (
+            <div className="flex items-center gap-2">
+              {/* 講述時間標籤 */}
+              {hasLectureContent && lectureData?.recordedSeconds ? (
+                <span className="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-1 rounded-lg border border-slate-200/60 hidden sm:inline-block">
+                  講述 {formatTimer(lectureData.recordedSeconds)}
+                </span>
+              ) : null}
+
+              {/* 講師專屬：編輯詳細內容按鈕 */}
+              {isInstructor && activeTab === "article" && hasLectureContent && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isEditingArticle) {
+                      setIsEditingArticle(false);
+                    } else {
+                      setEditingArticleText(lectureData?.textbookArticle || "");
+                      setIsEditingArticle(true);
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                    isEditingArticle
+                      ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                      : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
+                  }`}
+                  title={isEditingArticle ? "取消編輯" : "編輯課堂詳細內容"}
+                >
+                  <span>{isEditingArticle ? "✖ 取消編輯" : "✏️ 編輯詳細內容"}</span>
+                </button>
+              )}
+
+              {/* 講師專屬：新增便利貼按鈕 */}
+              {isInstructor && activeTab === "stickies" && hasLectureContent && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSticky({
+                      id: `sticky_${Date.now()}_${(lectureData?.stickies?.length || 0)}`,
+                      title: "新重點主題",
+                      color: "yellow",
+                      points: ["重點一"]
+                    });
+                  }}
+                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                  title="手動新增一張重點便利貼"
+                >
+                  <span>➕ 新增便籤</span>
+                </button>
+              )}
+
+              {/* 講師專屬：單一錄音控制紐 (避免重複按鈕) */}
+              {isInstructor && !isRecordingThisSlide && !isCompilingThisSlide && (
+                hasLectureContent ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowRerecordModal(true)}
+                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                    title="補充講述或重新錄製此頁"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                    <span>🎙️ 錄音選項</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onStartLectureRecord?.(slide.id, slide.title, slide.page, 'fresh')}
+                    className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-black transition-all flex items-center gap-1.5 shadow-sm shadow-rose-600/20 cursor-pointer active:scale-95"
+                    title="開始講課錄音，講完小編將自動為全班整理重點"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    <span>🎙️ 開始錄音</span>
+                  </button>
+                )
+              )}
+            </div>
+          )}
+
+          {activeTab === "note" && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-slate-400 hidden sm:inline">
+                {noteLength} / 10,000 字
+              </span>
+              <button
+                type="button"
+                onClick={handleToggleVoice}
+                disabled={isInputDisabled || !isVoiceSupported}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs ${
+                  isRecording
+                    ? "bg-rose-500 text-white animate-pulse shadow-rose-500/20"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                }`}
+                title={!isVoiceSupported ? "當前瀏覽器不支援語音辨識" : (isRecording ? "點擊停止語音輸入" : "點擊開始語音筆記")}
+              >
+                <svg className={`w-3.5 h-3.5 ${isRecording ? "text-white animate-bounce" : "text-slate-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+                <span>{isRecording ? "正在聆聽..." : "🎙️ 語音筆記"}</span>
+              </button>
+            </div>
+          )}
+
+          {activeTab === "example" && (
+            <span className="text-xs font-mono text-slate-400">
+              範例圖片模式
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Dedicate whiteboard button if page has one */}
-      {hasWhiteboard && (
-        <div className="mb-3 shrink-0">
-          <button
-            onClick={() => {
-              const baseUrl = import.meta.env.BASE_URL || "/";
-              let boardFile = "";
-              if (slide.id === "slide-7") boardFile = "wbs.html";
-              else if (slide.id === "slide-8") boardFile = "impact-map.html";
-              else if (slide.id === "slide-9") boardFile = "story-map.html";
-              else if (slide.id === "slide-22") boardFile = "decision-table.html";
-              window.open(`${baseUrl}${boardFile}`, "_blank");
-            }}
-            className="w-full py-2.5 bg-fubon-green hover:bg-fubon-green-dark text-slate-900 font-black rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.98]"
-          >
-            <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-            </svg>
-            開啟專屬 {slide.title} {slide.id === "slide-22" ? "工具" : "協作白板"}
-          </button>
+      {/* ======================================================== */}
+      {/* 標籤頁 1：重點便利貼 (便利貼群 + ON-AIR 錄音狀態) */}
+      {/* ======================================================== */}
+      {activeTab === "stickies" && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* 1. 若正在「其他頁面」錄音中：顯示跨頁持續錄音提示與快速跳回按鈕 */}
+          {isRecordingOtherSlide && (
+            <div className="bg-slate-900 border border-rose-500/40 text-slate-200 px-3.5 py-2.5 rounded-2xl flex items-center justify-between shadow-lg mb-3 shrink-0 animate-in fade-in">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                <span className="font-bold text-rose-400">正在錄音中</span>
+                <span className="text-slate-300 font-medium truncate max-w-[150px] sm:max-w-[220px]" title={recordingState?.slideTitle || ''}>
+                  {recordingState?.slidePage ? `第 ${recordingState.slidePage} 頁 · ` : ''}{recordingState?.slideTitle}
+                </span>
+                <span className="font-mono bg-rose-950/80 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-bold">
+                  {formatTimer(recordingState?.recordingSeconds || 0)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {onNavigateToSlide && recordingState?.slideId && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToSlide(recordingState.slideId!)}
+                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  >
+                    👉 跳回錄音頁面
+                  </button>
+                )}
+                {isInstructor && onStopLectureRecord && (
+                  <button
+                    type="button"
+                    onClick={onStopLectureRecord}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  >
+                    ⏹ 結束
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 2. 若正在「本頁」錄音中：顯示精緻緊湊型 ON-AIR 狀態列 */}
+          {isRecordingThisSlide && (
+            isInstructor ? (
+              <div className="bg-slate-950 text-white p-3.5 sm:p-4 rounded-2xl border border-rose-500/40 shadow-xl mb-3 shrink-0 flex flex-col gap-2.5 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 font-mono text-xs font-black border border-rose-500/40">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" />
+                      ON AIR
+                    </span>
+                    <span className="text-sm font-mono font-black text-rose-300">
+                      {formatTimer(recordingState?.recordingSeconds || 0)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onStopLectureRecord}
+                    className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-rose-600/30 cursor-pointer"
+                  >
+                    <span className="w-2 h-2 rounded-xs bg-white" />
+                    <span>⏹ 結束講述，整理重點</span>
+                  </button>
+                </div>
+
+                {/* 微型聲波與逐字即時串流 */}
+                <div className="flex items-center gap-2.5 bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-800/80">
+                  <div className="flex items-center gap-0.5 h-3.5 shrink-0">
+                    {[40, 80, 50, 95, 60, 85, 45, 90, 70, 100, 55, 75].map((h, i) => (
+                      <div
+                        key={i}
+                        className="w-1 bg-rose-500 rounded-full animate-pulse"
+                        style={{
+                          height: `${h}%`,
+                          animationDelay: `${(i * 0.08).toFixed(2)}s`,
+                          animationDuration: '0.7s'
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-300 italic truncate flex-1 font-sans">
+                    {recordingState?.interimSpeech ? `「${recordingState.interimSpeech}」` : "正在收音聆聽講述內容..."}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* 學員端安靜淡雅小橫條 */
+              <div className="bg-slate-900/90 border border-slate-800 text-slate-300 px-3.5 py-2 rounded-2xl flex items-center justify-between mb-3 text-xs shrink-0 shadow-sm animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  <span className="font-bold text-rose-400">🎙️ 講師隨堂講述中</span>
+                  <span className="font-mono text-slate-400">({formatTimer(recordingState?.recordingSeconds || 0)})</span>
+                </div>
+                <span className="text-[11px] text-slate-400">講述完畢後小編將在此為大家整理重點</span>
+              </div>
+            )
+          )}
+
+          {/* 3. 小編工作中 (提煉整理狀態) */}
+          {isCompilingThisSlide && (
+            <div className="p-8 sm:p-12 rounded-3xl bg-slate-50 border border-slate-200 text-center flex flex-col items-center justify-center my-auto animate-in fade-in duration-300">
+              <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl mb-4 animate-bounce">
+                ☕
+              </div>
+              <h3 className="text-base font-black text-slate-900 mb-1">小編工作中...</h3>
+              <p className="text-xs text-slate-500 max-w-xs mb-6">
+                小編正在為大家整理剛才的課堂重點，請稍候片刻...
+              </p>
+              <div className="w-full max-w-sm space-y-3">
+                <div className="h-14 bg-slate-200/60 rounded-2xl animate-pulse" />
+                <div className="h-14 bg-slate-200/40 rounded-2xl animate-pulse" />
+              </div>
+            </div>
+          )}
+
+          {/* 4. 已經生成：重點便利貼群 (無重複二層標籤) */}
+          {!isCompilingThisSlide && hasLectureContent && (
+            <div className="flex-1 overflow-y-auto pr-1 space-y-3 pb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {lectureData?.stickies.map((stk, sIdx) => (
+                  <div
+                    key={stk.id || sIdx}
+                    className={`p-4 rounded-3xl border shadow-xs transition-all relative flex flex-col justify-between ${getStickyBgColor(
+                      stk.color
+                    )}`}
+                  >
+                    <div>
+                      {/* 便籤主題標題與編輯按鈕 (僅老師可見/可編輯) */}
+                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/10">
+                        <h4 className="font-black text-sm text-slate-900 leading-snug">
+                          {stk.title}
+                        </h4>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono opacity-40 font-bold">
+                            #{sIdx + 1}
+                          </span>
+                          {isInstructor && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingSticky({ ...stk, points: [...stk.points] });
+                              }}
+                              className="px-1.5 py-0.5 rounded-md bg-black/5 hover:bg-black/15 text-slate-800 text-[10px] font-bold transition-all cursor-pointer"
+                              title="編輯此便利貼"
+                            >
+                              ✏️ 編輯
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {/* 便籤條列重點 */}
+                      <ul className="space-y-1.5 text-xs leading-relaxed text-slate-800 font-medium">
+                        {stk.points.map((pt, pIdx) => (
+                          <li key={pIdx} className="flex items-start gap-1.5">
+                            <span className="text-slate-400 font-bold shrink-0">•</span>
+                            <span>{pt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+
+                {/* 老師專屬：手動新增重點便利貼卡片 */}
+                {isInstructor && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingSticky({
+                        id: `sticky_${Date.now()}_${(lectureData?.stickies?.length || 0)}`,
+                        title: "新增重點主題",
+                        color: "yellow",
+                        points: ["請輸入重點內容"]
+                      });
+                    }}
+                    className="p-5 min-h-[140px] rounded-3xl border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50/50 hover:bg-emerald-50/30 text-slate-400 hover:text-emerald-700 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group"
+                    title="手動新增一張重點便利貼"
+                  >
+                    <span className="w-8 h-8 rounded-full bg-slate-200 group-hover:bg-emerald-200 text-slate-600 group-hover:text-emerald-800 flex items-center justify-center font-bold text-lg">
+                      +
+                    </span>
+                    <span className="text-xs font-bold">新增重點便利貼</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 5. 尚未錄製：待講授引導狀態 (學生與講師字眼一致) */}
+          {!isCompilingThisSlide && !isRecordingThisSlide && !hasLectureContent && (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-3 shadow-inner">
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <h4 className="text-sm font-black text-slate-800 mb-1">尚未錄製本頁重點</h4>
+              <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                {isInstructor
+                  ? "點擊右上角「🎙️ 開始錄音」即可進行隨堂講授，小編將為全班整理重點便利貼與課堂詳細內容。"
+                  : "講師尚未講授此頁，講授完畢後小編將在此為大家整理重點便利貼與課堂詳細內容。"}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
-      {activeTab === "note" ? (
+      {/* ======================================================== */}
+      {/* 標籤頁 2：課堂詳細內容 (教科書級課堂講述完整詳解) */}
+      {/* ======================================================== */}
+      {activeTab === "article" && (
         <div className="flex-1 flex flex-col overflow-hidden">
+          {isEditingArticle && isInstructor ? (
+            <div className="flex-1 flex flex-col overflow-hidden gap-3">
+              <div className="flex items-center justify-between shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                  <span>✏️</span>
+                  <span>正在編輯課堂詳細內容 (支援 Markdown 標題與條列格式)</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingArticle(false)}
+                    className="px-3 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSavingLecture}
+                    onClick={() => handleSaveArticle(editingArticleText)}
+                    className="px-3.5 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-black transition-all shadow-sm cursor-pointer active:scale-95"
+                  >
+                    {isSavingLecture ? "儲存中..." : "💾 儲存並同步給全班"}
+                  </button>
+                </div>
+              </div>
+              <textarea
+                value={editingArticleText}
+                onChange={(e) => setEditingArticleText(e.target.value)}
+                className="flex-1 w-full p-4 rounded-2xl bg-white border border-indigo-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 leading-relaxed text-xs sm:text-sm text-slate-800 font-sans outline-none resize-none shadow-inner"
+                placeholder="輸入課堂講述詳細內容..."
+              />
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto pr-1 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-100 leading-relaxed text-xs sm:text-sm text-slate-700 whitespace-pre-line font-medium pb-6">
+              {lectureData?.textbookArticle}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* 標籤頁 2：小組筆記 (原隨堂筆記與租約鎖協作) */}
+      {/* ======================================================== */}
+      {activeTab === "note" && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Observation Mode Banner */}
+          {isObservationMode && (
+            <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs text-amber-900 shrink-0">
+              <span className="font-bold flex items-center gap-1.5">
+                <span>👀 觀摩模式 (唯讀)：您正在查閱【第 {activeTeamId} 組】隨堂筆記</span>
+              </span>
+              {onSwitchToMyTeam && userSession && (
+                <button
+                  type="button"
+                  onClick={onSwitchToMyTeam}
+                  className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-lg text-[11px] shadow-sm transition-all cursor-pointer"
+                >
+                  切回我組 (第 {userSession.teamId} 組)
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Class Inactive Read-Only Banner */}
+          {isClassReadOnly && (
+            <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 shrink-0">
+              ⚠️ 班級已停用：目前處於全班唯讀狀態，無法編輯筆記。
+            </div>
+          )}
+
           {/* Slide 3 Specific: One-click Copy Button */}
           {slide.id === "slide-3" && (
             <div className="mb-4 shrink-0">
@@ -1062,7 +1718,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                 </svg>
-                一鍵複製課堂 AI 提示詞 (DoD & DoR)
+                一鍵複製課堂提示詞範本 (DoD & DoR)
               </button>
             </div>
           )}
@@ -1080,7 +1736,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                 </svg>
-                一鍵複製課堂 AI 提示詞 (User Story & AC)
+                一鍵複製課堂提示詞範本 (User Story & AC)
               </button>
             </div>
           )}
@@ -1098,22 +1754,200 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                 </svg>
-                一鍵複製課堂 AI 提示詞 (MVP & MMF)
+                一鍵複製課堂提示詞範本 (MVP & MMF)
               </button>
+            </div>
+          )}
+
+          {/* 鎖定狀態指示橫幅 (多組員防踩踏與租約鎖協同) */}
+          {grabStatus && (
+            <div className="mb-2 p-2 bg-emerald-50 border border-emerald-300 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in shrink-0">
+              <span>{grabStatus}</span>
+            </div>
+          )}
+
+          {/* 組員正在編輯中的鎖定橫幅 */}
+          {isLockedByOther && !isObservationMode && !isClassReadOnly && (
+            <div className="mb-2.5 p-2.5 bg-amber-500/15 border border-amber-500/35 rounded-xl flex items-center justify-between text-xs text-amber-950 shrink-0 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping shrink-0" />
+                <span className="font-bold">
+                  🔒 組員【{teamNote?.lock?.holderName || "其他學員"}】正在編輯此頁筆記
+                </span>
+                <span className="text-[11px] text-amber-800 font-mono hidden sm:inline">
+                  (35 秒租約保護中)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleGrabLock}
+                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black rounded-lg text-[11px] shadow-sm transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                title="若組員已停止操作或中途離線，可點擊爭取編輯權"
+              >
+                <span>🙋 爭取編輯權</span>
+              </button>
+            </div>
+          )}
+
+          {/* 本人持有鎖定狀態列 */}
+          {isHeldByMe && !isObservationMode && !isClassReadOnly && (
+            <div className="mb-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between text-xs text-emerald-800 shrink-0">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>您正在編輯中 (組內即時同步，每 15 秒心跳續約保護)</span>
+              </span>
+              {onReleaseLock && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await onReleaseLock();
+                  }}
+                  className="px-2 py-0.5 bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-md text-[10px] font-bold transition-colors cursor-pointer"
+                  title="點擊主動釋放編輯鎖，交給同組其他同學編輯"
+                >
+                  交出編輯權
+                </button>
+              )}
             </div>
           )}
 
           {/* Input Area (Textarea) */}
           <textarea
-            value={response.personalNote}
+            value={teamNote ? teamNote.memo : response.personalNote}
+            disabled={isInputDisabled}
+            readOnly={isInputDisabled}
+            onClick={() => {
+              if (isLockedByOther && !isObservationMode && !isClassReadOnly) {
+                handleGrabLock();
+              }
+            }}
+            onFocus={async () => {
+              if (!isInputDisabled && onAcquireLock) {
+                await onAcquireLock();
+              }
+            }}
             onChange={(e) => updateNote(slide.id, e.target.value)}
-            placeholder={slide.notePlaceholder || "記錄你對這張卡片的理解、講師補充、疑問或工作上的聯想……"}
+            placeholder={
+              isObservationMode
+                ? "👀 觀摩模式中，筆記為唯讀狀態。"
+                : isClassReadOnly
+                ? "⚠️ 班級已停用，筆記為唯讀狀態。"
+                : isLockedByOther
+                ? `🔒 組員【${teamNote?.lock?.holderName || "其他學員"}】正在編輯中，點擊上方「爭取編輯權」可接手……`
+                : (slide.notePlaceholder || "點擊輸入開始記錄小組討論、筆記與敏捷拆解心得……")
+            }
             maxLength={10000}
-            className="w-full flex-1 p-4 border border-slate-200 focus:border-fubon-blue rounded-2xl outline-none focus:ring-4 focus:ring-fubon-blue-glow transition-all text-sm resize-none leading-relaxed bg-slate-50 focus:bg-white"
+            className={`w-full flex-1 p-4 border rounded-2xl outline-none transition-all text-sm resize-none leading-relaxed ${
+              isInputDisabled
+                ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
+                : "bg-slate-50 focus:bg-white border-slate-200 focus:border-fubon-blue focus:ring-4 focus:ring-fubon-blue-glow"
+            }`}
           />
+
+          {/* 即時語音辨識串流指示 */}
+          {isRecording && (
+            <div className="mt-2 px-3 py-2 bg-rose-50 border border-rose-200/80 rounded-xl text-xs flex items-center justify-between text-rose-800 animate-pulse shrink-0">
+              <div className="flex items-center gap-2 overflow-hidden truncate">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" />
+                <span className="font-bold shrink-0">正在聆聽語音：</span>
+                <span className="italic text-rose-900 truncate">{interimText || "請對著麥克風說話..."}</span>
+              </div>
+              <button
+                type="button"
+                onClick={stopRecording}
+                className="text-[10px] px-2 py-0.5 bg-rose-200 hover:bg-rose-300 text-rose-900 font-bold rounded-md shrink-0 transition-colors cursor-pointer"
+              >
+                完成
+              </button>
+            </div>
+          )}
+
+          {/* 語音錯誤提示 */}
+          {voiceErrorMessage && (
+            <div className="mt-2 px-3 py-1.5 bg-rose-100/80 border border-rose-300 rounded-xl text-xs text-rose-800 flex items-center justify-between shrink-0">
+              <span className="flex items-center gap-1.5">
+                <span>⚠️ 語音辨識提醒：{voiceErrorMessage}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Attachments Section (完全比照 AI-ARM 附件支援) */}
+          <div className="mt-3 pt-3 border-t border-slate-100 shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <span>📎 附檔與截圖 ({teamNote?.attachments?.length || 0})</span>
+              </span>
+              {!isInputDisabled && onAddAttachment && (
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="image/*,.pdf,.doc,.docx"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1"
+                  >
+                    <span>+ 上傳附件</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Attachments List */}
+            {teamNote?.attachments && teamNote.attachments.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {teamNote.attachments.map((att) => (
+                  <div key={att.id} className="relative group shrink-0 border border-slate-200 rounded-xl p-1.5 bg-slate-50 hover:bg-white flex items-center gap-2 max-w-[160px]">
+                    {att.dataUrl && att.mime?.startsWith("image/") ? (
+                      <img
+                        src={att.dataUrl}
+                        alt={att.name}
+                        onClick={() => onImageClick?.(att.dataUrl!)}
+                        className="w-8 h-8 rounded-lg object-cover cursor-zoom-in"
+                      />
+                    ) : (
+                      <div
+                        onClick={() => handleDownloadAttachment(att)}
+                        className="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 flex items-center justify-center text-indigo-500 text-[10px] font-bold cursor-pointer"
+                        title={`點擊下載 ${att.name}`}
+                      >
+                        FILE
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-bold text-slate-800 truncate" title={att.name}>
+                        {att.name}
+                      </div>
+                      <div className="text-[9px] text-slate-400 font-mono">
+                        {(att.size / 1024).toFixed(0)} KB
+                      </div>
+                    </div>
+                    {!isInputDisabled && onRemoveAttachment && (
+                      <button
+                        type="button"
+                        onClick={() => onRemoveAttachment(att.id)}
+                        className="text-slate-400 hover:text-rose-500 p-0.5"
+                        title="刪除此附件"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      ) : (
-        /* Examples tab view */
+      )}
+
+      {/* ======================================================== */}
+      {/* 標籤頁 3：補充參考範例 */}
+      {/* ======================================================== */}
+      {activeTab === "example" && (
         <div className="flex-1 overflow-y-auto space-y-6 pr-1">
           {slide.examples?.map((ex, index) => {
             const exUrl = getImageUrl(ex.image);
@@ -1154,6 +1988,202 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* 講師專屬：再次錄音模式選擇彈窗 */}
+      {showRerecordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4 animate-in zoom-in-95">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto text-xl">
+              🎙️
+            </div>
+            <div>
+              <h3 className="text-base font-black text-slate-900">選擇錄音方式</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                這頁已有整理好的重點，您希望如何進行？
+              </p>
+            </div>
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRerecordModal(false);
+                  onStartLectureRecord?.(slide.id, slide.title, slide.page, 'augment');
+                }}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>🎙️ 補充錄音</span>
+                <span className="text-[10px] opacity-80 font-normal">(保留既有重點並追加內容)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRerecordModal(false);
+                  onStartLectureRecord?.(slide.id, slide.title, slide.page, 'fresh');
+                }}
+                className="w-full py-3 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>🔄 重新錄這頁</span>
+                <span className="text-[10px] opacity-80 font-normal">(覆蓋本頁內容)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRerecordModal(false)}
+                className="w-full py-2 text-slate-400 hover:text-slate-600 text-xs font-bold transition-colors cursor-pointer"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 講師專屬：重點便利貼編輯彈窗 */}
+      {editingSticky && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📌</span>
+                <h3 className="text-base font-black text-slate-900">
+                  {lectureData?.stickies?.some(s => s.id === editingSticky.id) ? "編輯重點便利貼" : "新增重點便利貼"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSticky(null)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {/* 顏色選擇 */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">便籤顏色</label>
+                <div className="flex gap-2">
+                  {(['yellow', 'green', 'blue', 'pink', 'purple'] as const).map((colorKey) => {
+                    const colorStyles: Record<string, string> = {
+                      yellow: 'bg-amber-300 border-amber-400',
+                      green: 'bg-emerald-300 border-emerald-400',
+                      blue: 'bg-sky-300 border-sky-400',
+                      pink: 'bg-rose-300 border-rose-400',
+                      purple: 'bg-purple-300 border-purple-400'
+                    };
+                    const isSelected = (editingSticky.color || 'yellow') === colorKey;
+                    return (
+                      <button
+                        key={colorKey}
+                        type="button"
+                        onClick={() => setEditingSticky({ ...editingSticky, color: colorKey })}
+                        className={`w-7 h-7 rounded-full border-2 transition-all cursor-pointer ${colorStyles[colorKey]} ${
+                          isSelected ? 'ring-2 ring-slate-900 scale-110 shadow-md' : 'opacity-70 hover:opacity-100'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 標題 */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 mb-1 block">重點主題 (標題)</label>
+                <input
+                  type="text"
+                  value={editingSticky.title}
+                  onChange={(e) => setEditingSticky({ ...editingSticky, title: e.target.value })}
+                  placeholder="例如：DoD 的核心要點"
+                  className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-fubon-blue focus:bg-white"
+                />
+              </div>
+
+              {/* 重點項目清單 */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-bold text-slate-500">重點要點清單 (條列)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingSticky({
+                        ...editingSticky,
+                        points: [...editingSticky.points, ""]
+                      });
+                    }}
+                    className="text-[10px] font-bold text-fubon-blue hover:text-blue-700 cursor-pointer flex items-center gap-1"
+                  >
+                    <span>➕ 新增一條</span>
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {editingSticky.points.map((pt, pIdx) => (
+                    <div key={pIdx} className="flex items-center gap-2">
+                      <span className="text-slate-400 font-mono text-[10px] w-4 text-right">{pIdx + 1}.</span>
+                      <input
+                        type="text"
+                        value={pt}
+                        onChange={(e) => {
+                          const newPoints = [...editingSticky.points];
+                          newPoints[pIdx] = e.target.value;
+                          setEditingSticky({ ...editingSticky, points: newPoints });
+                        }}
+                        placeholder="請輸入重點內容..."
+                        className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-fubon-blue focus:bg-white"
+                      />
+                      {editingSticky.points.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPoints = editingSticky.points.filter((_, idx) => idx !== pIdx);
+                            setEditingSticky({ ...editingSticky, points: newPoints });
+                          }}
+                          className="text-slate-400 hover:text-rose-500 text-xs p-1 cursor-pointer"
+                          title="刪除此條"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 按鈕群 */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+              <div>
+                {lectureData?.stickies?.some(s => s.id === editingSticky.id) && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSticky(editingSticky.id)}
+                    disabled={isSavingLecture}
+                    className="px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  >
+                    🗑️ 刪除便籤
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingSticky(null)}
+                  disabled={isSavingLecture}
+                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveSticky(editingSticky)}
+                  disabled={isSavingLecture || !editingSticky.title.trim()}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isSavingLecture ? "儲存中..." : "💾 儲存並同步"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

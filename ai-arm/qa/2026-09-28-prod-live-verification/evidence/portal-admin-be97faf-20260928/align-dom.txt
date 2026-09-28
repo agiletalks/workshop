@@ -1,0 +1,46 @@
+- banner:
+  - link "AgileTalks Central Admin":
+    - /url: ./
+    - generic: AgileTalks
+    - generic: Central Admin
+  - combobox:
+    - option "SPLIT：需求拆解與用戶故事實戰工作坊 (完整管理)"
+    - option "AI-ARM：AI 需求建模與敏捷 Refinement (唯讀檢視)"
+    - option "AI-Align：AI 賦能敏捷跨部門溝通 (通用模式)" [selected]
+  - generic: AI-Align 通用模式
+  - button "重新載入班級資料":
+  - link "返回首頁":
+    - /url: ./
+    - generic: 返回首頁
+- main:
+  - generic: 目前課程班級數
+  - generic: "1"
+  - generic: 啟用中班級
+  - generic: "1"
+  - generic: 總配置組數
+  - generic: "6"
+  - generic: 底層隔離集合
+  - generic: aigile_boards (通用)
+  - heading "【AI-Align 通用模式檢視】" [level=4]
+  - paragraph:
+    - text: AI 賦能敏捷採用固定單一班級架構（通行密碼：agile-2026，底層白板：aigile_boards）。
+    - text: 中央後台提供講義與各組協作白板快速連結。
+  - textbox "搜尋班級名稱或班級代碼..."
+  - generic: 啟用中
+  - generic: 6 組
+  - generic: 預設
+  - generic: 唯讀
+  - heading "預設敏捷需求班" [level=3]
+  - 'button "報到代碼: default"':
+    - text: "報到代碼:"
+    - strong: default
+  - generic: "建立: 9月8日 上午08:00"
+  - paragraph: 固定通用班級（使用 aigile_boards 集合，支援 1~6 組白板）
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/ai-align/
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/ai-align/
+    - generic: 進入
+  - generic: AI-ARM 演練清空與資料異動請由專屬舊版後台操作

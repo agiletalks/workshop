@@ -84,6 +84,20 @@ try {
   } else {
     console.warn('Warning: Root index.html not found, skipping.');
   }
+
+  // Copy admin.html to dist/workshop/admin.html
+  const rootAdminSrc = path.join(rootDir, 'admin.html');
+  if (fs.existsSync(rootAdminSrc)) {
+    fs.copyFileSync(rootAdminSrc, path.join(distWorkshopDir, 'admin.html'));
+    console.log('✓ Central admin.html copied successfully.');
+  }
+
+  // Copy adapters to dist/workshop/adapters
+  const adaptersSrc = path.join(rootDir, 'adapters');
+  if (fs.existsSync(adaptersSrc)) {
+    copyFolderSync(adaptersSrc, path.join(distWorkshopDir, 'adapters'));
+    console.log('✓ Course adapters copied successfully.');
+  }
   // Create dist/index.html redirect to /workshop/
   const redirectHtml = `<!DOCTYPE html>
 <html>

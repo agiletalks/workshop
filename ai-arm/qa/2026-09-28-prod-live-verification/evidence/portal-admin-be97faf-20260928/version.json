@@ -1,0 +1,51 @@
+{
+  "at": "2026-09-28T05:08:15.469Z",
+  "build": {
+    "command": "node scripts/build-all.js",
+    "exit": 0,
+    "splitBundle": "index-CrI00W6P.js"
+  },
+  "suite": {
+    "command": "node tests/verify-suite.js",
+    "passed": 11,
+    "total": 11,
+    "limitation": "mock Firestore and local assertions; not deployed rule verification"
+  },
+  "files": [
+    {
+      "path": "index.html",
+      "status": 200,
+      "sourceSHA256": "2e289c73084ce91ed43755e13de37e80e18935a28d2162914b2cb34762b3edaa",
+      "servedSHA256": "2e289c73084ce91ed43755e13de37e80e18935a28d2162914b2cb34762b3edaa",
+      "identical": true
+    },
+    {
+      "path": "admin.html",
+      "status": 200,
+      "sourceSHA256": "1ef8f737b76efd2f1eb4c218c94029185cb7eeb93838fd750aa5234062766d45",
+      "servedSHA256": "1ef8f737b76efd2f1eb4c218c94029185cb7eeb93838fd750aa5234062766d45",
+      "identical": true
+    },
+    {
+      "path": "adapters/ai-align-adapter.js",
+      "status": 200,
+      "sourceSHA256": "abe1e55f1149ece447171570d63b1d1e9a9de231fcff6e51c1b6fe73726151ef",
+      "servedSHA256": "abe1e55f1149ece447171570d63b1d1e9a9de231fcff6e51c1b6fe73726151ef",
+      "identical": true
+    },
+    {
+      "path": "adapters/ai-arm-adapter.js",
+      "status": 200,
+      "sourceSHA256": "94bced45ab3300bfe5b606920863fdcb3c9a67e35add4157f36d48fcc77d31c7",
+      "servedSHA256": "94bced45ab3300bfe5b606920863fdcb3c9a67e35add4157f36d48fcc77d31c7",
+      "identical": true
+    },
+    {
+      "path": "adapters/split-adapter.js",
+      "status": 200,
+      "sourceSHA256": "5adba147f7e76ccf7c5834e5ba8b9ec9129aaf7c8336c6afbe2abc77dadadd49",
+      "servedSHA256": "5adba147f7e76ccf7c5834e5ba8b9ec9129aaf7c8336c6afbe2abc77dadadd49",
+      "identical": true
+    }
+  ]
+}

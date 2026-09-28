@@ -1,0 +1,14 @@
+[
+  {
+    "type": "verbose",
+    "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"current-password\"): (More info: https://www.chromium.org/developers/design-documents/create-amazing-password-forms) %o"
+  },
+  {
+    "type": "error",
+    "text": "[subscribeQuestions] error: FirebaseError: Missing or insufficient permissions."
+  },
+  {
+    "type": "warning",
+    "text": "[App] Firestore questions sync failed: FirebaseError: Missing or insufficient permissions."
+  }
+]

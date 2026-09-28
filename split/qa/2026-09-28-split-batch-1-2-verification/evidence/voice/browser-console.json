@@ -1,0 +1,38 @@
+[
+  {
+    "level": "error",
+    "message": "[vite] Failed to reload /src/App.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above)",
+    "timestamp": "2026-09-28T04:48:26.474Z",
+    "url": "http://localhost:5173/@vite/client"
+  },
+  {
+    "level": "error",
+    "message": "[vite] Failed to reload /src/App.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above)",
+    "timestamp": "2026-09-28T04:48:38.611Z",
+    "url": "http://localhost:5173/@vite/client"
+  },
+  {
+    "level": "error",
+    "message": "[vite] Failed to reload /src/App.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above)",
+    "timestamp": "2026-09-28T04:48:43.793Z",
+    "url": "http://localhost:5173/@vite/client"
+  },
+  {
+    "level": "error",
+    "message": "[vite] Failed to reload /src/App.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above)",
+    "timestamp": "2026-09-28T04:49:00.433Z",
+    "url": "http://localhost:5173/@vite/client"
+  },
+  {
+    "level": "error",
+    "message": "ReferenceError: useState is not defined\n    at QuestionsDrawer (http://localhost:5173/src/components/QuestionsDrawer.tsx?t=1790570962577:8:40)\n    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=a88516ca:12864:12)\n    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=a88516ca:4211:19)\n    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=a88516ca:5567:16)\n    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=a88516ca:6138:20)\n    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=a88516ca:850:66)\n    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=a88516ca:8427:92)\n    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=a88516ca:8323:37)\n    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=a88516ca:8307:6)\n    at performWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=a88516ca:7992:27)",
+    "timestamp": "2026-09-28T04:49:22.681Z",
+    "url": "http://localhost:5173/src/components/QuestionsDrawer.tsx?t=1790570962577"
+  },
+  {
+    "level": "warn",
+    "message": "%s\n\n%s\n An error occurred in the <QuestionsDrawer> component. Consider adding an error boundary to your tree to customize error handling behavior.\nVisit https://react.dev/link/error-boundaries to learn more about error boundaries.",
+    "timestamp": "2026-09-28T04:49:22.681Z",
+    "url": "http://localhost:5173/@vite/client"
+  }
+]

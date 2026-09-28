@@ -1,0 +1,47 @@
+{
+  "at": "2026-09-28T07:16:56.437Z",
+  "classId": "qa-split-retest",
+  "method": "Real production adapter; QA wrapper probes before releaseWriteLease; no product changes",
+  "probeBodyFields": [
+    "name"
+  ],
+  "authorizationHeader": false,
+  "before": {
+    "status": "active",
+    "generation": "5"
+  },
+  "beforeProbe": {
+    "at": "2026-09-28T07:16:57.749Z",
+    "status": 403
+  },
+  "publicLeaseFields": [],
+  "duringProbe": {
+    "at": "2026-09-28T07:17:01.687Z",
+    "status": 403
+  },
+  "unauthAuditWrite": {
+    "status": 200,
+    "documentId": "qa-fix7-auth-probe-1790579821687",
+    "authorizationHeader": false,
+    "bodyFields": [
+      "classId",
+      "type",
+      "qaOnly",
+      "description"
+    ],
+    "retainedForEvidence": true
+  },
+  "releaseFinished": true,
+  "operation": {
+    "success": true
+  },
+  "afterProbe": {
+    "at": "2026-09-28T07:17:02.887Z",
+    "status": 403
+  },
+  "after": {
+    "status": "active",
+    "generation": "5",
+    "nameUnchanged": true
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "href": "./admin.html",
+    "text": "\n                管理後台 (Admin)\n                →\n            "
+  },
+  {
+    "href": "./admin.html?course=ai-align",
+    "text": "\n                \n                    通用模式\n                \n                \n                  \n                      Course Management\n                  \n                  AI-Align：跨部門溝通萃取需求\n                  \n                      從 WHY 目標出發，走過 WHO 行為者、HOW 分析流程，直達 WHAT 原型對齊共識。中央管理檢視、講義與即時白板快速連結。\n                  \n                \n                \n                    進入 AI-Align 管理後台 →\n                \n            "
+  },
+  {
+    "href": "./admin.html?course=ai-arm",
+    "text": "\n                \n                    唯讀管理模式\n                \n                \n                  \n                      Course Management\n                  \n                  AI-ARM：AI 需求建模與敏捷 Refinement\n                  \n                      從 WHY 目標到 HOW 行為與 WHAT 交付物。班級列表查詢、專屬講義網址與小組白板連結檢視。\n                  \n                \n                \n                    進入 AI-ARM 管理後台 →\n                \n            "
+  },
+  {
+    "href": "./admin.html?course=split",
+    "text": "\n                \n                    完整班級管理\n                \n                \n                  \n                      Course Management\n                  \n                  SPLIT：需求拆解與用戶故事實戰\n                  \n                      班級開班建立、1~12 組數設定、學生進班驗證碼、演練世代遞增重設 (Gen+1) 與快照復原。\n                  \n                \n                \n                    進入 SPLIT 管理後台 →\n                \n            "
+  },
+  {
+    "href": "./marshmallow/",
+    "text": "\n                \n                  \n                      Interactive Web App\n                  \n                  棉花糖挑戰\n                  \n                      一個包含引導大螢幕與小組填寫端的實時連線看板。透過經典的棉花糖挑戰，親身體驗 MVP（最小可行性產品）與快速反覆迭代的精髓。\n                  \n                \n                \n                    進入 →\n                \n            "
+  },
+  {
+    "href": "./hook/",
+    "text": "\n                \n                  \n                      Toolkit\n                  \n                  HOOKED 互動講義\n                  \n                      引導學員進行情緒覺察、掛鉤/脫鉤與主客觀詮釋的對話卡片與引導工具箱。包含 Kiki/Bouba 實驗與多項實踐練習。\n                  \n                \n                \n                    進入 →\n                \n            "
+  }
+]

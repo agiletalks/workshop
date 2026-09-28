@@ -1,0 +1,37 @@
+[
+  {
+    "id": "Q01-PATH-CONTRACT",
+    "description": "Verify target Firestore collection path format",
+    "result": "PASS"
+  },
+  {
+    "id": "Q02-SECURITY-RULE-AUDIT",
+    "description": "Detect path mismatch in firestore.rules",
+    "result": "PASS"
+  },
+  {
+    "id": "Q03-UPVOTE-DEDUPLICATION",
+    "description": "Verify toggle upvote prevents duplicate inflation",
+    "result": "PASS"
+  },
+  {
+    "id": "Q04-INSTRUCTOR-REPLY",
+    "description": "Verify instructor reply marks question answered",
+    "result": "PASS"
+  },
+  {
+    "id": "Q05-FILTERING-LOGIC",
+    "description": "Verify scope and status filter behavior",
+    "result": "PASS"
+  },
+  {
+    "id": "Q06-SORTING-LOGIC",
+    "description": "Verify sorting by newest and upvotes",
+    "result": "PASS"
+  },
+  {
+    "id": "Q07-WORDING-COMPLIANCE",
+    "description": "Verify zero presence of forbidden word 便利貼 in module files",
+    "result": "PASS"
+  }
+]

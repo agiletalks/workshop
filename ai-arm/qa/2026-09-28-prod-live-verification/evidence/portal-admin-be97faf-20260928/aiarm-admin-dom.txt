@@ -1,0 +1,145 @@
+- banner:
+  - link "AgileTalks Central Admin":
+    - /url: ./
+    - generic: AgileTalks
+    - generic: Central Admin
+  - combobox:
+    - option "SPLIT：需求拆解與用戶故事實戰工作坊 (完整管理)"
+    - option "AI-ARM：AI 需求建模與敏捷 Refinement (唯讀檢視)" [selected]
+    - option "AI-Align：AI 賦能敏捷跨部門溝通 (通用模式)"
+  - generic: AI-ARM 唯讀檢視模式
+  - button "重新載入班級資料":
+  - link "返回首頁":
+    - /url: ./
+    - generic: 返回首頁
+- main:
+  - generic: 目前課程班級數
+  - generic: "7"
+  - generic: 啟用中班級
+  - generic: "7"
+  - generic: 總配置組數
+  - generic: "37"
+  - generic: 底層隔離集合
+  - generic: ai_arm_classes (唯讀)
+  - heading "【AI-ARM 第一階段：唯讀管理檢視】" [level=4]
+  - paragraph:
+    - text: 為確保 AI-ARM 線上運作 100% 零破壞與舊相容，中央管理後台目前僅提供班級列表與網址查詢。
+    - text: 若需新增班級、調整組數或清空資料，請至 AI-ARM 專屬舊版後台操作。
+  - link "開啟舊版 AI-ARM 後台":
+    - /url: ./ai-arm/admin.html
+    - generic: 開啟舊版 AI-ARM 後台
+  - textbox "搜尋班級名稱或班級代碼..."
+  - generic: 啟用中
+  - generic: 6 組
+  - generic: 唯讀
+  - heading "IBM" [level=3]
+  - 'button "報到代碼: 202609-IBM"':
+    - text: "報到代碼:"
+    - strong: 202609-IBM
+  - generic: "建立: 9月23日 上午12:16"
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/ai-arm/?c=202609-IBM
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/ai-arm/?c=202609-IBM
+    - generic: 進入
+  - generic: AI-ARM 演練清空與資料異動請由專屬舊版後台操作
+  - generic: 啟用中
+  - generic: 6 組
+  - generic: 唯讀
+  - heading "IBM" [level=3]
+  - 'button "報到代碼: 202609-ibm"':
+    - text: "報到代碼:"
+    - strong: 202609-ibm
+  - generic: "建立: 9月23日 上午12:16"
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/ai-arm/?c=202609-ibm
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/ai-arm/?c=202609-ibm
+    - generic: 進入
+  - generic: AI-ARM 演練清空與資料異動請由專屬舊版後台操作
+  - generic: 啟用中
+  - generic: 6 組
+  - generic: 唯讀
+  - heading "凱基銀行" [level=3]
+  - 'button "報到代碼: 202609-kgi"':
+    - text: "報到代碼:"
+    - strong: 202609-kgi
+  - generic: "建立: 9月21日 上午11:59"
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/ai-arm/?c=202609-kgi
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/ai-arm/?c=202609-kgi
+    - generic: 進入
+  - generic: AI-ARM 演練清空與資料異動請由專屬舊版後台操作
+  - generic: 啟用中
+  - generic: 2 組
+  - generic: 唯讀
+  - heading "QA 附件同步驗收 2026-test" [level=3]
+  - 'button "報到代碼: 2026-test"':
+    - text: "報到代碼:"
+    - strong: 2026-test
+  - generic: "建立: 9月20日 下午10:12"
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/ai-arm/?c=2026-test
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/ai-arm/?c=2026-test
+    - generic: 進入
+  - generic: AI-ARM 演練清空與資料異動請由專屬舊版後台操作
+  - generic: 啟用中
+  - generic: 8 組
+  - generic: 唯讀
+  - heading "QA複測0920 B" [level=3]
+  - 'button "報到代碼: qa-retest-0920-b"':
+    - text: "報到代碼:"
+    - strong: qa-retest-0920-b
+  - generic: "建立: 9月20日 上午12:15"
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/ai-arm/?c=qa-retest-0920-b
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/ai-arm/?c=qa-retest-0920-b
+    - generic: 進入
+  - generic: AI-ARM 演練清空與資料異動請由專屬舊版後台操作
+  - generic: 啟用中
+  - generic: 3 組
+  - generic: 唯讀
+  - heading "QA複測0920 A" [level=3]
+  - 'button "報到代碼: qa-retest-0920-a"':
+    - text: "報到代碼:"
+    - strong: qa-retest-0920-a
+  - generic: "建立: 9月20日 上午12:14"
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/ai-arm/?c=qa-retest-0920-a
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/ai-arm/?c=qa-retest-0920-a
+    - generic: 進入
+  - generic: AI-ARM 演練清空與資料異動請由專屬舊版後台操作
+  - generic: 啟用中
+  - generic: 6 組
+  - generic: 預設
+  - generic: 唯讀
+  - heading "AI-ARM 示範班（預設）" [level=3]
+  - 'button "報到代碼: default"':
+    - text: "報到代碼:"
+    - strong: default
+  - generic: "建立: 9月20日 上午12:14"
+  - paragraph: 系統自動建立的預設班級，供一般展示與向下相容使用
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/ai-arm/?c=default
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/ai-arm/?c=default
+    - generic: 進入
+  - generic: AI-ARM 演練清空與資料異動請由專屬舊版後台操作

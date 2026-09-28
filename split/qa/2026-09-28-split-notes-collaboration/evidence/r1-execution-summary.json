@@ -1,0 +1,14 @@
+{
+  "windowAHeldLock": true,
+  "windowBReceivedLockBanner": true,
+  "windowBTextareaDisabled": true,
+  "realtimeTextSynced": true,
+  "bannerBDetachedOnRelease": true,
+  "windowBHeldLock": true,
+  "windowAReceivedLockBanner": true,
+  "attachmentInB": true,
+  "attachmentSyncedToAWithoutReload": true,
+  "errorsA": [],
+  "errorsB": [],
+  "allPassed": true
+}

@@ -1,0 +1,8 @@
+const fs=require('fs'), crypto=require('crypto');
+const base='https://firestore.googleapis.com/v1/projects/marshmallow-agile-3b4b/databases/(default)/documents';
+(async()=>{let o={at:new Date().toISOString()};let r=await fetch(base+'/split_class_secrets/qa-split-retest');o.secretGet={status:r.status};let c=await fetch(base+'/split_classes/qa-split-retest'),j=await c.json();o.publicClass={status:c.status,fields:Object.keys(j.fields||{}),adminTokenPublic:typeof j.fields?.adminToken?.stringValue==='string',generation:j.fields?.currentGeneration};if(c.status===200 && j.fields?.name){let p=await fetch(base+'/split_classes/qa-split-retest?updateMask.fieldPaths=name&currentDocument.updateTime='+encodeURIComponent(j.updateTime),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{name:j.fields.name}})});o.unauthSameValuePatch={status:p.status,explicitAdminTokenInBody:false,authorizationHeader:false,field:'name',sameValue:true};}for(const path of ['index.html','admin.html','adapters/split-adapter.js','split/index.html']){let r=await fetch('http://localhost:5000/workshop/'+path),b=Buffer.from(await r.arrayBuffer()),hash=x=>crypto.createHash('sha256').update(x).digest('hex');let disk=fs.readFileSync('C:/Antigravity/workshop/'+(path==='split/index.html'?'dist/workshop/':'')+path);(o.files??=[]).push({path,status:r.status,hash:hash(b),matchesDisk:hash(b)===hash(disk)});}fs.writeFileSync('C:/VIBE/ai-arm/qa-portal-fix8-20260928/security-version.json',JSON.stringify(o,null,2));console.log(JSON.stringify(o,null,2));})();
+
+
+
+
+

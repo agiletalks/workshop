@@ -1,28 +1,46 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { slides } from "../data/slides";
 import type { Slide } from "../data/slides";
+import type { UserSession } from "../services/notesService";
+import { TeamTaskBriefCard } from "./TeamTaskBriefCard";
 
 interface SlideViewerProps {
   slide: Slide;
+  totalSlides?: number;
   onNext: () => void;
   onPrev: () => void;
   onImageClick: (imageUrl: string) => void;
+  isInstructor?: boolean;
+  onEditCustomTask?: (taskId: string) => void;
+  userSession?: UserSession | null;
+  activeTeamId?: number;
 }
 
 export const SlideViewer: React.FC<SlideViewerProps> = ({
   slide,
+  totalSlides,
   onNext,
   onPrev,
-  onImageClick
+  onImageClick,
+  isInstructor = false,
+  onEditCustomTask,
+  userSession,
+  activeTeamId
 }) => {
   const [imageError, setImageError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const maxPages = totalSlides || slides.length;
 
-  // Reset image status when slide changes
+  // Reset image status when slide ID or image changes (若瀏覽器已有快取則立即結束載入)
   useEffect(() => {
     setImageError(false);
-    setLoading(true);
-  }, [slide]);
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  }, [slide.id, slide.image]);
 
   // Construct image path safely using base URL
   const getImageUrl = (imageName: string) => {
@@ -87,14 +105,23 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
             {slide.title}
           </span>
         </div>
+
         <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-          頁碼 {slide.page} / {slides.length}
+          頁碼 {slide.page} / {maxPages}
         </span>
       </div>
 
       {/* Main Slide Content Area */}
       <div className="flex-1 flex items-center justify-center overflow-hidden bg-slate-950/5 rounded-3xl border border-slate-200/20 relative group">
-        {imageUrl ? (
+        {slide.slideKind === "task" && slide.teamTask ? (
+          <TeamTaskBriefCard
+            slide={slide}
+            userSession={userSession}
+            activeTeamId={activeTeamId}
+            isInstructor={isInstructor}
+            onEditTask={() => onEditCustomTask?.(slide.id)}
+          />
+        ) : imageUrl ? (
           imageError ? (
             /* Error display */
             <div className="flex flex-col items-center justify-center p-8 text-center max-w-sm">
@@ -124,6 +151,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
                 </div>
               )}
               <img
+                ref={imgRef}
                 src={imageUrl}
                 alt={`第 ${slide.page} 頁：${slide.title}`}
                 onLoad={() => setLoading(false)}
@@ -215,12 +243,12 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
         </button>
 
         <span className="text-[11px] font-mono text-slate-500 font-bold">
-          SLIDE {slide.page} / {slides.length}
+          SLIDE {slide.page} / {maxPages}
         </span>
 
         <button
           onClick={onNext}
-          disabled={slide.page === slides.length}
+          disabled={slide.page === maxPages}
           className="px-4 py-2 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:hover:border-slate-200 bg-white text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition-all active:scale-[0.98] select-none"
         >
           下一頁

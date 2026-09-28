@@ -1,0 +1,56 @@
+{
+  "central": [
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T05:03:52.651Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T05:04:00.032Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T05:04:12.562Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T05:04:19.996Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T05:04:20.243Z",
+      "url": "https://cdn.tailwindcss.com/"
+    },
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T05:04:20.574Z",
+      "url": "https://cdn.tailwindcss.com/"
+    }
+  ],
+  "legacy": [
+    {
+      "level": "warn",
+      "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "timestamp": "2026-09-28T05:05:04.845Z",
+      "url": "https://cdn.tailwindcss.com/"
+    }
+  ],
+  "split": [
+    {
+      "level": "error",
+      "message": "[CS] extension is not ready yet, give up to retry",
+      "timestamp": "2026-09-28T05:05:22.056Z",
+      "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+    }
+  ]
+}

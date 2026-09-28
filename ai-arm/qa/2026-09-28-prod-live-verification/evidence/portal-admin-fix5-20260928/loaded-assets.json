@@ -1,0 +1,12 @@
+{
+  "student": [
+    "http://localhost:5000/workshop/split/assets/index-CwMIbIQG.js"
+  ],
+  "admin": [
+    "https://cdn.tailwindcss.com/",
+    "https://unpkg.com/lucide@latest",
+    "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js",
+    "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js",
+    "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"
+  ]
+}

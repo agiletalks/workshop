@@ -1,0 +1,21 @@
+{
+  "instructorBypass": true,
+  "studentLogin": true,
+  "initialStudentPages": 27,
+  "taskCreatedByInstructor": true,
+  "studentReceivedTaskNoReload": true,
+  "postInsertStudentPages": 28,
+  "reindexingVerified": true,
+  "missionCardVerified": true,
+  "aiPromptCopied": true,
+  "whiteboardLinkCorrect": true,
+  "notesLeaseLockAcquired": true,
+  "notesRealtimeSynced": true,
+  "attachmentUploadedAndSynced": true,
+  "taskEditedAndSynced": true,
+  "taskDeletedAndPagesReverted": true,
+  "finalStudentPages": 27,
+  "errorsA": [],
+  "errorsB": [],
+  "allPassed": true
+}

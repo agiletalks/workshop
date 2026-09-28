@@ -1,0 +1,200 @@
+- banner:
+  - generic: ARM
+  - heading "AI-ARM 班級管理系統 Multi-Cohort" [level=1]:
+    - generic: AI-ARM 班級管理系統
+    - generic: Multi-Cohort
+  - paragraph: 各班獨立專屬網址、組數配置、資料隔離與即時啟用/停用
+  - button "課堂通用 QR Code":
+    - generic: 課堂通用 QR Code
+  - button "建立新班級":
+    - generic: 建立新班級
+  - link "以學員身分打開首頁報到門禁":
+    - /url: ./
+  - button "登出管理員":
+- main:
+  - generic: 已建班級總數
+  - generic: "7"
+  - generic: 目前啟用中
+  - generic: "7"
+  - generic: 總配置組數
+  - generic: "37"
+  - generic: 系統資料庫
+  - generic: Firestore 即時連線
+  - heading "班級清單與專屬入口 7 班" [level=2]:
+    - generic: 班級清單與專屬入口
+    - generic: 7 班
+  - paragraph: 每一班擁有獨立命名空間，學員筆記、白板與提問完全隔離
+  - button "線上正式 (aigile.tw)"
+  - button "本機 / 自動偵測"
+  - textbox "搜尋班級名稱或代碼..."
+  - button "重新整理班級清單":
+  - generic: 啟用中
+  - generic: 6 組
+  - button "停用":
+    - generic: 停用
+  - heading "IBM" [level=3]
+  - 'button "報到代碼: 202609-ibm"':
+    - text: "報到代碼:"
+    - strong: 202609-ibm
+  - generic: "建立: 9月23日 上午12:16"
+  - generic: "講義:"
+  - textbox: https://aigile.tw/workshop/ai-arm/?c=202609-ibm
+  - button "複製講義":
+    - generic: 複製講義
+  - button "複製白板":
+    - generic: 複製白板
+  - button "QR Code":
+    - generic: QR Code
+  - link "進講義":
+    - /url: https://aigile.tw/workshop/ai-arm/?c=202609-ibm
+    - generic: 進講義
+  - button "設定":
+    - generic: 設定
+  - button "清空":
+    - generic: 清空
+  - generic: 啟用中
+  - generic: 6 組
+  - button "停用":
+    - generic: 停用
+  - heading "IBM" [level=3]
+  - 'button "報到代碼: 202609-IBM"':
+    - text: "報到代碼:"
+    - strong: 202609-IBM
+  - generic: "建立: 9月23日 上午12:16"
+  - generic: "講義:"
+  - textbox: https://aigile.tw/workshop/ai-arm/?c=202609-IBM
+  - button "複製講義":
+    - generic: 複製講義
+  - button "複製白板":
+    - generic: 複製白板
+  - button "QR Code":
+    - generic: QR Code
+  - link "進講義":
+    - /url: https://aigile.tw/workshop/ai-arm/?c=202609-IBM
+    - generic: 進講義
+  - button "設定":
+    - generic: 設定
+  - button "清空":
+    - generic: 清空
+  - generic: 啟用中
+  - generic: 6 組
+  - button "停用":
+    - generic: 停用
+  - heading "凱基銀行" [level=3]
+  - 'button "報到代碼: 202609-kgi"':
+    - text: "報到代碼:"
+    - strong: 202609-kgi
+  - generic: "建立: 9月21日 上午11:59"
+  - generic: "講義:"
+  - textbox: https://aigile.tw/workshop/ai-arm/?c=202609-kgi
+  - button "複製講義":
+    - generic: 複製講義
+  - button "複製白板":
+    - generic: 複製白板
+  - button "QR Code":
+    - generic: QR Code
+  - link "進講義":
+    - /url: https://aigile.tw/workshop/ai-arm/?c=202609-kgi
+    - generic: 進講義
+  - button "設定":
+    - generic: 設定
+  - button "清空":
+    - generic: 清空
+  - generic: 啟用中
+  - generic: 2 組
+  - button "停用":
+    - generic: 停用
+  - heading "QA 附件同步驗收 2026-test" [level=3]
+  - 'button "報到代碼: 2026-test"':
+    - text: "報到代碼:"
+    - strong: 2026-test
+  - generic: "建立: 9月20日 下午10:12"
+  - generic: "講義:"
+  - textbox: https://aigile.tw/workshop/ai-arm/?c=2026-test
+  - button "複製講義":
+    - generic: 複製講義
+  - button "複製白板":
+    - generic: 複製白板
+  - button "QR Code":
+    - generic: QR Code
+  - link "進講義":
+    - /url: https://aigile.tw/workshop/ai-arm/?c=2026-test
+    - generic: 進講義
+  - button "設定":
+    - generic: 設定
+  - button "清空":
+    - generic: 清空
+  - generic: 啟用中
+  - generic: 8 組
+  - button "停用":
+    - generic: 停用
+  - heading "QA複測0920 B" [level=3]
+  - 'button "報到代碼: qa-retest-0920-b"':
+    - text: "報到代碼:"
+    - strong: qa-retest-0920-b
+  - generic: "建立: 9月20日 上午12:15"
+  - generic: "講義:"
+  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-b
+  - button "複製講義":
+    - generic: 複製講義
+  - button "複製白板":
+    - generic: 複製白板
+  - button "QR Code":
+    - generic: QR Code
+  - link "進講義":
+    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-b
+    - generic: 進講義
+  - button "設定":
+    - generic: 設定
+  - button "清空":
+    - generic: 清空
+  - generic: 啟用中
+  - generic: 3 組
+  - button "停用":
+    - generic: 停用
+  - heading "QA複測0920 A" [level=3]
+  - 'button "報到代碼: qa-retest-0920-a"':
+    - text: "報到代碼:"
+    - strong: qa-retest-0920-a
+  - generic: "建立: 9月20日 上午12:14"
+  - generic: "講義:"
+  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-a
+  - button "複製講義":
+    - generic: 複製講義
+  - button "複製白板":
+    - generic: 複製白板
+  - button "QR Code":
+    - generic: QR Code
+  - link "進講義":
+    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-a
+    - generic: 進講義
+  - button "設定":
+    - generic: 設定
+  - button "清空":
+    - generic: 清空
+  - generic: 啟用中
+  - generic: 6 組
+  - generic: 預設
+  - button "停用":
+    - generic: 停用
+  - heading "AI-ARM 示範班（預設）" [level=3]
+  - 'button "報到代碼: default"':
+    - text: "報到代碼:"
+    - strong: default
+  - generic: "建立: 9月20日 上午12:14"
+  - paragraph: 系統自動建立的預設班級，供一般展示與向下相容使用
+  - generic: "講義:"
+  - textbox: https://aigile.tw/workshop/ai-arm/?c=default
+  - button "複製講義":
+    - generic: 複製講義
+  - button "複製白板":
+    - generic: 複製白板
+  - button "QR Code":
+    - generic: QR Code
+  - link "進講義":
+    - /url: https://aigile.tw/workshop/ai-arm/?c=default
+    - generic: 進講義
+  - button "設定":
+    - generic: 設定
+  - button "清空":
+    - generic: 清空

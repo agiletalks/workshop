@@ -1,0 +1,13 @@
+{
+  "qVisibleInA": true,
+  "qBroadcastToBWithoutReload": true,
+  "upvoteInB": true,
+  "upvoteSyncedToAWithoutReload": true,
+  "cancelUpvoteInB": true,
+  "cancelUpvoteSyncedToA": true,
+  "slideJumpSuccess": true,
+  "cleanupComplete": true,
+  "errorsA": [],
+  "errorsB": [],
+  "allPassed": true
+}

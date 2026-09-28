@@ -1,0 +1,52 @@
+{
+  "at": "2026-09-28T06:01:39.770Z",
+  "status": 200,
+  "audits": [
+    {
+      "name": "BXbESX1mn7d9rKys4F8X",
+      "fields": [
+        "type",
+        "classId",
+        "clientRequestId",
+        "fromGeneration",
+        "toGeneration",
+        "reason",
+        "adminToken",
+        "timestamp"
+      ],
+      "adminTokenPublic": true,
+      "toGeneration": {
+        "integerValue": "4"
+      }
+    },
+    {
+      "name": "BhJXwdqv0tt1ojIpgJGi",
+      "fields": [
+        "type",
+        "classId",
+        "fromGeneration",
+        "toGeneration",
+        "timestamp"
+      ],
+      "adminTokenPublic": false,
+      "toGeneration": {
+        "integerValue": "2"
+      }
+    },
+    {
+      "name": "sFQwVXNDNKCeWpYrcT1J",
+      "fields": [
+        "type",
+        "classId",
+        "fromGeneration",
+        "toGeneration",
+        "reason",
+        "timestamp"
+      ],
+      "adminTokenPublic": false,
+      "toGeneration": {
+        "integerValue": "3"
+      }
+    }
+  ]
+}

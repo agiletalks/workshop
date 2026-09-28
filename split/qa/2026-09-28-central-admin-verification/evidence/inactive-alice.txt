@@ -1,0 +1,153 @@
+- banner:
+  - button "收合單元進度":
+  - generic: SP
+  - heading "SPLIT 需求拆解實戰" [level=1]
+  - generic: qa-split-2026 · Gen 3
+  - generic: 已停用唯讀
+  - generic: "進度: 0% (0/19頁)"
+  - generic: "當前視角:"
+  - combobox:
+    - option "第 1 組 (觀摩)"
+    - option "第 2 組 (我的組)" [selected]
+    - option "第 3 組 (觀摩)"
+    - option "第 4 組 (觀摩)"
+    - option "第 5 組 (觀摩)"
+    - option "第 6 組 (觀摩)"
+  - generic: 唯讀模式
+  - generic "點擊切換使用者或班級":
+    - generic: T
+    - generic "Tester-Alice"
+  - button "MD"
+  - button "備份"
+  - button "還原"
+  - button "重置"
+  - button "總覽"
+  - link "管理後台":
+    - /url: ../admin.html?course=split
+    - generic: 管理後台
+- complementary:
+  - generic: 課程單元與進度
+  - generic: 6 MODULES
+  - heading "E 敏捷需求基本概念" [level=3]:
+    - generic: E
+    - text: 敏捷需求基本概念
+  - generic: 0%
+  - button "P.01 SPLIT 需求分解的技術":
+    - generic: P.01
+    - generic: SPLIT 需求分解的技術
+  - button "P.02 目錄":
+    - generic: P.02
+    - generic: 目錄
+  - button "P.03 Ready & DONE":
+    - generic: P.03
+    - generic: Ready & DONE
+  - button "P.04 User Story":
+    - generic: P.04
+    - generic: User Story
+  - button "P.05 需求的階層":
+    - generic: P.05
+    - generic: 需求的階層
+  - heading "S 結構與價值脈絡" [level=3]:
+    - generic: S
+    - text: 結構與價值脈絡
+  - generic: 0%
+  - button "P.06 Structure":
+    - generic: P.06
+    - generic: Structure
+  - button "P.07 WBS":
+    - generic: P.07
+    - generic: WBS
+  - button "P.08 Impact Map":
+    - generic: P.08
+    - generic: Impact Map
+  - button "P.09 Story Map":
+    - generic: P.09
+    - generic: Story Map
+  - heading "P 流程與價值流" [level=3]:
+    - generic: P
+    - text: 流程與價值流
+  - generic: 0%
+  - button "P.10 Process":
+    - generic: P.10
+    - generic: Process
+  - button "P.11 Road Map":
+    - generic: P.11
+    - generic: Road Map
+  - button "P.12 Value Stream":
+    - generic: P.12
+    - generic: Value Stream
+  - button "P.13 Kanban Board":
+    - generic: P.13
+    - generic: Kanban Board
+  - button "P.14 Scenario":
+    - generic: P.14
+    - generic: Scenario
+  - heading "L 實驗與不確定性" [level=3]:
+    - generic: L
+    - text: 實驗與不確定性
+  - generic: 0%
+  - button "P.15 Learn":
+    - generic: P.15
+    - generic: Learn
+  - button "P.16 MVP":
+    - generic: P.16
+    - generic: MVP
+  - button "P.17 Spike":
+    - generic: P.17
+    - generic: Spike
+  - heading "I 可增量交付計劃" [level=3]:
+    - generic: I
+    - text: 可增量交付計劃
+  - generic: 0%
+  - button "P.18 Increment":
+    - generic: P.18
+    - generic: Increment
+  - button "P.19 A and B":
+    - generic: P.19
+    - generic: A and B
+  - button "P.20 Dependency":
+    - generic: P.20
+    - generic: Dependency
+  - button "P.21 Discount":
+    - generic: P.21
+    - generic: Discount
+  - button "P.22 Decision Table":
+    - generic: P.22
+    - generic: Decision Table
+  - heading "T 可執行工作拆解" [level=3]:
+    - generic: T
+    - text: 可執行工作拆解
+  - generic: 0%
+  - button "P.23 Task":
+    - generic: P.23
+    - generic: Task
+  - button "P.24 Spider":
+    - generic: P.24
+    - generic: Spider
+  - button "P.25 Timetable":
+    - generic: P.25
+    - generic: Timetable
+  - button "P.26 Gannt":
+    - generic: P.26
+    - generic: Gannt
+  - button "P.27 Are You Ready":
+    - generic: P.27
+    - generic: Are You Ready
+- generic: E
+- generic: 目錄
+- generic: 頁碼 2 / 27
+- img "第 2 頁：目錄"
+- text: 點擊放大
+- button "上一頁 (左方向鍵)":
+- button "下一頁 (右方向鍵)":
+- button "上一頁":
+  - text: 上一頁
+- generic: SLIDE 2 / 27
+- button "下一頁":
+  - text: 下一頁
+- heading "個人隨堂筆記" [level=3]: 個人隨堂筆記
+- generic: 23 / 10,000 字
+- generic: ⚠️ 班級已停用：目前處於全班唯讀狀態，無法編輯筆記。
+- generic: 🔒 編輯鎖定中：【Tester-Bob】正在編輯本頁筆記，請稍候……
+- textbox "⚠️ 班級已停用，筆記為唯讀狀態。" [disabled]: 這是由 Alice 輸入的第一筆測試驗收紀錄 QA-20260928
+- generic: 📎 附檔與截圖 (0)

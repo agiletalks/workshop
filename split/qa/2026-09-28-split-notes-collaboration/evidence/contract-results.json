@@ -1,0 +1,32 @@
+[
+  {
+    "id": "N01-PATH-CONTRACT",
+    "description": "Verify target Firestore collection & note document path",
+    "result": "PASS"
+  },
+  {
+    "id": "N02-LEASE-TIMING-CONTRACT",
+    "description": "Verify 35s lease duration and 15s heartbeat",
+    "result": "PASS"
+  },
+  {
+    "id": "N03-LOCK-EXCLUSIVITY",
+    "description": "Verify User B cannot acquire lock while User A holds valid lease",
+    "result": "PASS"
+  },
+  {
+    "id": "N04-LEASE-TIMEOUT-STEAL",
+    "description": "Verify User B can steal lock after 35s lease expires",
+    "result": "PASS"
+  },
+  {
+    "id": "N05-VOLUNTARY-RELEASE",
+    "description": "Verify User B can acquire lock immediately after User A voluntary release",
+    "result": "PASS"
+  },
+  {
+    "id": "N06-ATTACHMENT-SIZE-LIMIT",
+    "description": "Verify 800 KB upload limit defense",
+    "result": "PASS"
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "testTime": "2026-09-28T08:40:52.937Z",
+  "tc01_voiceCloudSaveAndSync": true,
+  "tc01_studentReceivedSync": true,
+  "tc01_flipCardArticleWorks": true,
+  "tc01_copyStickyToNoteWorks": true,
+  "tc02_navOver8sTargetCorrect": true,
+  "tc02_nextSlideRemainedClean": true,
+  "tc03_handbookModalOpened": true,
+  "tc03_handbookHas27PageToc": true,
+  "tc03_handbookHasTeamNotes": true,
+  "tc04_zeroAiWordingTaskEditor": true,
+  "tc04_zeroAiWordingTaskCard": true,
+  "defectsResolved": [
+    "BUG-SPLIT-VOICE-01",
+    "BUG-SPLIT-VOICE-02",
+    "BUG-SPLIT-PRINT-01",
+    "BUG-SPLIT-WORDING-01"
+  ],
+  "remainingDefects": [],
+  "allPassed": true
+}

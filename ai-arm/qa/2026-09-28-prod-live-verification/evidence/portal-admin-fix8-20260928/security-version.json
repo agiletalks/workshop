@@ -1,0 +1,59 @@
+{
+  "at": "2026-09-28T07:28:50.984Z",
+  "secretGet": {
+    "status": 403
+  },
+  "publicClass": {
+    "status": 200,
+    "fields": [
+      "lastClearedAt",
+      "lastResetReason",
+      "updatedAt",
+      "id",
+      "currentGeneration",
+      "notes",
+      "createdAt",
+      "status",
+      "name",
+      "teamCount",
+      "passcodeHash"
+    ],
+    "adminTokenPublic": false,
+    "generation": {
+      "integerValue": "5"
+    }
+  },
+  "unauthSameValuePatch": {
+    "status": 403,
+    "explicitAdminTokenInBody": false,
+    "authorizationHeader": false,
+    "field": "name",
+    "sameValue": true
+  },
+  "files": [
+    {
+      "path": "index.html",
+      "status": 200,
+      "hash": "4da4314811e0a97951817ad13dbb55dcb5cc581d6eb8dd0b9420c0b1abb1f4f4",
+      "matchesDisk": true
+    },
+    {
+      "path": "admin.html",
+      "status": 200,
+      "hash": "053fb6efac80ddd53611aa6de14340a38eaad89144e3e5457d429fa38c7e7415",
+      "matchesDisk": true
+    },
+    {
+      "path": "adapters/split-adapter.js",
+      "status": 200,
+      "hash": "4f0a32ca84207f2d4ccea4bcf2092aaaba045dfd1f124f396c3204af3efb41fa",
+      "matchesDisk": true
+    },
+    {
+      "path": "split/index.html",
+      "status": 200,
+      "hash": "59b877ab58a2e3a3d2d82dc8f5595460570f7c87b33b4e7c20cdc81acd877d44",
+      "matchesDisk": true
+    }
+  ]
+}

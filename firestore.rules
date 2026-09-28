@@ -1,7 +1,190 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
+
+    // 管理員令牌授權驗證
+    function isAdminToken() {
+      return request.resource.data.adminToken == '24721942@Ai' || request.resource.data.adminToken == 'agile-2026';
+    }
+
+    // 驗證是否持有有效管理員更新租約 (嚴格比對操作別名、時間戳記與受影響欄位集合，拒絕局部未授權 PATCH 探針)
+    function hasValidAdminUpdateLease(classId, permittedActions) {
+      let secretDoc = get(/databases/$(database)/documents/split_class_secrets/$(classId));
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
+      return exists(/databases/$(database)/documents/split_class_secrets/$(classId))
+        && ('leaseExpiresAt' in secretDoc.data)
+        && request.time.toMillis() < secretDoc.data.leaseExpiresAt
+        && secretDoc.data.adminToken in ['24721942@Ai', 'agile-2026']
+        && ('action' in secretDoc.data)
+        && secretDoc.data.action in permittedActions
+        && ('targetUpdatedAt' in secretDoc.data)
+        && ('updatedAt' in request.resource.data)
+        && request.resource.data.updatedAt == secretDoc.data.targetUpdatedAt
+        && affected.hasAll(['updatedAt'])
+        && (
+          (secretDoc.data.action == 'toggleClassStatus' && (affected.hasOnly(['status', 'updatedAt']) || affected.hasOnly(['status', 'updatedAt', 'leaseToken', 'leaseHolder', 'leaseAction']))) ||
+          (secretDoc.data.action == 'resetClass' && (affected.hasOnly(['currentGeneration', 'lastClearedAt', 'lastResetReason', 'updatedAt']) || affected.hasOnly(['currentGeneration', 'lastClearedAt', 'lastResetReason', 'updatedAt', 'leaseToken', 'leaseHolder', 'leaseAction']))) ||
+          (secretDoc.data.action == 'restoreGeneration' && (affected.hasOnly(['currentGeneration', 'lastRestoredAt', 'restoredFromGeneration', 'updatedAt']) || affected.hasOnly(['currentGeneration', 'lastRestoredAt', 'restoredFromGeneration', 'updatedAt', 'leaseToken', 'leaseHolder', 'leaseAction']))) ||
+          (secretDoc.data.action == 'saveClass' && affected.hasOnly(['name', 'teamCount', 'status', 'passcodeHash', 'notes', 'updatedAt']))
+        );
+    }
+
+    // 驗證是否持有有效管理員建立租約 (新建班級文件，嚴格白名單欄位)
+    function hasValidAdminCreateLease(classId) {
+      let secretDoc = get(/databases/$(database)/documents/split_class_secrets/$(classId));
+      return exists(/databases/$(database)/documents/split_class_secrets/$(classId))
+        && ('leaseExpiresAt' in secretDoc.data)
+        && request.time.toMillis() < secretDoc.data.leaseExpiresAt
+        && secretDoc.data.adminToken in ['24721942@Ai', 'agile-2026']
+        && ('action' in secretDoc.data)
+        && secretDoc.data.action == 'saveClass'
+        && ('targetUpdatedAt' in secretDoc.data)
+        && ('updatedAt' in request.resource.data)
+        && request.resource.data.updatedAt == secretDoc.data.targetUpdatedAt
+        && request.resource.data.keys().hasOnly(['id', 'name', 'teamCount', 'status', 'passcodeHash', 'notes', 'createdAt', 'currentGeneration', 'lastClearedAt', 'updatedAt']);
+    }
+
+    // 驗證是否持有重設請求租約 (新建 split_reset_requests 文件，嚴格綁定持有者授權之 clientRequestId)
+    function hasValidResetRequestLease(classId, requestId) {
+      let secretDoc = get(/databases/$(database)/documents/split_class_secrets/$(classId));
+      return exists(/databases/$(database)/documents/split_class_secrets/$(classId))
+        && ('leaseExpiresAt' in secretDoc.data)
+        && request.time.toMillis() < secretDoc.data.leaseExpiresAt
+        && secretDoc.data.adminToken in ['24721942@Ai', 'agile-2026']
+        && ('action' in secretDoc.data)
+        && secretDoc.data.action == 'resetClass'
+        && ('targetUpdatedAt' in secretDoc.data)
+        && ('createdAt' in request.resource.data)
+        && request.resource.data.createdAt == secretDoc.data.targetUpdatedAt
+        && ('authorizedRequestId' in secretDoc.data)
+        && ('clientRequestId' in request.resource.data)
+        && request.resource.data.clientRequestId == secretDoc.data.authorizedRequestId
+        && requestId == secretDoc.data.authorizedRequestId
+        && request.resource.data.keys().hasOnly(['clientRequestId', 'classId', 'generation', 'reason', 'createdAt']);
+    }
+
+    // 驗證是否持有審計日誌寫入租約 (僅限 resetClass 與 restoreGeneration，嚴格綁定持有者授權之 auditId 與 clientRequestId)
+    function hasValidAuditLogLease(classId, logId) {
+      let secretDoc = get(/databases/$(database)/documents/split_class_secrets/$(classId));
+      return exists(/databases/$(database)/documents/split_class_secrets/$(classId))
+        && ('leaseExpiresAt' in secretDoc.data)
+        && request.time.toMillis() < secretDoc.data.leaseExpiresAt
+        && secretDoc.data.adminToken in ['24721942@Ai', 'agile-2026']
+        && ('action' in secretDoc.data)
+        && secretDoc.data.action in ['resetClass', 'restoreGeneration']
+        && ('targetUpdatedAt' in secretDoc.data)
+        && ('timestamp' in request.resource.data)
+        && request.resource.data.timestamp == secretDoc.data.targetUpdatedAt
+        && ('authorizedAuditId' in secretDoc.data)
+        && logId == secretDoc.data.authorizedAuditId
+        && ('authorizedRequestId' in secretDoc.data)
+        && ('clientRequestId' in request.resource.data)
+        && request.resource.data.clientRequestId == secretDoc.data.authorizedRequestId
+        && ('type' in request.resource.data)
+        && request.resource.data.type in ['CLASS_RESET_GENERATION', 'GENERATION_SNAPSHOT_RESTORE']
+        && (
+          (request.resource.data.type == 'CLASS_RESET_GENERATION' && request.resource.data.keys().hasOnly(['type', 'classId', 'clientRequestId', 'fromGeneration', 'toGeneration', 'reason', 'timestamp'])) ||
+          (request.resource.data.type == 'GENERATION_SNAPSHOT_RESTORE' && request.resource.data.keys().hasOnly(['type', 'classId', 'clientRequestId', 'sourceGeneration', 'newGeneration', 'timestamp', 'restoredNotesCount']))
+        );
+    }
+
+    // ==========================================
+    // 1. SPLIT 課程資料架構
+    // ==========================================
+
+    // 機密憑證：絕對禁止任何客戶端讀取 (阻擋外部未授權 REST 與學員存取)
+    match /split_class_secrets/{classId} {
+      allow read: if false;
+      allow write: if isAdminToken();
+    }
+
+    // 公開班級清單 (絕不儲存 adminToken、leaseToken 等機密憑證；寫入需持有嚴格綁定受影響欄位之有效租約)
+    match /split_classes/{classId} {
+      allow read: if true;
+      allow create: if !('adminToken' in request.resource.data)
+        && !('leaseToken' in request.resource.data)
+        && !('leaseHolder' in request.resource.data)
+        && !('leaseAction' in request.resource.data)
+        && hasValidAdminCreateLease(classId);
+      allow update: if !('adminToken' in request.resource.data)
+        && !('leaseToken' in request.resource.data)
+        && !('leaseHolder' in request.resource.data)
+        && !('leaseAction' in request.resource.data)
+        && hasValidAdminUpdateLease(classId, ['saveClass', 'toggleClassStatus', 'resetClass', 'restoreGeneration']);
+      allow delete: if false;
+    }
+
+    // 班級自訂演練任務集合 (Team Tasks)
+    match /split_classes/{classId}/custom_tasks/{taskId} {
+      allow read, write: if true;
+    }
+
+    // 冪等性重設請求 (僅能新建單次，嚴格綁定持有者授權之 clientRequestId；寫入後永久不可篡改)
+    match /split_reset_requests/{requestId} {
+      allow read: if true;
+      allow create: if !('adminToken' in request.resource.data)
+        && !('leaseToken' in request.resource.data)
+        && ('classId' in request.resource.data)
+        && hasValidResetRequestLease(request.resource.data.classId, requestId);
+      allow update, delete: if false;
+    }
+
+    // 審計日誌集合 (僅能由持有者授權之合法操作單次建立，禁止更新與刪除)
+    match /split_audit_logs/{logId} {
+      allow read: if false;
+      allow create: if !('adminToken' in request.resource.data)
+        && !('leaseToken' in request.resource.data)
+        && ('classId' in request.resource.data)
+        && hasValidAuditLogLease(request.resource.data.classId, logId);
+      allow update, delete: if false;
+    }
+
+    // 世代演練筆記、協作白板、提問抽屜與隨堂講師重點
+    match /split_data/{classId}/generations/{genId}/notes/{noteId} {
+      allow read, write: if true;
+    }
+    match /split_data/{classId}/generations/{genId}/boards/{boardId} {
+      allow read, write: if true;
+    }
+    match /split_data/{classId}/generations/{genId}/questions/{questionId} {
+      allow read, write: if true;
+    }
+    match /split_data/{classId}/generations/{genId}/lecture_notes/{slideId} {
+      allow read, write: if true;
+    }
+    match /split_data/{classId}/questions/{questionId} {
+      allow read, write: if true;
+    }
+    // 即時課堂狀態（講師即時投影頁碼、廣播狀態）
+    match /split_data/{classId}/live/{docId} {
+      allow read, write: if true;
+    }
+
+    // ==========================================
+    // 2. AI-ARM 與 AI-Align 既有相容路徑 (100% 舊相容)
+    // ==========================================
+
+    match /ai_arm_classes/{classId} {
+      allow read, write: if true;
+    }
+
+    match /classes/{classId}/slides/{slideId}/instructorNotes/{docId} {
+      allow read, write: if true;
+    }
+
+    match /aigile_boards/{boardId} {
+      allow read, write: if true;
+    }
+
+    match /ai_arm_presence/{presenceId} {
+      allow read, write: if true;
+    }
+
+    // ==========================================
+    // 3. 棉花糖挑戰等既有專案集合
+    // ==========================================
+
+    match /agiletalks-db/{doc=**} {
       allow read, write: if true;
     }
   }

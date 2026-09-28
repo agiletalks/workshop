@@ -22,6 +22,18 @@ export interface SlideExample {
   description?: string;
 }
 
+export interface TeamTaskConfig {
+  durationMinutes?: number;
+  badge?: string;
+  scenario: string;
+  objective: string;
+  steps: string[];
+  deliverable: string;
+  prompts?: string[];
+  whiteboardType?: string;
+  referenceImages?: string[];
+}
+
 export interface Slide {
   id: string;
   page: number;
@@ -30,6 +42,8 @@ export interface Slide {
   subtitle?: string;
   image: string;
   type: "cover" | "overview" | "concept" | "core" | "comparison" | "divider" | "conclusion" | "resource";
+  slideKind?: "lecture" | "task";
+  teamTask?: TeamTaskConfig;
   keywords?: string[];
   toolName?: string;
   learningPurpose?: string;

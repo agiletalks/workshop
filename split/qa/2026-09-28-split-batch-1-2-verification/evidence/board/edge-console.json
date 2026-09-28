@@ -1,0 +1,26 @@
+[
+  {
+    "level": "warn",
+    "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+    "timestamp": "2026-09-28T04:40:16.124Z",
+    "url": "https://cdn.tailwindcss.com/"
+  },
+  {
+    "level": "error",
+    "message": "SyntaxError: Unexpected end of input",
+    "timestamp": "2026-09-28T04:40:16.345Z",
+    "url": "http://localhost:5000/workshop/split/board.html?c=qa-split-test-01&team=team-1&type=wbs"
+  },
+  {
+    "level": "error",
+    "message": "[CS] extension is not ready yet, give up to retry",
+    "timestamp": "2026-09-28T04:40:17.085Z",
+    "url": "chrome-extension://fokifklggehlihkifghafpekelcicmgl/contentScript.bundle.js"
+  },
+  {
+    "level": "error",
+    "message": "ReferenceError: switchTeamBoard is not defined\n    at HTMLSelectElement.onchange (http://localhost:5000/workshop/split/board.html?c=qa-split-test-01&team=team-1&type=wbs:304:218)\n    at to.selectOptions (<anonymous>:18:4749)\n    at <anonymous>:227:214\n    at <anonymous>:227:319\n    at <anonymous>:228:11\n    at <anonymous>:229:11",
+    "timestamp": "2026-09-28T04:40:27.933Z",
+    "url": "http://localhost:5000/workshop/split/board.html?c=qa-split-test-01&team=team-1&type=wbs"
+  }
+]

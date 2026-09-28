@@ -1,0 +1,18 @@
+[
+  {
+    "type": "warning",
+    "text": "[LectureNote] 訂閱異常 (slide-1): FirebaseError: Missing or insufficient permissions."
+  },
+  {
+    "type": "warning",
+    "text": "[LectureNote] 訂閱異常 (slide-1): FirebaseError: Missing or insufficient permissions."
+  },
+  {
+    "type": "error",
+    "text": "[LectureRecord] 小編整理失敗: FirebaseError: Missing or insufficient permissions."
+  },
+  {
+    "type": "warning",
+    "text": "[LectureNote] 讀取全班隨堂重點失敗: FirebaseError: Missing or insufficient permissions."
+  }
+]

@@ -1,0 +1,74 @@
+- banner:
+  - link "AgileTalks Central Admin":
+    - /url: ./
+    - generic: AgileTalks
+    - generic: Central Admin
+  - combobox:
+    - option "AI-ARM：AI 需求建模與敏捷 Refinement (唯讀)"
+    - option "SPLIT：需求拆解與用戶故事實戰工作坊 (可管理)" [selected]
+  - generic: SPLIT 獨立隔離管理
+  - button "重新載入班級資料":
+  - link "返回首頁":
+    - /url: ./
+    - generic: 返回首頁
+- main:
+  - generic: 目前課程班級數
+  - generic: "1"
+  - generic: 啟用中班級
+  - generic: "1"
+  - generic: 總配置組數
+  - generic: "6"
+  - generic: 底層隔離集合
+  - generic: split_classes (可寫入)
+  - textbox "搜尋班級名稱或班級代碼..."
+  - button "建立新班級":
+    - generic: 建立新班級
+  - generic: 啟用中
+  - generic: 6 組
+  - generic "當前資料世代": Gen 1
+  - button "停用":
+    - generic: 停用
+  - heading "QA 驗收實戰示範班" [level=3]
+  - 'button "報到代碼: qa-split-2026"':
+    - text: "報到代碼:"
+    - strong: qa-split-2026
+  - generic: "建立: 9月28日 下午12:26"
+  - paragraph: 本班為 QA 自動與人工驗收測試專用
+  - generic: "入口:"
+  - textbox: http://localhost:5000/workshop/split/?c=qa-split-2026
+  - button "複製":
+    - generic: 複製
+  - link "進入":
+    - /url: http://localhost:5000/workshop/split/?c=qa-split-2026
+    - generic: 進入
+  - button "重設演練 (世代+1)":
+    - generic: 重設演練 (世代+1)
+  - button "快照復原" [disabled]:
+    - generic: 快照復原
+- heading "建立新班級 (SPLIT)" [level=3]:
+  - generic: 建立新班級 (SPLIT)
+- paragraph:
+  - text: 獨立儲存於
+  - code: split_classes
+  - text: 集合
+- button:
+- generic: 班級代碼 (唯一英文數字 ID)
+- textbox "例如：202610-split": qa-split-2026
+- button "自動生成"
+- paragraph: 學員報到時使用的代碼，送出後不建議變更。
+- generic: 班級名稱
+- textbox "例如：富邦人壽 需求拆解實戰一班": QA 重複代碼禁止覆寫
+- generic: 小組數量 (1~12 組)
+- combobox:
+  - option "2 組"
+  - option "4 組"
+  - option "6 組 (標準推薦)" [selected]
+  - option "8 組"
+  - option "10 組"
+  - option "12 組 (大型班級)"
+- generic: 學員報到驗證碼
+- textbox "預設：split-2026": <redacted>
+- generic: 備註說明 (選填)
+- textbox "備註開課企業、講師或上課地點……"
+- button "取消"
+- button "確認儲存"

@@ -1,0 +1,64 @@
+{
+  "classId": "qa-split-retest",
+  "generation": {
+    "integerValue": "4"
+  },
+  "passcodeHashMatchesCustom": true,
+  "passcodeHashMatchesDefault": false,
+  "lastResetReason": {
+    "stringValue": "QA 第三輪驗證 clientRequestId 與原因"
+  },
+  "audits": [
+    {
+      "classId": {
+        "stringValue": "qa-split-retest"
+      },
+      "clientRequestId": {
+        "stringValue": "reset_qa-split-retest_1790574333852_khiylr"
+      },
+      "fromGeneration": {
+        "integerValue": "3"
+      },
+      "toGeneration": {
+        "integerValue": "4"
+      },
+      "reason": {
+        "stringValue": "QA 第三輪驗證 clientRequestId 與原因"
+      },
+      "timestamp": {
+        "integerValue": "1790574336069"
+      }
+    },
+    {
+      "classId": {
+        "stringValue": "qa-split-retest"
+      },
+      "fromGeneration": {
+        "integerValue": "1"
+      },
+      "toGeneration": {
+        "integerValue": "2"
+      },
+      "timestamp": {
+        "integerValue": "1790571967800"
+      }
+    },
+    {
+      "classId": {
+        "stringValue": "qa-split-retest"
+      },
+      "fromGeneration": {
+        "integerValue": "2"
+      },
+      "toGeneration": {
+        "integerValue": "3"
+      },
+      "reason": {
+        "stringValue": "QA 20260928 複測：確認自訂重設原因持久化"
+      },
+      "timestamp": {
+        "integerValue": "1790573116924"
+      }
+    }
+  ]
+}
