@@ -88,6 +88,7 @@ interface PasswordGateProps {
 
 export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
   const [classId, setClassId] = useState("");
+  const [isUrlClassLocked, setIsUrlClassLocked] = useState(false);
   const [teamId, setTeamId] = useState(1);
   const [name, setName] = useState("");
   const [passcode, setPasscode] = useState("");
@@ -97,7 +98,8 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
   const [verifyingSession, setVerifyingSession] = useState(() => {
     if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
-    const cParam = params.get('c') || params.get('class') || 'default-split';
+    const cParam = params.get('c') || params.get('class');
+    if (!cParam) return false;
     const normalizedClass = cParam.trim().toLowerCase();
     const classKey = `split_user_session_${normalizedClass}`;
     return Boolean(localStorage.getItem(classKey) || localStorage.getItem('split_user_session'));
@@ -106,14 +108,26 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
   useEffect(() => {
     // 從 URL 取得 classId 與 teamId 參數 (例如 ?c=202610-split&team=team-2)
     const params = new URLSearchParams(window.location.search);
-    const cParam = params.get('c') || params.get('class') || 'default-split';
-    setClassId(cParam);
+    const cParam = (params.get('c') || params.get('class') || '').trim();
+    if (cParam) {
+      setClassId(cParam);
+      setIsUrlClassLocked(true);
+    } else {
+      setClassId("");
+      setIsUrlClassLocked(false);
+    }
 
     const tParam = params.get('team') || 'team-1';
     const parsedTeam = parseInt(tParam.replace(/\D/g, ''), 10) || 1;
     setTeamId(parsedTeam);
 
-    const normalizedClass = cParam.trim().toLowerCase();
+    const normalizedClass = cParam.toLowerCase();
+
+    // 若 URL 無 class 參數，不進行自動登入，由學員輸入或點擊專屬連結進入
+    if (!normalizedClass) {
+      setVerifyingSession(false);
+      return;
+    }
 
     // --- 中央管理後台一鍵免密直通 (Admin Direct Bypass) ---
     const roleParam = params.get('role') || params.get('r');
@@ -122,20 +136,37 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
     const isValidAdmin = admToken === 'agile-2026' || admToken === '24721942@Ai' || hasAdminSession;
 
     if (roleParam === 'instructor' && isValidAdmin) {
-      const instructorSession: UserSession = {
-        uid: "inst_" + Math.random().toString(36).substring(2, 9),
-        sessionId: "sess_inst_" + Math.random().toString(36).substring(2, 9),
-        name: "課程講師 (Percy)",
-        teamId: parsedTeam,
-        classId: normalizedClass,
-        passcodeHash: "admin_direct_verified",
-        role: "instructor"
-      };
-      localStorage.setItem('split_user_session', JSON.stringify(instructorSession));
-      localStorage.setItem(`split_user_session_${normalizedClass}`, JSON.stringify(instructorSession));
-      sessionStorage.setItem("split_courseware_authorized", "true");
-      setVerifyingSession(false);
-      onAuthorized(instructorSession);
+      // 講師免密直通也必須確認該班級在 Firestore 中已建立
+      (async () => {
+        try {
+          if (db) {
+            const classRef = doc(db, 'split_classes', normalizedClass);
+            const snap = await getDoc(classRef);
+            if (!snap.exists()) {
+              setError(`找不到班級【${normalizedClass}】。請先在中央管理後台建立班級。`);
+              setVerifyingSession(false);
+              return;
+            }
+          }
+          const instructorSession: UserSession = {
+            uid: "inst_" + Math.random().toString(36).substring(2, 9),
+            sessionId: "sess_inst_" + Math.random().toString(36).substring(2, 9),
+            name: "課程講師 (Percy)",
+            teamId: parsedTeam,
+            classId: normalizedClass,
+            passcodeHash: "admin_direct_verified",
+            role: "instructor"
+          };
+          localStorage.setItem('split_user_session', JSON.stringify(instructorSession));
+          localStorage.setItem(`split_user_session_${normalizedClass}`, JSON.stringify(instructorSession));
+          sessionStorage.setItem("split_courseware_authorized", "true");
+          setVerifyingSession(false);
+          onAuthorized(instructorSession);
+        } catch (e) {
+          console.warn('[PasswordGate] Instructor bypass verification failed:', e);
+          setVerifyingSession(false);
+        }
+      })();
       return;
     }
 
@@ -172,7 +203,7 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
             localStorage.removeItem('split_user_session');
             sessionStorage.removeItem("split_courseware_authorized");
             if (isMounted) {
-              setError(`找不到班級【${normalizedClass}】`);
+              setError(`找不到班級【${normalizedClass}】。請確認班級專屬網址是否正確。`);
               setVerifyingSession(false);
             }
             return;
@@ -190,7 +221,7 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
             }
             return;
           }
-          // 2. 若班級設有專屬 passcodeHash，檢查 session 中的 passcodeHash 是否吻合 (且不能為空，講師身分豁免)
+          // 2. 若班級設有專屬 passcodeHash，檢查 session 中的 passcodeHash 是否吻合
           if (s.role !== 'instructor' && classData.passcodeHash) {
             if (!s.passcodeHash || s.passcodeHash !== classData.passcodeHash) {
               console.warn('[PasswordGate] 清除密碼不符或過期之舊 session 快取:', normalizedClass);
@@ -199,18 +230,6 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
               sessionStorage.removeItem("split_courseware_authorized");
               if (isMounted) {
                 setError("班級通行密碼已更新或已失效，請重新輸入密碼驗證");
-                setVerifyingSession(false);
-              }
-              return;
-            }
-          } else if (s.role !== 'instructor' && appConfig.passwordEnabled) {
-            // 舊班級需具備預設密碼雜湊
-            if (!s.passcodeHash || s.passcodeHash !== appConfig.defaultPasscodeHash) {
-              localStorage.removeItem(classKey);
-              localStorage.removeItem('split_user_session');
-              sessionStorage.removeItem("split_courseware_authorized");
-              if (isMounted) {
-                setError("通行密碼已失效，請重新輸入");
                 setVerifyingSession(false);
               }
               return;
@@ -236,7 +255,7 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
     e.preventDefault();
     const normalizedClass = classId.trim().toLowerCase();
     if (!normalizedClass) {
-      setError("請填寫班級代碼");
+      setError("請填寫班級代碼（或點擊講師開立之專屬連結進入）");
       return;
     }
 
@@ -250,35 +269,39 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
     setError("");
 
     try {
-      let classData: any = null;
-      if (db) {
-        try {
-          const classRef = doc(db, 'split_classes', normalizedClass);
-          const snap = await getDoc(classRef);
-          if (snap.exists()) {
-            classData = snap.data();
-          }
-        } catch (dbErr) {
-          console.warn('[PasswordGate] Failed to fetch class info from Firestore:', dbErr);
-        }
+      if (!db) {
+        setError("系統無法連線至雲端資料庫，請檢查網路連線後重試");
+        setLoading(false);
+        return;
       }
 
-      // 檢查班級狀態：若為停用狀態則阻擋學員進入
-      if (classData && classData.status === 'inactive') {
+      // 嚴格校驗 1：班級必須存在於 Firestore 中！未在後台開立之班級絕對禁止進入！
+      const classRef = doc(db, 'split_classes', normalizedClass);
+      const snap = await getDoc(classRef);
+      if (!snap.exists()) {
+        setError(`找不到班級【${normalizedClass}】。請先由講師於管理後台開立班級，或確認班級專屬網址是否正確。`);
+        setLoading(false);
+        return;
+      }
+
+      const classData = snap.data();
+
+      // 嚴格校驗 2：檢查班級狀態，若為停用狀態則阻擋學員進入
+      if (!classData || classData.status === 'inactive') {
         setError(`班級【${normalizedClass}】目前處於停用狀態，暫停開放學員進入。`);
         setLoading(false);
         return;
       }
 
-      // 密碼安全雜湊比對 (專屬班級絕無通用密碼旁路)
+      // 嚴格校驗 3：密碼安全比對 (必須與開班時設定的驗證碼相符)
       const inputTrimmed = passcode.trim();
       const inputHash = sha256Sync(inputTrimmed);
 
       if (appConfig.passwordEnabled) {
-        if (classData?.passcodeHash) {
+        if (classData.passcodeHash) {
           // 專屬班級：嚴格要求輸入之雜湊等於該班 passcodeHash，絕不允許通用密碼旁路！
           if (inputHash !== classData.passcodeHash) {
-            setError("驗證密碼不符，請重新確認");
+            setError("驗證密碼不符，請輸入此班級專屬之驗證密碼");
             setLoading(false);
             return;
           }
@@ -353,17 +376,27 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
           <form onSubmit={handleSubmit} className="w-full space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">班級代碼 (Class Code)</label>
-              <input
-                type="text"
-                required
-                value={classId}
-                onChange={(e) => {
-                  setClassId(e.target.value);
-                  setError("");
-                }}
-                placeholder="例如：202610-split"
-                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500"
-              />
+              {isUrlClassLocked ? (
+                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-950 border border-emerald-500/40 rounded-xl text-xs font-mono text-emerald-400">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="font-bold">{classId}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-sans">（專屬網址帶入）</span>
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  required
+                  value={classId}
+                  onChange={(e) => {
+                    setClassId(e.target.value);
+                    setError("");
+                  }}
+                  placeholder="請輸入講師於後台開立之班級代碼（例如：202610-split）"
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500"
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">

@@ -173,6 +173,15 @@ function App() {
     if (!userSession?.classId) return;
 
     const unsub = subscribeClassMetadata(userSession.classId, (meta) => {
+      if (!meta) {
+        // 班級在雲端資料庫中不存在或已被刪除：清除 session 快取並強制退回門禁
+        console.warn('[App] Class does not exist in Firestore, evicting session');
+        localStorage.removeItem('split_user_session');
+        localStorage.removeItem(`split_user_session_${userSession.classId.toLowerCase()}`);
+        sessionStorage.removeItem("split_courseware_authorized");
+        setUserSession(null);
+        return;
+      }
       setClassMetadata(meta);
       if (meta.status === 'inactive') {
         // 班級已被講師停用：清除 session 快取並強制退回門禁

@@ -138,6 +138,8 @@ export function subscribeClassMetadata(
         currentGeneration: Number(d.currentGeneration) || 1,
         notes: d.notes || ''
       });
+    } else {
+      onUpdate(null as any);
     }
   }, (err) => {
     console.error('[subscribeClassMetadata] error:', err);
