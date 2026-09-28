@@ -29,6 +29,7 @@ dist/
 out/
 build/
 .firebase/
+backups/
 
 # IDEs and editors
 .idea/
