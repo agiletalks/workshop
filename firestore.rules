@@ -152,6 +152,12 @@ service cloud.firestore {
     match /split_data/{classId}/generations/{genId}/lecture_notes/{slideId} {
       allow read, write: if true;
     }
+    match /split_data/{classId}/generations/{genId}/handbook/{docId} {
+      allow read, write: if true;
+    }
+    match /split_data/{classId}/generations/{genId}/textbook_cache/{docId} {
+      allow read, write: if true;
+    }
     match /split_data/{classId}/questions/{questionId} {
       allow read, write: if true;
     }

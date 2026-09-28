@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-28T15:11:24.778Z",
+  "commit": "18078dd",
+  "classId": "qa-split-test-01",
+  "results": {
+    "test1_four_pillar_tabs_and_transcript_isolation": {
+      "pass": true,
+      "details": "4 pillars present for instructor; student has strict zero-exposure transcript isolation."
+    },
+    "test2_unified_resource_uploader_and_realtime_sync": {
+      "pass": true,
+      "details": "Prompt & Attachment uploaded via unified modal, synced instantly to student, copy feedback & lightbox verified."
+    },
+    "test3_master_textbook_generation_and_cache": {
+      "pass": true,
+      "details": "Full day chained textbook generated across chapters, persisted to Firestore cache, TOC, Figures & Appendix A confirmed."
+    },
+    "test4_personalized_handbook_cover_and_appendix_b": {
+      "pass": true,
+      "details": "Cover dynamically injects student name and team; Appendix B correctly renders team deliverables and perspective switching."
+    },
+    "test5_zero_error_and_realtime_integrity": {
+      "pass": true,
+      "details": "All 4 core tests passed smoothly. Clean execution across dual-window contexts. (Console errors: 0)"
+    }
+  },
+  "consoleErrors": {
+    "instructor": [],
+    "student": []
+  }
+}
