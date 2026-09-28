@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-09-28T11:11:46.813Z",
+  "commit": "debb5cc",
+  "classId": "qa-split-test-01",
+  "allPass": true,
+  "results": {
+    "test1_gemini_connection": {
+      "pass": true,
+      "details": "Gemini 3.5 Flash-lite 連線自測成功，小編設定即時就緒，學員端 100% 隔離金鑰無設定按鈕。"
+    },
+    "test2_stickies_edit_and_sync": {
+      "pass": true,
+      "details": "重點便利貼講師編輯/新增成功，學員端在未重新整理下 1 秒內即時同步，且學員端完全無編輯與新增按鈕。"
+    },
+    "test3_article_edit_and_sync": {
+      "pass": true,
+      "details": "課程詳細內容講師即時編輯並成功同步全班，學員端無刷新即時顯示且無任何編輯按鈕。"
+    },
+    "test4_live_projection_and_jump": {
+      "pass": true,
+      "details": "目錄側欄清楚顯示投影中與錄音狀態；學員換頁時頂部出現「回到老師投影 (P.03)」醒目按鈕，點擊後瞬間導航回投影片且按鈕自動轉換為「與老師同步中」。"
+    },
+    "test5_team_task_and_perspective": {
+      "pass": true,
+      "details": "一般講義頁面切換組別視角時隨堂重點全班一致；Team Task 演練頁面切換組別時各自獨立載入該組筆記成果，隔離防護 100% 完整。"
+    }
+  }
+}
