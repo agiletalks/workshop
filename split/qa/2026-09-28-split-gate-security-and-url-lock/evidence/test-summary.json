@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-28T13:26:28.885Z",
+  "commit": "d258b0d",
+  "allPass": true,
+  "results": {
+    "test1_manual_ghost_class_blocked": {
+      "pass": true,
+      "details": "隨意手動輸入未開立之幽靈班級，系統精準以紅字阻擋並提示需先於管理後台開班，無法進入講義。"
+    },
+    "test2_url_injected_ghost_class_blocked": {
+      "pass": true,
+      "details": "網址注入不存在之班級代碼時，欄位自動鎖定為專屬網址帶入，送出後嚴格阻擋並提示找不到班級。"
+    },
+    "test3_valid_class_login_success": {
+      "pass": true,
+      "details": "真實存在於 Firestore 且啟用中的班級，輸入正確密碼與組別順利進班，講義教材與面板完整呈現。"
+    },
+    "test4_url_class_code_locked_badge": {
+      "pass": true,
+      "details": "以專屬網址進入時，班級代碼為不可編輯之綠色鎖定標記並標註（專屬網址帶入），完全杜絕學員誤改。"
+    },
+    "test5_wrong_password_blocked": {
+      "pass": true,
+      "details": "輸入錯誤密碼時，系統立即阻擋並提示「驗證密碼不符，請輸入此班級專屬之驗證密碼」，門禁嚴格把關。"
+    },
+    "test6_inactive_class_kick_and_blocked": {
+      "pass": true,
+      "details": "在線學員於班級停用後 1521ms 內由 Firestore 即時監聽自動踢退回門禁；再次嘗試登入被嚴格阻擋並提示處於停用狀態。測試後已安全還原班級為啟用。"
+    }
+  }
+}
