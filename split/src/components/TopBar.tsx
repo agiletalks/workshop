@@ -24,6 +24,7 @@ interface TopBarProps {
   onJumpToInstructorSlide?: (slideId: string) => void;
   geminiKeyConfigured?: boolean;
   onOpenAiConfig?: () => void;
+  onOpenStudentQr?: () => void;
   // 保留相容性可選參數
   viewMode?: "focus" | "overview";
   setViewMode?: (mode: "focus" | "overview") => void;
@@ -55,7 +56,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   instructorLiveSlide,
   onJumpToInstructorSlide,
   geminiKeyConfigured = false,
-  onOpenAiConfig
+  onOpenAiConfig,
+  onOpenStudentQr
 }) => {
   const totalTeams = classMetadata?.teamCount || 6;
   const isMyTeam = userSession ? activeTeamId === userSession.teamId : true;
@@ -248,6 +250,20 @@ export const TopBar: React.FC<TopBarProps> = ({
             title="印出或匯出全天隨堂講義手冊與重點便利貼"
           >
             <span>🖨️ 列印筆記</span>
+          </button>
+        )}
+
+        {/* 講師專屬：大螢幕學員報到 QR Code 投影 (防直通漏洞，純學員報到) */}
+        {isInstructor && onOpenStudentQr && (
+          <button
+            onClick={onOpenStudentQr}
+            className="inline-flex px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black transition-all items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer shrink-0"
+            title="開啟大螢幕學員報到 QR Code (純學員入口，絕不洩漏免密權限)"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+            </svg>
+            <span>📱 學生報到 QR</span>
           </button>
         )}
 

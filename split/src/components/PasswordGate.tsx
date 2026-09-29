@@ -160,6 +160,20 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
           localStorage.setItem('split_user_session', JSON.stringify(instructorSession));
           localStorage.setItem(`split_user_session_${normalizedClass}`, JSON.stringify(instructorSession));
           sessionStorage.setItem("split_courseware_authorized", "true");
+
+          // 核心安全防護：立即從網址列清理所有免密與管理參數 (adm, admin, role, r)
+          // 確保老師投影時，無論使用瀏覽器內建 QR Code 功能或手動複製，都只會產生標準學員報到網址，絕不洩漏免密權限！
+          try {
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('adm');
+            cleanUrl.searchParams.delete('admin');
+            cleanUrl.searchParams.delete('role');
+            cleanUrl.searchParams.delete('r');
+            window.history.replaceState({}, '', cleanUrl.toString());
+          } catch (cleanErr) {
+            console.warn('[PasswordGate] Failed to sanitize URL:', cleanErr);
+          }
+
           setVerifyingSession(false);
           onAuthorized(instructorSession);
         } catch (e) {
@@ -426,16 +440,23 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">進班驗證密碼</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-300">進班驗證密碼</label>
+                <span className="text-[10px] text-slate-400 font-sans">（明文顯示，方便確認打字）</span>
+              </div>
               <input
-                type="password"
+                type="text"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 placeholder="預設：split-2026"
                 value={passcode}
                 onChange={(e) => {
                   setPasscode(e.target.value);
                   setError("");
                 }}
-                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500 tracking-wider"
               />
             </div>
 

@@ -12,6 +12,7 @@ import { QuestionsDrawer } from "./components/QuestionsDrawer";
 import { TaskEditorModal } from "./components/TaskEditorModal";
 import { PrintHandbookModal } from "./components/PrintHandbookModal";
 import { AiConfigModal } from "./components/AiConfigModal";
+import { StudentQrCodeModal } from "./components/StudentQrCodeModal";
 import { getDoc } from "firebase/firestore";
 import { VoiceNoteRecorder } from "./services/voiceRecorder";
 import {
@@ -61,6 +62,23 @@ function App() {
     return userSession ? userSession.teamId : 1;
   });
   const [isPrintHandbookOpen, setIsPrintHandbookOpen] = useState(false);
+  const [isStudentQrOpen, setIsStudentQrOpen] = useState(false);
+
+  // 關鍵防護：若為講師身分，確認網址列已完全移除 adm, admin, role 等敏感參數，防止投影被截圖或掃碼直通
+  useEffect(() => {
+    if (userSession?.role === 'instructor' && typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('adm') || url.searchParams.has('admin') || url.searchParams.has('role') || url.searchParams.has('r')) {
+          url.searchParams.delete('adm');
+          url.searchParams.delete('admin');
+          url.searchParams.delete('role');
+          url.searchParams.delete('r');
+          window.history.replaceState({}, '', url.toString());
+        }
+      } catch (e) {}
+    }
+  }, [userSession]);
 
   // 當 userSession 變更時同步更新 activeTeamId
   useEffect(() => {
@@ -796,6 +814,7 @@ function App() {
       onJumpToInstructorSlide={handleJumpToInstructorSlide}
       geminiKeyConfigured={geminiKeyConfigured}
       onOpenAiConfig={() => setIsAiConfigOpen(true)}
+      onOpenStudentQr={() => setIsStudentQrOpen(true)}
     />
   );
 
@@ -952,6 +971,14 @@ function App() {
         isOpen={isAiConfigOpen}
         onClose={() => setIsAiConfigOpen(false)}
         onKeySaved={(k) => setGeminiKeyConfigured(Boolean(k))}
+      />
+
+      {/* 講師大螢幕學員報到 QR Code 投影視窗 */}
+      <StudentQrCodeModal
+        isOpen={isStudentQrOpen}
+        onClose={() => setIsStudentQrOpen(false)}
+        classId={userSession?.classId || classMetadata?.id || ''}
+        className={classMetadata?.name}
       />
     </div>
   );
