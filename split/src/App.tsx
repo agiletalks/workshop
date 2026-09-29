@@ -165,8 +165,9 @@ function App() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState("");
 
-  // Sidebar collapsible state
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Sidebar collapsible state & Mobile Responsive Active Tab
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [mobileTab, setMobileTab] = useState<'slide' | 'notes'>('slide');
 
   // 根據 Firestore 自訂任務動態插入既有教材並重新計算頁碼
   const mergedSlides = useMemo(() => {
@@ -531,6 +532,9 @@ function App() {
     if (workbook.viewMode === "overview") {
       setViewMode("focus");
     }
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarCollapsed(true);
+    }
   };
 
   const handleImageClick = (imageUrl: string) => {
@@ -826,6 +830,7 @@ function App() {
       getResponse={getResponse}
       viewMode={workbook.viewMode}
       collapsed={sidebarCollapsed}
+      onClose={() => setSidebarCollapsed(true)}
       isInstructor={userSession?.role === 'instructor'}
       onOpenTaskEditor={(sId) => handleOpenCreateTask(sId)}
       recordingSlideId={lectureRecording.isRecording ? lectureRecording.slideId : null}
@@ -881,32 +886,86 @@ function App() {
       {workbook.viewMode === "focus" ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           {topBar}
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden relative">
+            {/* 手機版側邊欄背景暗色遮罩 */}
+            {!sidebarCollapsed && (
+              <div
+                className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 md:hidden"
+                onClick={() => setSidebarCollapsed(true)}
+              />
+            )}
             {sidebar}
-            <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-full">
-              <div className="w-full h-[38vh] min-h-[220px] max-h-[300px] md:h-full md:max-h-none md:w-[40%] lg:w-[35%] xl:w-[30%] shrink-0 overflow-hidden flex flex-col bg-slate-900 border-r border-slate-800 relative">
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-full relative">
+              {/* 投影片檢視區：桌面端維持固定欄寬，手機端依 mobileTab 切換全螢幕 */}
+              <div className={`
+                ${mobileTab === 'slide' ? 'flex-1 flex h-full' : 'hidden md:flex'}
+                w-full md:h-full md:max-h-none md:w-[40%] lg:w-[35%] xl:w-[30%] shrink-0 overflow-hidden flex-col bg-slate-900 border-r border-slate-800 relative
+              `}>
                 {slideViewer}
               </div>
-              <div className="flex-1 border-t md:border-t-0 md:border-l border-slate-800 bg-white h-full overflow-hidden flex flex-col">
+              {/* 隨堂重點與筆記區：桌面端維持固定欄寬，手機端依 mobileTab 切換全螢幕 */}
+              <div className={`
+                ${mobileTab === 'notes' ? 'flex-1 flex h-full' : 'hidden md:flex'}
+                flex-1 border-t md:border-t-0 md:border-l border-slate-800 bg-white h-full overflow-hidden flex-col
+              `}>
                 {workbookPanel}
               </div>
             </div>
           </div>
+
+          {/* 手機底部切換列 (Mobile Bottom Navigation Bar) */}
+          <nav className="md:hidden h-14 bg-slate-900 border-t border-slate-800 flex items-center justify-around z-30 shrink-0 select-none px-3">
+            <button
+              type="button"
+              onClick={() => setMobileTab('slide')}
+              className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all cursor-pointer ${
+                mobileTab === 'slide'
+                  ? 'text-teal-400 font-bold bg-slate-800/90 shadow-inner'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span className="text-base leading-none">📺</span>
+              <span className="text-[11px] leading-tight">
+                課程簡報 {activeSlide?.page ? `(P.${activeSlide.page})` : ''}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab('notes')}
+              className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all cursor-pointer ${
+                mobileTab === 'notes'
+                  ? 'text-teal-400 font-bold bg-slate-800/90 shadow-inner'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span className="text-base leading-none">📝</span>
+              <span className="text-[11px] leading-tight">
+                隨堂重點與筆記
+              </span>
+            </button>
+          </nav>
         </div>
       ) : (
         <div className="flex-1 flex flex-col overflow-hidden">
           {topBar}
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden relative">
+            {/* 手機版側邊欄背景暗色遮罩 */}
+            {!sidebarCollapsed && (
+              <div
+                className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 md:hidden"
+                onClick={() => setSidebarCollapsed(true)}
+              />
+            )}
             {sidebar}
             <OverviewGrid slides={mergedSlides} onSelectSlide={handleSelectSlide} getResponse={getResponse} />
           </div>
         </div>
       )}
 
-      {/* 右下角常駐浮動提問按鈕 (Floating Action Button) */}
+      {/* 右下角常駐浮動提問按鈕 (Floating Action Button，手機端避開底部導航列與簡報換頁鍵) */}
       <button
         onClick={() => setIsQuestionsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 px-3.5 py-2.5 rounded-full bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-teal-400/30 transition-all hover:shadow-teal-500/20 group cursor-pointer"
+        className="fixed bottom-32 right-4 md:bottom-6 md:right-6 z-40 px-3.5 py-2.5 rounded-full bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-teal-400/30 transition-all hover:shadow-teal-500/20 group cursor-pointer"
         title="開啟課堂提問"
       >
         <span className="text-base group-hover:scale-110 transition-transform">💬</span>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { UserSession, ClassMetadata } from "../services/notesService";
 
 interface TopBarProps {
@@ -59,6 +59,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenAiConfig,
   onOpenStudentQr
 }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const totalTeams = classMetadata?.teamCount || 6;
   const isMyTeam = userSession ? activeTeamId === userSession.teamId : true;
   const isClassReadOnly = classMetadata?.status === 'inactive';
@@ -74,51 +75,257 @@ export const TopBar: React.FC<TopBarProps> = ({
   };
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-white h-16 px-4 sm:px-6 flex items-center justify-between shadow-lg z-30 relative shrink-0">
+    <header className="bg-slate-900 border-b border-slate-800 text-white shadow-lg z-30 relative shrink-0">
+      {/* ======================================================== */}
+      {/* 1. 電腦與平板寬螢幕模式 (>= md: 768px)                     */}
+      {/* ======================================================== */}
+      <div className="hidden md:flex h-16 px-4 sm:px-6 items-center justify-between w-full">
+        {/* Left Area: Title, Sidebar toggle, and Class tag */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onToggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-all focus:outline-none flex items-center justify-center shrink-0 cursor-pointer"
+            title={sidebarCollapsed ? "展開單元進度" : "收合單元進度"}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
 
-      {/* Left Area: Title, Sidebar toggle, and Class tag */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onToggleSidebar}
-          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-all focus:outline-none flex items-center justify-center shrink-0"
-          title={sidebarCollapsed ? "展開單元進度" : "收合單元進度"}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-sm select-none">
+            SP
+          </div>
 
-        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-sm select-none">
-          SP
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-bold leading-tight tracking-wide m-0 text-white">
+                SPLIT 需求拆解實戰
+              </h1>
+              {classMetadata && (
+                <span className="text-[10px] bg-slate-800 border border-slate-700 text-emerald-400 px-2 py-0.5 rounded-full font-mono font-bold">
+                  {classMetadata.id} · Gen {classMetadata.currentGeneration}
+                </span>
+              )}
+              {isClassReadOnly && (
+                <span className="text-[10px] bg-rose-500/20 border border-rose-500/40 text-rose-300 px-2 py-0.5 rounded-full font-bold animate-pulse">
+                  已停用唯讀
+                </span>
+              )}
+            </div>
+            <div className="text-[10px] text-slate-400 font-medium hidden sm:flex items-center gap-2">
+              <span>進度: {progress.percentage}% ({progress.completed}/{progress.total}頁)</span>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm sm:text-base font-bold leading-tight tracking-wide m-0 text-white">
-              SPLIT 需求拆解實戰
-            </h1>
-            {classMetadata && (
-              <span className="text-[10px] bg-slate-800 border border-slate-700 text-emerald-400 px-2 py-0.5 rounded-full font-mono font-bold">
-                {classMetadata.id} · Gen {classMetadata.currentGeneration}
-              </span>
+        {/* Middle Area: Team Switcher, Global Whiteboard & Observation Mode Indicator */}
+        <div className="flex items-center gap-2.5">
+          {/* 組別下拉選單 */}
+          <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800">
+            <span className="text-[11px] font-bold text-slate-400">當前視角:</span>
+            <select
+              value={activeTeamId}
+              onChange={(e) => onSwitchTeam(Number(e.target.value))}
+              className="bg-transparent text-xs font-bold text-emerald-400 focus:outline-none cursor-pointer"
+            >
+              {Array.from({ length: totalTeams }, (_, i) => i + 1).map((tNum) => {
+                const isSelf = !isInstructor && userSession && userSession.teamId === tNum;
+                return (
+                  <option key={tNum} value={tNum} className="bg-slate-900 text-white">
+                    第 {tNum} 組 {isInstructor ? "" : isSelf ? "(我的組)" : "(觀摩)"}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* 全域小組協作白板按鈕 (全組共用唯一白板) */}
+          <button
+            onClick={handleOpenWhiteboard}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
+            title={`點擊在新分頁開啟【第 ${activeTeamId} 組】共用協作白板`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+            </svg>
+            <span>📋 小組白板</span>
+          </button>
+
+          {/* 觀摩模式快捷切回我組按鈕 (僅學員在觀摩模式時出現，講師不出現) */}
+          {!isInstructor && !isMyTeam && userSession && (
+            <button
+              onClick={() => onSwitchTeam(userSession.teamId)}
+              className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1 shadow-md shadow-amber-500/20 cursor-pointer"
+              title="點擊立即切回您所屬組別以進行編輯"
+            >
+              <span>切回我組 (第 {userSession.teamId} 組)</span>
+            </button>
+          )}
+
+          {/* 雲端同步狀態燈 (嚴格比對伺服器 ACK) */}
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-bold">
+            {cloudSyncStatus === 'online' && (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-emerald-400">雲端同步</span>
+              </>
             )}
-            {isClassReadOnly && (
-              <span className="text-[10px] bg-rose-500/20 border border-rose-500/40 text-rose-300 px-2 py-0.5 rounded-full font-bold animate-pulse">
-                已停用唯讀
-              </span>
+            {cloudSyncStatus === 'syncing' && (
+              <>
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" />
+                <span className="text-amber-400">同步中...</span>
+              </>
+            )}
+            {cloudSyncStatus === 'offline' && (
+              <>
+                <span className="w-2 h-2 rounded-full bg-slate-500" />
+                <span className="text-slate-400">離線暫存</span>
+              </>
+            )}
+            {cloudSyncStatus === 'readonly' && (
+              <>
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span className="text-rose-400">唯讀模式</span>
+              </>
             )}
           </div>
-          <div className="text-[10px] text-slate-400 font-medium hidden sm:flex items-center gap-2">
-            <span>進度: {progress.percentage}% ({progress.completed}/{progress.total}頁)</span>
-          </div>
+        </div>
+
+        {/* Right Area: Actions */}
+        <div className="flex items-center gap-2">
+          {userSession && (
+            <div
+              onClick={onOpenCheckIn}
+              className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-800 text-xs cursor-pointer hover:opacity-80"
+              title="點擊切換使用者或班級"
+            >
+              <span className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">
+                {userSession.name.charAt(0)}
+              </span>
+              <span className="text-slate-300 font-medium truncate max-w-[80px]" title={userSession.name}>
+                {userSession.name}
+              </span>
+            </div>
+          )}
+
+          {/* 學員專屬：跟隨老師投影狀態與一鍵跳回按鈕 */}
+          {!isInstructor && instructorLiveSlide && (
+            instructorLiveSlide.slideId !== activeSlideId ? (
+              <button
+                onClick={() => onJumpToInstructorSlide?.(instructorLiveSlide.slideId)}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95 animate-pulse cursor-pointer shrink-0"
+                title={`老師正在投影：第 ${instructorLiveSlide.pageNumber} 頁 · ${instructorLiveSlide.slideTitle}，點此跳回`}
+              >
+                <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping" />
+                <span>🎯 回到老師投影 (P.{String(instructorLiveSlide.pageNumber).padStart(2, '0')})</span>
+              </button>
+            ) : (
+              <div
+                className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold shrink-0"
+                title="您當前畫面與老師投影完全同步"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span>與老師同步中</span>
+              </div>
+            )
+          )}
+
+          {/* 講師專屬：隨堂小編連線狀態燈號與設定 (學員不顯示) */}
+          {isInstructor && onOpenAiConfig && (
+            <button
+              onClick={onOpenAiConfig}
+              className={`inline-flex px-3 py-1.5 rounded-xl border text-xs font-bold items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                geminiKeyConfigured
+                  ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50'
+                  : 'bg-amber-950/40 border-amber-500/40 text-amber-300 hover:bg-amber-900/50 animate-pulse'
+              }`}
+              title={geminiKeyConfigured ? "隨堂小編已就緒 (點擊查看或更換金鑰)" : "尚未配置金鑰 (點擊設定小編金鑰)"}
+            >
+              <span className={`w-2 h-2 rounded-full ${geminiKeyConfigured ? 'bg-emerald-400' : 'bg-amber-400 animate-ping'}`} />
+              <span>{geminiKeyConfigured ? '⚙️ 小編設定 (已就緒)' : '⚙️ 小編設定 (未連線)'}</span>
+            </button>
+          )}
+
+          {/* 全日手冊列印 (學員與講師皆可用) */}
+          {onOpenPrintHandbook && (
+            <button
+              onClick={onOpenPrintHandbook}
+              className="inline-flex px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-all items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer shrink-0"
+              title="印出或匯出全天隨堂講義手冊與重點便利貼"
+            >
+              <span>🖨️ 列印筆記</span>
+            </button>
+          )}
+
+          {/* 講師專屬：大螢幕學員報到 QR Code 投影 (防直通漏洞，純學員報到) */}
+          {isInstructor && onOpenStudentQr && (
+            <button
+              onClick={onOpenStudentQr}
+              className="inline-flex px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black transition-all items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer shrink-0"
+              title="開啟大螢幕學員報到 QR Code (純學員入口，絕不洩漏免密權限)"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              </svg>
+              <span>📱 學生報到 QR</span>
+            </button>
+          )}
+
+          {/* 講師專屬：新增小組演練任務按鈕 */}
+          {isInstructor && onInsertTask && (
+            <button
+              onClick={onInsertTask}
+              className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 border border-purple-400/50 text-xs font-bold text-purple-200 hover:text-white transition-all items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
+              title="在當前頁面後方插入新團隊演練 (Team Task)"
+            >
+              <span>🎯 +演練</span>
+            </button>
+          )}
+
+          {/* 講師專屬：班級管理後台 (學員絕不顯示) */}
+          {isInstructor && (
+            <a
+              href="../admin.html?course=split"
+              target="_blank"
+              className="hidden sm:flex px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-amber-400 hover:text-amber-300 transition-all items-center gap-1"
+              title="開啟 SPLIT 班級管理後台"
+            >
+              <span>管理後台</span>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          )}
         </div>
       </div>
 
-      {/* Middle Area: Team Switcher, Global Whiteboard & Observation Mode Indicator */}
-      <div className="flex items-center gap-2.5">
-        {/* 組別下拉選單 */}
-        <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800">
-          <span className="text-[11px] font-bold text-slate-400">當前視角:</span>
+      {/* ======================================================== */}
+      {/* 2. 手機超緊湊窄螢幕模式 (< md: 768px)                       */}
+      {/* ======================================================== */}
+      <div className="md:hidden flex h-14 px-3 items-center justify-between w-full">
+        {/* Left: Hamburger + Brand Badge + Title */}
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={onToggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-all focus:outline-none flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
+            title={sidebarCollapsed ? "展開目錄" : "收合目錄"}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-xs select-none shrink-0">
+            SP
+          </div>
+
+          <span className="text-xs font-bold text-white truncate max-w-[80px]">
+            SPLIT
+          </span>
+        </div>
+
+        {/* Center: Compact Team Picker */}
+        <div className="flex items-center bg-slate-950 px-2 py-1 rounded-xl border border-slate-800 shrink-0">
           <select
             value={activeTeamId}
             onChange={(e) => onSwitchTeam(Number(e.target.value))}
@@ -128,171 +335,236 @@ export const TopBar: React.FC<TopBarProps> = ({
               const isSelf = !isInstructor && userSession && userSession.teamId === tNum;
               return (
                 <option key={tNum} value={tNum} className="bg-slate-900 text-white">
-                  第 {tNum} 組 {isInstructor ? "" : isSelf ? "(我的組)" : "(觀摩)"}
+                  第 {tNum} 組 {isInstructor ? "" : isSelf ? "(我)" : ""}
                 </option>
               );
             })}
           </select>
         </div>
 
-        {/* 全域小組協作白板按鈕 (全組共用唯一白板) */}
-        <button
-          onClick={handleOpenWhiteboard}
-          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
-          title={`點擊在新分頁開啟【第 ${activeTeamId} 組】共用協作白板`}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-          </svg>
-          <span>📋 小組白板</span>
-        </button>
+        {/* Right: Quick Jump + Action Sheet Trigger */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* 學員專屬：跟隨老師快速躍遷按鈕 */}
+          {!isInstructor && instructorLiveSlide && instructorLiveSlide.slideId !== activeSlideId && (
+            <button
+              onClick={() => onJumpToInstructorSlide?.(instructorLiveSlide.slideId)}
+              className="px-2 py-1 rounded-lg bg-amber-500 text-slate-950 text-xs font-black flex items-center gap-1 active:scale-95 animate-pulse shrink-0 cursor-pointer shadow-sm"
+              title="跳回老師投影"
+            >
+              <span>🎯 P.{instructorLiveSlide.pageNumber}</span>
+            </button>
+          )}
 
-        {/* 觀摩模式快捷切回我組按鈕 (僅學員在觀摩模式時出現，講師不出現) */}
-        {!isInstructor && !isMyTeam && userSession && (
+          {/* 更多功能 Action Sheet 按鈕 */}
           <button
-            onClick={() => onSwitchTeam(userSession.teamId)}
-            className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1 shadow-md shadow-amber-500/20 cursor-pointer"
-            title="點擊立即切回您所屬組別以進行編輯"
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center justify-center shrink-0 active:scale-95 cursor-pointer shadow-sm"
+            title="開啟功能選單"
           >
-            <span>切回我組 (第 {userSession.teamId} 組)</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
           </button>
-        )}
-
-        {/* 雲端同步狀態燈 (嚴格比對伺服器 ACK) */}
-        <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-bold">
-          {cloudSyncStatus === 'online' && (
-            <>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-emerald-400">雲端同步</span>
-            </>
-          )}
-          {cloudSyncStatus === 'syncing' && (
-            <>
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" />
-              <span className="text-amber-400">同步中...</span>
-            </>
-          )}
-          {cloudSyncStatus === 'offline' && (
-            <>
-              <span className="w-2 h-2 rounded-full bg-slate-500" />
-              <span className="text-slate-400">離線暫存</span>
-            </>
-          )}
-          {cloudSyncStatus === 'readonly' && (
-            <>
-              <span className="w-2 h-2 rounded-full bg-rose-500" />
-              <span className="text-rose-400">唯讀模式</span>
-            </>
-          )}
         </div>
       </div>
 
-      {/* Right Area: Actions */}
-      <div className="flex items-center gap-2">
-        {userSession && (
+      {/* ======================================================== */}
+      {/* 3. 手機版操作選單抽屜 (Action Sheet Drawer)                  */}
+      {/* ======================================================== */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+          {/* 背景暗色遮罩 */}
           <div
-            onClick={onOpenCheckIn}
-            className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-800 text-xs cursor-pointer hover:opacity-80"
-            title="點擊切換使用者或班級"
-          >
-            <span className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">
-              {userSession.name.charAt(0)}
-            </span>
-            <span className="text-slate-300 font-medium truncate max-w-[80px]" title={userSession.name}>
-              {userSession.name}
-            </span>
-          </div>
-        )}
+            className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs animate-in fade-in"
+            onClick={() => setMobileMenuOpen(false)}
+          />
 
-        {/* 學員專屬：跟隨老師投影狀態與一鍵跳回按鈕 */}
-        {!isInstructor && instructorLiveSlide && (
-          instructorLiveSlide.slideId !== activeSlideId ? (
-            <button
-              onClick={() => onJumpToInstructorSlide?.(instructorLiveSlide.slideId)}
-              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95 animate-pulse cursor-pointer shrink-0"
-              title={`老師正在投影：第 ${instructorLiveSlide.pageNumber} 頁 · ${instructorLiveSlide.slideTitle}，點此跳回`}
-            >
-              <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping" />
-              <span>🎯 回到老師投影 (P.{String(instructorLiveSlide.pageNumber).padStart(2, '0')})</span>
-            </button>
-          ) : (
-            <div
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold shrink-0"
-              title="您當前畫面與老師投影完全同步"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>與老師同步中</span>
+          {/* 滑出底部抽屜 */}
+          <div className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl p-5 shadow-2xl z-10 flex flex-col gap-3.5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+            {/* 抽屜頂部資訊列 */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-sm">
+                  {userSession ? userSession.name.charAt(0) : "SP"}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <span>{userSession?.name || "學員"}</span>
+                    <span className="text-[10px] bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-full text-emerald-400 font-mono font-bold">
+                      {isInstructor ? "講師" : `第 ${userSession?.teamId || activeTeamId} 組`}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    {classMetadata ? `${classMetadata.id} · Gen ${classMetadata.currentGeneration}` : "SPLIT 需求拆解"}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer text-sm"
+              >
+                ✕
+              </button>
             </div>
-          )
-        )}
 
-        {/* 講師專屬：隨堂小編連線狀態燈號與設定 (學員不顯示) */}
-        {isInstructor && onOpenAiConfig && (
-          <button
-            onClick={onOpenAiConfig}
-            className={`inline-flex px-3 py-1.5 rounded-xl border text-xs font-bold items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
-              geminiKeyConfigured
-                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50'
-                : 'bg-amber-950/40 border-amber-500/40 text-amber-300 hover:bg-amber-900/50 animate-pulse'
-            }`}
-            title={geminiKeyConfigured ? "隨堂小編已就緒 (點擊查看或更換金鑰)" : "尚未配置金鑰 (點擊設定小編金鑰)"}
-          >
-            <span className={`w-2 h-2 rounded-full ${geminiKeyConfigured ? 'bg-emerald-400' : 'bg-amber-400 animate-ping'}`} />
-            <span>{geminiKeyConfigured ? '⚙️ 小編設定 (已就緒)' : '⚙️ 小編設定 (未連線)'}</span>
-          </button>
-        )}
+            {/* 同步狀態與課堂進度卡片 */}
+            <div className="flex items-center justify-between bg-slate-950/70 p-3 rounded-2xl border border-slate-800 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400">連線狀態:</span>
+                {cloudSyncStatus === 'online' && (
+                  <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    雲端同步中
+                  </span>
+                )}
+                {cloudSyncStatus === 'syncing' && (
+                  <span className="text-amber-400 font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" />
+                    資料同步中...
+                  </span>
+                )}
+                {cloudSyncStatus === 'offline' && (
+                  <span className="text-slate-400 font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-slate-500" />
+                    離線暫存
+                  </span>
+                )}
+                {cloudSyncStatus === 'readonly' && (
+                  <span className="text-rose-400 font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                    唯讀模式
+                  </span>
+                )}
+              </div>
+              <div className="text-slate-400 font-mono text-[11px]">
+                進度: {progress.percentage}%
+              </div>
+            </div>
 
-        {/* 全日手冊列印 (學員與講師皆可用) */}
-        {onOpenPrintHandbook && (
-          <button
-            onClick={onOpenPrintHandbook}
-            className="inline-flex px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-all items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer shrink-0"
-            title="印出或匯出全天隨堂講義手冊與重點便利貼"
-          >
-            <span>🖨️ 列印筆記</span>
-          </button>
-        )}
+            {/* 核心操作按鈕雙格 (白板 + 列印) */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  handleOpenWhiteboard();
+                  setMobileMenuOpen(false);
+                }}
+                className="p-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+              >
+                <span>📋 小組白板</span>
+              </button>
+              {onOpenPrintHandbook && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenPrintHandbook();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="p-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+                >
+                  <span>🖨️ 列印筆記</span>
+                </button>
+              )}
+            </div>
 
-        {/* 講師專屬：大螢幕學員報到 QR Code 投影 (防直通漏洞，純學員報到) */}
-        {isInstructor && onOpenStudentQr && (
-          <button
-            onClick={onOpenStudentQr}
-            className="inline-flex px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black transition-all items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer shrink-0"
-            title="開啟大螢幕學員報到 QR Code (純學員入口，絕不洩漏免密權限)"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-            </svg>
-            <span>📱 學生報到 QR</span>
-          </button>
-        )}
+            {/* 觀摩模式：快捷切回我組 */}
+            {!isInstructor && !isMyTeam && userSession && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSwitchTeam(userSession.teamId);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-3 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 rounded-2xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
+              >
+                <span>切回我組 (第 {userSession.teamId} 組)</span>
+              </button>
+            )}
 
-        {/* 講師專屬：新增小組演練任務按鈕 */}
-        {isInstructor && onInsertTask && (
-          <button
-            onClick={onInsertTask}
-            className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 border border-purple-400/50 text-xs font-bold text-purple-200 hover:text-white transition-all items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
-            title="在當前頁面後方插入新團隊演練 (Team Task)"
-          >
-            <span>🎯 +演練</span>
-          </button>
-        )}
+            {/* 跳至老師投影 */}
+            {!isInstructor && instructorLiveSlide && (
+              <button
+                type="button"
+                onClick={() => {
+                  onJumpToInstructorSlide?.(instructorLiveSlide.slideId);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+              >
+                <span>🎯 跳至老師投影 (P.{instructorLiveSlide.pageNumber} · {instructorLiveSlide.slideTitle})</span>
+              </button>
+            )}
 
-        {/* 講師專屬：班級管理後台 (學員絕不顯示) */}
-        {isInstructor && (
-          <a
-            href="../admin.html?course=split"
-            target="_blank"
-            className="hidden sm:flex px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-amber-400 hover:text-amber-300 transition-all items-center gap-1"
-            title="開啟 SPLIT 班級管理後台"
-          >
-            <span>管理後台</span>
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        )}
-      </div>
+            {/* 切換登入身分 */}
+            {onOpenCheckIn && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenCheckIn();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+              >
+                <span>👤 切換登入身分 / 重新報到</span>
+              </button>
+            )}
+
+            {/* 講師專用工具集 */}
+            {isInstructor && (
+              <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">講師專用管理</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {onOpenStudentQr && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenStudentQr();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="p-2.5 bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <span>📱 學生報到 QR</span>
+                    </button>
+                  )}
+                  {onOpenAiConfig && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenAiConfig();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <span>⚙️ 小編設定</span>
+                    </button>
+                  )}
+                  {onInsertTask && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onInsertTask();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="p-2.5 bg-purple-600/30 hover:bg-purple-600/40 text-purple-200 border border-purple-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <span>🎯 +演練任務</span>
+                    </button>
+                  )}
+                  <a
+                    href="../admin.html?course=split"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                  >
+                    <span>👨‍🏫 班級管理後台</span>
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

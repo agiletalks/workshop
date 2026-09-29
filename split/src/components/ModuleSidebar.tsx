@@ -9,6 +9,7 @@ interface ModuleSidebarProps {
   getResponse: (slideId: string) => SlideResponse;
   viewMode: "focus" | "overview";
   collapsed?: boolean;
+  onClose?: () => void;
   isInstructor?: boolean;
   onOpenTaskEditor?: (insertAfterSlideId?: string) => void;
   recordingSlideId?: string | null;
@@ -23,6 +24,7 @@ export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
   getResponse,
   viewMode,
   collapsed = false,
+  onClose,
   isInstructor = false,
   onOpenTaskEditor,
   recordingSlideId,
@@ -48,7 +50,14 @@ export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
   };
 
   return (
-    <aside className={`bg-slate-900 text-slate-300 flex flex-col shrink-0 h-full select-none transition-all duration-300 ${collapsed ? "w-0 opacity-0 overflow-hidden border-r-0 pointer-events-none" : "w-64 border-r border-slate-800"}`}>
+    <aside className={`
+      bg-slate-900 text-slate-300 flex flex-col shrink-0 select-none transition-all duration-300 z-50
+      fixed inset-y-0 left-0 md:relative md:inset-auto md:h-full
+      ${collapsed 
+        ? "-translate-x-full md:translate-x-0 md:w-0 md:opacity-0 md:overflow-hidden md:border-r-0 md:pointer-events-none" 
+        : "translate-x-0 w-72 md:w-64 border-r border-slate-800 shadow-2xl md:shadow-none"
+      }
+    `}>
       {/* Sidebar Header */}
       <div className="p-3.5 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
         <div>
@@ -60,16 +69,29 @@ export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
           </div>
         </div>
 
-        {/* 講師專屬新增演練捷徑 */}
-        {isInstructor && onOpenTaskEditor && (
-          <button
-            onClick={() => onOpenTaskEditor(activeSlideId)}
-            className="px-2 py-1 bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/40 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
-            title="在此位置插入新團隊演練"
-          >
-            <span>+ 演練</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* 講師專屬新增演練捷徑 */}
+          {isInstructor && onOpenTaskEditor && (
+            <button
+              onClick={() => onOpenTaskEditor(activeSlideId)}
+              className="px-2 py-1 bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/40 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+              title="在此位置插入新團隊演練"
+            >
+              <span>+ 演練</span>
+            </button>
+          )}
+
+          {/* 手機版關閉側邊欄按鈕 */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="md:hidden w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
+              title="關閉課程單元目錄"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Module List Scroll Area */}

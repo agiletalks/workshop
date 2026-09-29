@@ -1365,11 +1365,11 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
   const hasLectureContent = Boolean(lectureData && (lectureData.stickies.length > 0 || lectureData.textbookArticle));
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white select-none overflow-hidden p-4 sm:p-5">
+    <div className="flex-1 flex flex-col h-full bg-white select-none overflow-hidden p-3 sm:p-5">
       {/* Title & Tabs Selector / Dynamic Actions */}
-      <div className="flex justify-between items-center mb-3 shrink-0 border-b border-slate-100 pb-2.5">
+      <div className="flex items-center justify-between gap-2 mb-3 shrink-0 border-b border-slate-100 pb-2.5">
         {/* 標籤頁切換列：四大支柱內容模型 (便利貼、提示詞、範例附件、逐字稿) */}
-        <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 overflow-x-auto no-scrollbar flex-1 min-w-0">
           {/* 團隊演練頁：優先顯示小組成果筆記 */}
           {isTask && (
             <button
@@ -1557,18 +1557,22 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
       {/* ======================================================== */}
       {activeTab === "stickies" && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* 1. 若正在「其他頁面」錄音中：顯示跨頁持續錄音提示與快速跳回按鈕 */}
+          {/* 1. 若正在「其他頁面」講述中：顯示跨頁提示與快速跳回按鈕 */}
           {isRecordingOtherSlide && (
             <div className="bg-slate-900 border border-rose-500/40 text-slate-200 px-3.5 py-2.5 rounded-2xl flex items-center justify-between shadow-lg mb-3 shrink-0 animate-in fade-in">
               <div className="flex items-center gap-2 text-xs">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
-                <span className="font-bold text-rose-400">正在錄音中</span>
+                <span className="font-bold text-rose-400">
+                  {isInstructor ? "正在錄音中" : "🎙️ 講師正在講述中"}
+                </span>
                 <span className="text-slate-300 font-medium truncate max-w-[150px] sm:max-w-[220px]" title={recordingState?.slideTitle || ''}>
                   {recordingState?.slidePage ? `第 ${recordingState.slidePage} 頁 · ` : ''}{recordingState?.slideTitle}
                 </span>
-                <span className="font-mono bg-rose-950/80 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-bold">
-                  {formatTimer(recordingState?.recordingSeconds || 0)}
-                </span>
+                {isInstructor && (
+                  <span className="font-mono bg-rose-950/80 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-bold">
+                    {formatTimer(recordingState?.recordingSeconds || 0)}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {onNavigateToSlide && recordingState?.slideId && (
@@ -1577,7 +1581,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                     onClick={() => onNavigateToSlide(recordingState.slideId!)}
                     className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
                   >
-                    👉 跳回錄音頁面
+                    {isInstructor ? "👉 跳回錄音頁面" : "👉 跟隨老師進度"}
                   </button>
                 )}
                 {isInstructor && onStopLectureRecord && (
@@ -1747,19 +1751,29 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             </div>
           )}
 
-          {/* 5. 尚未錄製：待講授引導狀態 (學生與講師字眼一致) */}
+          {/* 5. 課堂隨堂重點準備中 / 待講授狀態 */}
           {!isCompilingThisSlide && !isRecordingThisSlide && !hasLectureContent && (
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-3 shadow-inner">
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-inner ${
+                isInstructor
+                  ? "bg-amber-500/10 border border-amber-500/20 text-amber-500"
+                  : "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500"
+              }`}>
+                {isInstructor ? (
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                ) : (
+                  <span className="text-2xl">✨</span>
+                )}
               </div>
-              <h4 className="text-sm font-black text-slate-800 mb-1">尚未錄製本頁重點</h4>
+              <h4 className="text-sm font-black text-slate-800 mb-1">
+                {isInstructor ? "尚未錄製本頁重點" : "✨ 本頁隨堂重點整理中"}
+              </h4>
               <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
                 {isInstructor
                   ? "點擊右上角「🎙️ 開始錄音」即可進行隨堂講授，小編將為全班整理重點便利貼與課堂詳細內容。"
-                  : "講師尚未講授此頁，講授完畢後小編將在此為大家整理重點便利貼與課堂詳細內容。"}
+                  : "課堂進行講授後，隨堂重點與精華內容將在此為大家即時呈現。"}
               </p>
             </div>
           )}
