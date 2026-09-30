@@ -91,16 +91,38 @@ export async function saveCustomTask(
   const taskId = task.id || `task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
   const docRef = doc(db, 'split_classes', classId, 'custom_tasks', taskId);
 
-  const payload: TeamTaskItem = {
-    ...task,
+  const payload: Record<string, any> = {
     id: taskId,
     classId,
-    updatedAt: Date.now(),
+    insertAfterSlideId: task.insertAfterSlideId || 'START',
+    title: task.title || '',
+    subtitle: task.subtitle || '',
+    moduleId: task.moduleId || 'E',
+    durationMinutes: Number(task.durationMinutes) || 15,
+    badge: task.badge || '小組演練',
+    scenario: task.scenario || '',
+    objective: task.objective || '',
+    steps: Array.isArray(task.steps) ? task.steps : [],
+    deliverable: task.deliverable || '',
+    prompts: Array.isArray(task.prompts) ? task.prompts : [],
+    isActive: task.isActive !== false,
     createdAt: task.createdAt || Date.now(),
-    isActive: task.isActive !== false
+    updatedAt: Date.now()
   };
 
-  await setDoc(docRef, payload, { merge: true });
+  if (task.whiteboardType) {
+    payload.whiteboardType = task.whiteboardType;
+  }
+
+  // 清除任何可能為 undefined 的屬性，確保 100% Firestore SDK 相容
+  const cleanPayload: Record<string, any> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined) {
+      cleanPayload[key] = value;
+    }
+  }
+
+  await setDoc(docRef, cleanPayload, { merge: true });
   return taskId;
 }
 

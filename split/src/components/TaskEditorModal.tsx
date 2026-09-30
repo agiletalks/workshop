@@ -76,14 +76,14 @@ export function TaskEditorModal({
         steps: initialTask?.steps || [],
         deliverable: initialTask?.deliverable || '',
         prompts: initialTask?.prompts || [],
-        whiteboardType: initialTask?.whiteboardType,
+        whiteboardType: initialTask?.whiteboardType || '',
         isActive,
         createdAt: initialTask?.createdAt || Date.now()
       });
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error('[TaskEditorModal] save error:', err);
-      alert('儲存失敗，請檢查網路連線');
+      alert(`儲存失敗: ${err?.message || '請檢查網路連線'}`);
     } finally {
       setIsSaving(false);
     }

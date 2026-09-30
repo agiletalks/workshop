@@ -17,6 +17,8 @@ import {
   type SlideAttachmentItem
 } from "../services/lectureNoteService";
 import { UnifiedResourceModal } from "./UnifiedResourceModal";
+import { AddLinkModal } from "./AddLinkModal";
+import { HtmlPreviewModal } from "./HtmlPreviewModal";
 
 interface WorkbookPanelProps {
   slide: Slide;
@@ -32,6 +34,7 @@ interface WorkbookPanelProps {
   onAcquireLock?: () => Promise<boolean>;
   onReleaseLock?: () => void;
   onAddAttachment?: (file: File) => Promise<void>;
+  onAddLinkAttachment?: (title: string, url: string) => Promise<void>;
   onRemoveAttachment?: (attId: string) => Promise<void>;
   onSwitchToMyTeam?: () => void;
   classMetadata?: ClassMetadata | null;
@@ -1002,6 +1005,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
   onAcquireLock,
   onReleaseLock,
   onAddAttachment,
+  onAddLinkAttachment,
   onRemoveAttachment,
   onSwitchToMyTeam,
   classMetadata = null,
@@ -1018,6 +1022,10 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
   // 頁籤切換：演練頁預設小組成果筆記，講述頁預設展示重點便利貼
   const [activeTab, setActiveTab] = useState<"stickies" | "prompts" | "examples" | "transcript" | "note">("stickies");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- 學員產出上傳與網頁連結彈窗狀態 ---
+  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [previewHtmlData, setPreviewHtmlData] = useState<{ title: string; dataUrl: string } | null>(null);
 
   // --- 隨堂重點狀態 ---
   const [lectureData, setLectureData] = useState<LectureNoteData | null>(null);
@@ -1330,6 +1338,31 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  };
+
+  const handleAttachmentClick = (att: NoteAttachment) => {
+    if (!att.dataUrl) return;
+    const isLink = att.mime === 'text/x-uri' || att.dataUrl.startsWith('http://') || att.dataUrl.startsWith('https://');
+    const isHtml = att.mime === 'text/html' || att.name?.toLowerCase().endsWith('.html') || att.name?.toLowerCase().endsWith('.htm');
+    const isImage = att.mime?.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(att.name || '');
+    const isPdf = att.mime === 'application/pdf' || att.name?.toLowerCase().endsWith('.pdf');
+
+    if (isLink) {
+      window.open(att.dataUrl, '_blank', 'noopener,noreferrer');
+    } else if (isImage && onImageClick) {
+      onImageClick(att.dataUrl);
+    } else if (isHtml) {
+      setPreviewHtmlData({ title: att.name, dataUrl: att.dataUrl });
+    } else if (isPdf) {
+      try {
+        const win = window.open(att.dataUrl, '_blank');
+        if (!win) handleDownloadAttachment(att);
+      } catch {
+        handleDownloadAttachment(att);
+      }
+    } else {
+      handleDownloadAttachment(att);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2125,75 +2158,133 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             </div>
           )}
 
-          {/* Attachments Section (完全比照 AI-ARM 附件支援) */}
+          {/* Attachments Section (小組產出：支援圖檔、PDF、HTML網頁、網頁連結) */}
           <div className="mt-3 pt-3 border-t border-slate-100 shrink-0">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <span>📎 附檔與截圖 ({teamNote?.attachments?.length || 0})</span>
+                <span>📎 小組產出與附件 ({teamNote?.attachments?.length || 0})</span>
               </span>
-              {!isInputDisabled && onAddAttachment && (
-                <div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    accept="image/*,.pdf,.doc,.docx"
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1"
-                  >
-                    <span>+ 上傳附件</span>
-                  </button>
+              {!isInputDisabled && (
+                <div className="flex items-center gap-1.5">
+                  {onAddAttachment && (
+                    <div>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        accept="image/*,.pdf,.html,.htm,.doc,.docx"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                        title="上傳圖片、PDF、HTML 網頁或文件"
+                      >
+                        <span>📁 上傳檔案</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {onAddLinkAttachment && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddLinkModal(true)}
+                      className="px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                      title="提交 Figma、Miro、Google Docs、專案成果等網頁連結"
+                    >
+                      <span>🔗 提交連結</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Attachments List */}
-            {teamNote?.attachments && teamNote.attachments.length > 0 && (
+            {teamNote?.attachments && teamNote.attachments.length > 0 ? (
               <div className="flex gap-2 overflow-x-auto pb-1">
-                {teamNote.attachments.map((att) => (
-                  <div key={att.id} className="relative group shrink-0 border border-slate-200 rounded-xl p-1.5 bg-slate-50 hover:bg-white flex items-center gap-2 max-w-[160px]">
-                    {att.dataUrl && att.mime?.startsWith("image/") ? (
-                      <img
-                        src={att.dataUrl}
-                        alt={att.name}
-                        onClick={() => onImageClick?.(att.dataUrl!)}
-                        className="w-8 h-8 rounded-lg object-cover cursor-zoom-in"
-                      />
-                    ) : (
+                {teamNote.attachments.map((att) => {
+                  const isLink = att.mime === 'text/x-uri' || att.dataUrl?.startsWith('http://') || att.dataUrl?.startsWith('https://');
+                  const isHtml = att.mime === 'text/html' || att.name?.toLowerCase().endsWith('.html') || att.name?.toLowerCase().endsWith('.htm');
+                  const isPdf = att.mime === 'application/pdf' || att.name?.toLowerCase().endsWith('.pdf');
+                  const isImage = att.mime?.startsWith("image/") || /\.(png|jpe?g|webp|gif|svg)$/i.test(att.name || '');
+
+                  return (
+                    <div
+                      key={att.id}
+                      className="relative group shrink-0 border border-slate-200 rounded-xl p-1.5 bg-slate-50 hover:bg-white flex items-center gap-2 max-w-[170px] shadow-sm transition-all"
+                    >
+                      {isImage && att.dataUrl ? (
+                        <img
+                          src={att.dataUrl}
+                          alt={att.name}
+                          onClick={() => handleAttachmentClick(att)}
+                          className="w-8 h-8 rounded-lg object-cover cursor-zoom-in"
+                        />
+                      ) : isHtml ? (
+                        <div
+                          onClick={() => handleAttachmentClick(att)}
+                          className="w-8 h-8 rounded-lg bg-teal-50 hover:bg-teal-100 border border-teal-200 flex items-center justify-center text-teal-600 text-[10px] font-black cursor-pointer shrink-0"
+                          title={`點擊即時預覽 HTML 網頁 ${att.name}`}
+                        >
+                          🌐 HTML
+                        </div>
+                      ) : isPdf ? (
+                        <div
+                          onClick={() => handleAttachmentClick(att)}
+                          className="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 text-[10px] font-black cursor-pointer shrink-0"
+                          title={`點擊檢視/下載 PDF ${att.name}`}
+                        >
+                          📕 PDF
+                        </div>
+                      ) : isLink ? (
+                        <div
+                          onClick={() => handleAttachmentClick(att)}
+                          className="w-8 h-8 rounded-lg bg-sky-50 hover:bg-sky-100 border border-sky-200 flex items-center justify-center text-sky-600 text-xs font-black cursor-pointer shrink-0"
+                          title={`點擊開啟網頁外鏈: ${att.dataUrl}`}
+                        >
+                          🔗
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => handleAttachmentClick(att)}
+                          className="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 flex items-center justify-center text-indigo-500 text-[10px] font-bold cursor-pointer shrink-0"
+                          title={`點擊下載 ${att.name}`}
+                        >
+                          FILE
+                        </div>
+                      )}
+
                       <div
-                        onClick={() => handleDownloadAttachment(att)}
-                        className="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 flex items-center justify-center text-indigo-500 text-[10px] font-bold cursor-pointer"
-                        title={`點擊下載 ${att.name}`}
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => handleAttachmentClick(att)}
                       >
-                        FILE
+                        <div className="text-[11px] font-bold text-slate-800 truncate" title={att.name}>
+                          {att.name}
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-mono">
+                          {isLink ? '網頁外鏈' : isHtml ? 'HTML 網頁' : isPdf ? 'PDF 文件' : `${(att.size / 1024).toFixed(0)} KB`}
+                        </div>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-bold text-slate-800 truncate" title={att.name}>
-                        {att.name}
-                      </div>
-                      <div className="text-[9px] text-slate-400 font-mono">
-                        {(att.size / 1024).toFixed(0)} KB
-                      </div>
+
+                      {!isInputDisabled && onRemoveAttachment && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveAttachment(att.id);
+                          }}
+                          className="text-slate-400 hover:text-rose-500 p-0.5 rounded transition-colors cursor-pointer"
+                          title="刪除此產出"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
-                    {!isInputDisabled && onRemoveAttachment && (
-                      <button
-                        type="button"
-                        onClick={() => onRemoveAttachment(att.id)}
-                        className="text-slate-400 hover:text-rose-500 p-0.5"
-                        title="刪除此附件"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
@@ -2556,6 +2647,26 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
           onSaveAttachment={handleSaveAttachment}
         />
       )}
+
+      {/* 學員小組成果：提交網頁外鏈彈窗 */}
+      <AddLinkModal
+        isOpen={showAddLinkModal}
+        onClose={() => setShowAddLinkModal(false)}
+        onAddLink={async (t, u) => {
+          if (onAddLinkAttachment) {
+            await onAddLinkAttachment(t, u);
+          }
+        }}
+        teamId={activeTeamId}
+      />
+
+      {/* 學員小組成果：HTML 網頁即時互動預覽彈窗 */}
+      <HtmlPreviewModal
+        isOpen={!!previewHtmlData}
+        onClose={() => setPreviewHtmlData(null)}
+        title={previewHtmlData?.title || ''}
+        dataUrl={previewHtmlData?.dataUrl || ''}
+      />
     </div>
   );
 };

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Slide } from '../data/slides';
-import type { UserSession } from '../services/notesService';
+import type { UserSession, TeamNote, NoteAttachment } from '../services/notesService';
+import { AddLinkModal } from './AddLinkModal';
+import { HtmlPreviewModal } from './HtmlPreviewModal';
 
 interface TeamTaskBriefCardProps {
   slide: Slide;
@@ -8,6 +10,11 @@ interface TeamTaskBriefCardProps {
   activeTeamId?: number;
   isInstructor?: boolean;
   onEditTask?: (slide: Slide) => void;
+  teamNote?: TeamNote | null;
+  onAddAttachment?: (file: File) => Promise<void>;
+  onAddLinkAttachment?: (title: string, url: string) => Promise<void>;
+  onRemoveAttachment?: (attId: string) => Promise<void>;
+  onImageClick?: (imageUrl: string) => void;
 }
 
 export function TeamTaskBriefCard({
@@ -15,11 +22,21 @@ export function TeamTaskBriefCard({
   userSession,
   activeTeamId,
   isInstructor: propIsInstructor,
-  onEditTask
+  onEditTask,
+  teamNote,
+  onAddAttachment,
+  onAddLinkAttachment,
+  onRemoveAttachment,
+  onImageClick
 }: TeamTaskBriefCardProps) {
   const [copiedPromptIndex, setCopiedPromptIndex] = useState<number | null>(null);
+  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [previewHtmlData, setPreviewHtmlData] = useState<{ title: string; dataUrl: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const task = slide.teamTask;
   const isInstructor = propIsInstructor !== undefined ? propIsInstructor : userSession?.role === 'instructor';
+  const isReadOnly = userSession?.role === 'student' && activeTeamId !== userSession.teamId;
 
   if (!task) {
     return (
@@ -42,6 +59,49 @@ export function TeamTaskBriefCard({
     const teamParam = `team-${activeTeamId || 1}`;
     const targetUrl = `${baseUrl}board.html?c=${encodeURIComponent(classId)}&team=${teamParam}&type=${boardType}`;
     window.open(targetUrl, "_blank");
+  };
+
+  const handleDownloadAttachment = (att: NoteAttachment) => {
+    if (!att.dataUrl) return;
+    const a = document.createElement("a");
+    a.href = att.dataUrl;
+    a.download = att.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleAttachmentClick = (att: NoteAttachment) => {
+    if (!att.dataUrl) return;
+    const isLink = att.mime === 'text/x-uri' || att.dataUrl.startsWith('http://') || att.dataUrl.startsWith('https://');
+    const isHtml = att.mime === 'text/html' || att.name?.toLowerCase().endsWith('.html') || att.name?.toLowerCase().endsWith('.htm');
+    const isImage = att.mime?.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(att.name || '');
+    const isPdf = att.mime === 'application/pdf' || att.name?.toLowerCase().endsWith('.pdf');
+
+    if (isLink) {
+      window.open(att.dataUrl, '_blank', 'noopener,noreferrer');
+    } else if (isImage && onImageClick) {
+      onImageClick(att.dataUrl);
+    } else if (isHtml) {
+      setPreviewHtmlData({ title: att.name, dataUrl: att.dataUrl });
+    } else if (isPdf) {
+      try {
+        const win = window.open(att.dataUrl, '_blank');
+        if (!win) handleDownloadAttachment(att);
+      } catch {
+        handleDownloadAttachment(att);
+      }
+    } else {
+      handleDownloadAttachment(att);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onAddAttachment) {
+      await onAddAttachment(file);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -106,6 +166,146 @@ export function TeamTaskBriefCard({
           </p>
         </div>
       )}
+
+      {/* 小組實作成果交付區 (Team Deliverables - 支援圖檔、PDF、HTML網頁、網頁外鏈) */}
+      <div className="bg-slate-950/70 border border-teal-500/30 rounded-2xl p-4 space-y-3 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-800/80 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📤</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs sm:text-sm font-black text-white">
+                  第 {activeTeamId || 1} 組實作成果交付庫
+                </h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 font-mono font-bold">
+                  {teamNote?.attachments?.length || 0} 項產出
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                支援圖檔截圖、PDF 報告、HTML 網頁原型與 Figma/Miro 網頁外鏈
+              </p>
+            </div>
+          </div>
+
+          {!isReadOnly && (
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              {onAddAttachment && (
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="image/*,.pdf,.html,.htm,.doc,.docx"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-teal-900/30 transition-all cursor-pointer"
+                    title="上傳圖片、PDF、HTML 網頁或文件"
+                  >
+                    <span>📁</span>
+                    <span>上傳檔案</span>
+                  </button>
+                </div>
+              )}
+
+              {onAddLinkAttachment && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddLinkModal(true)}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-teal-300 border border-teal-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="提交 Figma、Miro、Google Docs、專案成果等網頁外鏈"
+                >
+                  <span>🔗</span>
+                  <span>提交外鏈</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 成果列表 */}
+        {teamNote?.attachments && teamNote.attachments.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {teamNote.attachments.map((att) => {
+              const isLink = att.mime === 'text/x-uri' || att.dataUrl?.startsWith('http://') || att.dataUrl?.startsWith('https://');
+              const isHtml = att.mime === 'text/html' || att.name?.toLowerCase().endsWith('.html') || att.name?.toLowerCase().endsWith('.htm');
+              const isPdf = att.mime === 'application/pdf' || att.name?.toLowerCase().endsWith('.pdf');
+              const isImage = att.mime?.startsWith("image/") || /\.(png|jpe?g|webp|gif|svg)$/i.test(att.name || '');
+
+              return (
+                <div
+                  key={att.id}
+                  onClick={() => handleAttachmentClick(att)}
+                  className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-700/80 hover:border-teal-500/50 flex items-center justify-between gap-2.5 transition-all cursor-pointer group shadow-sm"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    {isImage && att.dataUrl ? (
+                      <img
+                        src={att.dataUrl}
+                        alt={att.name}
+                        className="w-9 h-9 rounded-lg object-cover border border-slate-700 shrink-0"
+                      />
+                    ) : isHtml ? (
+                      <div className="w-9 h-9 rounded-lg bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 text-[10px] font-black shrink-0">
+                        🌐 HTML
+                      </div>
+                    ) : isPdf ? (
+                      <div className="w-9 h-9 rounded-lg bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-300 text-[10px] font-black shrink-0">
+                        📕 PDF
+                      </div>
+                    ) : isLink ? (
+                      <div className="w-9 h-9 rounded-lg bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-sky-300 text-sm font-black shrink-0">
+                        🔗
+                      </div>
+                    ) : (
+                      <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">
+                        FILE
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-slate-100 truncate group-hover:text-teal-300 transition-colors" title={att.name}>
+                        {att.name}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
+                        <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[9px]">
+                          {isLink ? '網頁外鏈' : isHtml ? 'HTML 網頁' : isPdf ? 'PDF 文件' : '圖片檔案'}
+                        </span>
+                        {!isLink && <span>{(att.size / 1024).toFixed(0)} KB</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[10px] text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {isLink ? '開啟 ↗' : isHtml ? '預覽 ↗' : isPdf ? '檢視 ↗' : '放大 🔍'}
+                    </span>
+                    {!isReadOnly && onRemoveAttachment && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveAttachment(att.id);
+                        }}
+                        className="p-1 text-slate-500 hover:text-rose-400 rounded transition-colors cursor-pointer"
+                        title="刪除此產出"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-5 text-center text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-900/40 text-xs">
+            <span>第 {activeTeamId || 1} 組尚未提交成果，請點擊上方按鈕上傳圖檔、PDF、HTML 或提交網頁外鏈</span>
+          </div>
+        )}
+      </div>
 
       {/* 執行步驟指引 (Steps) */}
       {task.steps && task.steps.length > 0 && (
@@ -186,6 +386,26 @@ export function TeamTaskBriefCard({
           </div>
         )}
       </div>
+
+      {/* 彈窗：提交網頁外鏈 */}
+      <AddLinkModal
+        isOpen={showAddLinkModal}
+        onClose={() => setShowAddLinkModal(false)}
+        onAddLink={async (t, u) => {
+          if (onAddLinkAttachment) {
+            await onAddLinkAttachment(t, u);
+          }
+        }}
+        teamId={activeTeamId}
+      />
+
+      {/* 彈窗：HTML 網頁即時互動預覽 */}
+      <HtmlPreviewModal
+        isOpen={!!previewHtmlData}
+        onClose={() => setPreviewHtmlData(null)}
+        title={previewHtmlData?.title || ''}
+        dataUrl={previewHtmlData?.dataUrl || ''}
+      />
     </div>
   );
 }

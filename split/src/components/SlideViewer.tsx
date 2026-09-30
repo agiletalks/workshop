@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { slides } from "../data/slides";
 import type { Slide } from "../data/slides";
-import type { UserSession } from "../services/notesService";
+import type { UserSession, TeamNote } from "../services/notesService";
 import { TeamTaskBriefCard } from "./TeamTaskBriefCard";
 
 interface SlideViewerProps {
@@ -14,6 +14,10 @@ interface SlideViewerProps {
   onEditCustomTask?: (taskId: string) => void;
   userSession?: UserSession | null;
   activeTeamId?: number;
+  teamNote?: TeamNote | null;
+  onAddAttachment?: (file: File) => Promise<void>;
+  onAddLinkAttachment?: (title: string, url: string) => Promise<void>;
+  onRemoveAttachment?: (attId: string) => Promise<void>;
 }
 
 export const SlideViewer: React.FC<SlideViewerProps> = ({
@@ -25,7 +29,11 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
   isInstructor = false,
   onEditCustomTask,
   userSession,
-  activeTeamId
+  activeTeamId,
+  teamNote,
+  onAddAttachment,
+  onAddLinkAttachment,
+  onRemoveAttachment
 }) => {
   const [imageError, setImageError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -120,6 +128,11 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
             activeTeamId={activeTeamId}
             isInstructor={isInstructor}
             onEditTask={() => onEditCustomTask?.(slide.id)}
+            teamNote={teamNote}
+            onAddAttachment={onAddAttachment}
+            onAddLinkAttachment={onAddLinkAttachment}
+            onRemoveAttachment={onRemoveAttachment}
+            onImageClick={onImageClick}
           />
         ) : imageUrl ? (
           imageError ? (

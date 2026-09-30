@@ -381,11 +381,11 @@ function App() {
     await releaseNoteLock(userSession.classId, currentGen, activeSlide.id, activeTeamId, userSession);
   };
 
-  // 上傳附件檔案 (轉換為 DataURL，防呆限制 800KB)
+  // 上傳附件檔案 (轉換為 DataURL，支援圖檔、PDF、HTML網頁、文件，防呆限制 800KB)
   const handleAddAttachment = async (file: File) => {
     if (!userSession) return;
     if (file.size > 800 * 1024) {
-      alert("⚠️ 檔案過大：為確保雲端同步效能與文檔容量，請上傳小於 800KB 的圖片或檔案。");
+      alert("⚠️ 檔案過大：為確保雲端同步效能與文檔容量，請上傳小於 800KB 的圖片、PDF 或 HTML 檔案。");
       return;
     }
     const currentGen = classMetadata?.currentGeneration || 1;
@@ -394,16 +394,37 @@ function App() {
     reader.onload = async (e) => {
       const dataUrl = e.target?.result as string;
       const attId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      let mime = file.type;
+      if (!mime) {
+        if (/\.html?$/i.test(file.name)) mime = 'text/html';
+        else if (/\.pdf$/i.test(file.name)) mime = 'application/pdf';
+        else mime = 'application/octet-stream';
+      }
       await addNoteAttachment(userSession.classId, currentGen, activeSlide.id, activeTeamId, {
         id: attId,
         name: file.name,
         size: file.size,
-        mime: file.type || 'application/octet-stream',
+        mime: mime,
         createdAt: Date.now(),
         dataUrl: dataUrl
       }, userSession);
     };
     reader.readAsDataURL(file);
+  };
+
+  // 提交成果網頁連結 (Figma, Miro, Google Docs, 成果網址等)
+  const handleAddLinkAttachment = async (title: string, url: string) => {
+    if (!userSession) return;
+    const currentGen = classMetadata?.currentGeneration || 1;
+    const attId = `link_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    await addNoteAttachment(userSession.classId, currentGen, activeSlide.id, activeTeamId, {
+      id: attId,
+      name: title.trim() || url,
+      size: url.length,
+      mime: 'text/x-uri',
+      createdAt: Date.now(),
+      dataUrl: url.trim()
+    }, userSession);
   };
 
   // 刪除附件檔案
@@ -854,6 +875,7 @@ function App() {
       onAcquireLock={handleAcquireLock}
       onReleaseLock={handleReleaseLock}
       onAddAttachment={handleAddAttachment}
+      onAddLinkAttachment={handleAddLinkAttachment}
       onRemoveAttachment={handleRemoveAttachment}
       onSwitchToMyTeam={() => handleSwitchTeam(userSession.teamId)}
       classMetadata={classMetadata}
@@ -874,6 +896,10 @@ function App() {
       isInstructor={userSession?.role === 'instructor'}
       userSession={userSession}
       activeTeamId={activeTeamId}
+      teamNote={teamNote}
+      onAddAttachment={handleAddAttachment}
+      onAddLinkAttachment={handleAddLinkAttachment}
+      onRemoveAttachment={handleRemoveAttachment}
       onEditCustomTask={(taskId) => {
         const task = customTasks.find((t) => t.id === taskId);
         if (task) handleOpenEditTask(task);
