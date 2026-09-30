@@ -99,19 +99,44 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
     if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
     const cParam = params.get('c') || params.get('class');
-    if (!cParam) return false;
-    const normalizedClass = cParam.trim().toLowerCase();
-    const classKey = `split_user_session_${normalizedClass}`;
-    return Boolean(localStorage.getItem(classKey) || localStorage.getItem('split_user_session'));
+    if (cParam) {
+      const normalizedClass = cParam.trim().toLowerCase();
+      const classKey = `split_user_session_${normalizedClass}`;
+      return Boolean(localStorage.getItem(classKey) || localStorage.getItem('split_user_session'));
+    }
+    // 若 URL 暫無 ?c= 參數 (例如從深層投影片 hash 重新整理)，嘗試從本機快取 session 還原
+    const rawGlobal = localStorage.getItem('split_user_session');
+    if (rawGlobal) {
+      try {
+        const parsed = JSON.parse(rawGlobal);
+        if (parsed?.classId) return true;
+      } catch (e) {}
+    }
+    return false;
   });
 
   useEffect(() => {
     // 從 URL 取得 classId 與 teamId 參數 (例如 ?c=202610-split&team=team-2)
     const params = new URLSearchParams(window.location.search);
-    const cParam = (params.get('c') || params.get('class') || '').trim();
+    let cParam = (params.get('c') || params.get('class') || '').trim();
+    const isUrlLocked = Boolean(cParam);
+
+    // 若 URL 未帶 class 參數，嘗試由本機儲存之有效 session 還原班級代碼
+    if (!cParam) {
+      const rawGlobal = localStorage.getItem('split_user_session');
+      if (rawGlobal) {
+        try {
+          const parsed = JSON.parse(rawGlobal);
+          if (parsed?.classId) {
+            cParam = parsed.classId;
+          }
+        } catch (e) {}
+      }
+    }
+
     if (cParam) {
       setClassId(cParam);
-      setIsUrlClassLocked(true);
+      setIsUrlClassLocked(isUrlLocked);
     } else {
       setClassId("");
       setIsUrlClassLocked(false);
@@ -123,7 +148,7 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
 
     const normalizedClass = cParam.toLowerCase();
 
-    // 若 URL 無 class 參數，不進行自動登入，由學員輸入或點擊專屬連結進入
+    // 若仍無 class 參數，不進行自動登入，由學員輸入或點擊專屬連結進入
     if (!normalizedClass) {
       setVerifyingSession(false);
       return;

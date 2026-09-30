@@ -3,6 +3,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  getDocs,
   onSnapshot,
   type Unsubscribe
 } from 'firebase/firestore';
@@ -30,7 +31,7 @@ export interface TeamTaskItem {
 }
 
 /**
- * 監聽指定班級的自訂演練任務清單
+ * 監聽指定班級的自訂演練任務清單 (自動將 classId 正規化以防止大小寫路徑不一致)
  * 路徑：split_classes/{classId}/custom_tasks
  */
 export function subscribeCustomTasks(
@@ -39,8 +40,9 @@ export function subscribeCustomTasks(
   onError?: (err: Error) => void
 ): Unsubscribe | null {
   if (!db || !classId) return null;
+  const normalizedClassId = classId.trim().toLowerCase();
 
-  const colRef = collection(db, 'split_classes', classId, 'custom_tasks');
+  const colRef = collection(db, 'split_classes', normalizedClassId, 'custom_tasks');
 
   return onSnapshot(
     colRef,
@@ -50,7 +52,7 @@ export function subscribeCustomTasks(
         const d = docSnap.data();
         list.push({
           id: docSnap.id,
-          classId: d.classId || classId,
+          classId: d.classId || normalizedClassId,
           insertAfterSlideId: d.insertAfterSlideId || '',
           title: d.title || '未命名團隊演練',
           subtitle: d.subtitle || '',
@@ -81,6 +83,41 @@ export function subscribeCustomTasks(
 }
 
 /**
+ * 手動單次拉取自訂演練任務 (支援目錄就地「🔄 同步最新任務」按鈕，免重新整理整頁)
+ */
+export async function fetchCustomTasks(classId: string): Promise<TeamTaskItem[]> {
+  if (!db || !classId) return [];
+  const normalizedClassId = classId.trim().toLowerCase();
+  const colRef = collection(db, 'split_classes', normalizedClassId, 'custom_tasks');
+  const snap = await getDocs(colRef);
+  const list: TeamTaskItem[] = [];
+  snap.forEach((docSnap) => {
+    const d = docSnap.data();
+    list.push({
+      id: docSnap.id,
+      classId: d.classId || normalizedClassId,
+      insertAfterSlideId: d.insertAfterSlideId || '',
+      title: d.title || '未命名團隊演練',
+      subtitle: d.subtitle || '',
+      moduleId: (d.moduleId || 'E') as "E" | "S" | "P" | "L" | "I" | "T",
+      durationMinutes: Number(d.durationMinutes) || 15,
+      badge: d.badge || '小組演練',
+      scenario: d.scenario || '',
+      objective: d.objective || '',
+      steps: Array.isArray(d.steps) ? d.steps : [],
+      deliverable: d.deliverable || '',
+      prompts: Array.isArray(d.prompts) ? d.prompts : [],
+      whiteboardType: d.whiteboardType || undefined,
+      isActive: d.isActive !== false,
+      createdAt: Number(d.createdAt) || Date.now(),
+      updatedAt: Number(d.updatedAt) || Date.now()
+    });
+  });
+  list.sort((a, b) => a.createdAt - b.createdAt);
+  return list;
+}
+
+/**
  * 儲存或更新自訂演練任務
  */
 export async function saveCustomTask(
@@ -88,12 +125,13 @@ export async function saveCustomTask(
   task: Omit<TeamTaskItem, 'classId' | 'updatedAt'> & { classId?: string; updatedAt?: number }
 ): Promise<string> {
   if (!db) throw new Error('Firestore not initialized');
+  const normalizedClassId = classId.trim().toLowerCase();
   const taskId = task.id || `task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-  const docRef = doc(db, 'split_classes', classId, 'custom_tasks', taskId);
+  const docRef = doc(db, 'split_classes', normalizedClassId, 'custom_tasks', taskId);
 
   const payload: Record<string, any> = {
     id: taskId,
-    classId,
+    classId: normalizedClassId,
     insertAfterSlideId: task.insertAfterSlideId || 'START',
     title: task.title || '',
     subtitle: task.subtitle || '',
@@ -134,7 +172,8 @@ export async function deleteCustomTask(
   taskId: string
 ): Promise<void> {
   if (!db) throw new Error('Firestore not initialized');
-  const docRef = doc(db, 'split_classes', classId, 'custom_tasks', taskId);
+  const normalizedClassId = classId.trim().toLowerCase();
+  const docRef = doc(db, 'split_classes', normalizedClassId, 'custom_tasks', taskId);
   await deleteDoc(docRef);
 }
 
@@ -183,21 +222,28 @@ export function mergeSlidesWithCustomTasks(
 ): Slide[] {
   const result: Slide[] = [];
   const activeTasks = customTasks.filter((t) => t.isActive);
+  const insertedTaskIds = new Set<string>();
 
   // 整理以 slideId 為 key 的插入映射表
   const tasksMap = new Map<string, TeamTaskItem[]>();
   for (const task of activeTasks) {
-    const key = task.insertAfterSlideId || 'START';
-    if (!tasksMap.has(key)) {
-      tasksMap.set(key, []);
+    const rawKey = (task.insertAfterSlideId || 'START').trim();
+    if (!tasksMap.has(rawKey)) {
+      tasksMap.set(rawKey, []);
     }
-    tasksMap.get(key)!.push(task);
+    tasksMap.get(rawKey)!.push(task);
   }
 
-  // 1. 若有指定插入在開頭的任務
-  if (tasksMap.has('START')) {
-    for (const task of tasksMap.get('START')!) {
-      result.push(convertCustomTaskToSlide(task));
+  // 1. 若有指定插入在開頭的任務 (START, start, 0, slide-0)
+  const startKeys = ['START', 'start', '0', 'slide-0', 'slide-00'];
+  for (const k of startKeys) {
+    if (tasksMap.has(k)) {
+      for (const task of tasksMap.get(k)!) {
+        if (!insertedTaskIds.has(task.id)) {
+          result.push(convertCustomTaskToSlide(task));
+          insertedTaskIds.add(task.id);
+        }
+      }
     }
   }
 
@@ -205,16 +251,44 @@ export function mergeSlidesWithCustomTasks(
   for (const slide of staticSlides) {
     result.push(slide);
 
-    if (tasksMap.has(slide.id)) {
-      for (const task of tasksMap.get(slide.id)!) {
-        result.push(convertCustomTaskToSlide(task));
+    // 比對此 slide.id 的所有可能鍵 (例如 slide-1, slide-01, 1 等)
+    const possibleKeys = [
+      slide.id,
+      slide.id.toLowerCase(),
+      slide.id.replace('slide-0', 'slide-'),
+      slide.id.replace('slide-', ''),
+      String(slide.page)
+    ];
+
+    for (const key of possibleKeys) {
+      if (tasksMap.has(key)) {
+        for (const task of tasksMap.get(key)!) {
+          if (!insertedTaskIds.has(task.id)) {
+            result.push(convertCustomTaskToSlide(task));
+            insertedTaskIds.add(task.id);
+          }
+        }
       }
     }
   }
 
-  // 3. 重新編排整體 page 頁碼 (保持 1-indexed)
+  // 3. 防呆兜底：若有尚未插入的有效任務（例如所指定的錨點投影片找不到），依單元追加在該單元結尾或教材末尾，絕不遺失！
+  for (const task of activeTasks) {
+    if (!insertedTaskIds.has(task.id)) {
+      const lastModIndex = result.map(s => s.moduleId).lastIndexOf(task.moduleId);
+      if (lastModIndex !== -1) {
+        result.splice(lastModIndex + 1, 0, convertCustomTaskToSlide(task));
+      } else {
+        result.push(convertCustomTaskToSlide(task));
+      }
+      insertedTaskIds.add(task.id);
+    }
+  }
+
+  // 4. 重新編排整體 page 頁碼 (保持 1-indexed)
   return result.map((s, index) => ({
     ...s,
     page: index + 1
   }));
 }
+

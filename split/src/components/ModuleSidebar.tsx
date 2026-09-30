@@ -15,6 +15,9 @@ interface ModuleSidebarProps {
   recordingSlideId?: string | null;
   recordingSeconds?: number;
   instructorLiveSlideId?: string;
+  onRefreshTasks?: () => Promise<void>;
+  isSyncingTasks?: boolean;
+  taskSyncMessage?: string | null;
 }
 
 export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
@@ -29,7 +32,10 @@ export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
   onOpenTaskEditor,
   recordingSlideId,
   recordingSeconds = 0,
-  instructorLiveSlideId
+  instructorLiveSlideId,
+  onRefreshTasks,
+  isSyncingTasks = false,
+  taskSyncMessage = null
 }) => {
   const formatTimer = (sec: number) => {
     const m = String(Math.floor(sec / 60)).padStart(2, '0');
@@ -59,39 +65,63 @@ export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
       }
     `}>
       {/* Sidebar Header */}
-      <div className="p-3.5 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
-        <div>
-          <span className="text-xs font-bold text-slate-300 tracking-wider uppercase">
-            課程單元與進度
-          </span>
-          <div className="text-[10px] text-slate-500 font-mono">
-            {slides.length} SLIDES
+      <div className="p-3.5 border-b border-slate-800 bg-slate-950/40 flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-300 tracking-wider uppercase">
+                課程單元與進度
+              </span>
+              {onRefreshTasks && (
+                <button
+                  type="button"
+                  onClick={onRefreshTasks}
+                  disabled={isSyncingTasks}
+                  className="w-5 h-5 rounded hover:bg-slate-800 text-slate-400 hover:text-teal-300 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
+                  title="就地同步課堂最新演練任務（免重新整理網頁）"
+                >
+                  <span className={`text-[11px] ${isSyncingTasks ? "animate-spin inline-block" : ""}`}>
+                    🔄
+                  </span>
+                </button>
+              )}
+            </div>
+            <div className="text-[10px] text-slate-500 font-mono">
+              {slides.length} SLIDES
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* 講師專屬新增演練捷徑 */}
+            {isInstructor && onOpenTaskEditor && (
+              <button
+                onClick={() => onOpenTaskEditor(activeSlideId)}
+                className="px-2 py-1 bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/40 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                title="在此位置插入新團隊演練"
+              >
+                <span>+ 演練</span>
+              </button>
+            )}
+
+            {/* 手機版關閉側邊欄按鈕 */}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="md:hidden w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
+                title="關閉課程單元目錄"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* 講師專屬新增演練捷徑 */}
-          {isInstructor && onOpenTaskEditor && (
-            <button
-              onClick={() => onOpenTaskEditor(activeSlideId)}
-              className="px-2 py-1 bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/40 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
-              title="在此位置插入新團隊演練"
-            >
-              <span>+ 演練</span>
-            </button>
-          )}
-
-          {/* 手機版關閉側邊欄按鈕 */}
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="md:hidden w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
-              title="關閉課程單元目錄"
-            >
-              ✕
-            </button>
-          )}
-        </div>
+        {/* 同步回饋小提示 */}
+        {taskSyncMessage && (
+          <div className="text-[10px] px-2 py-0.5 rounded bg-teal-950/60 border border-teal-500/30 text-teal-300 flex items-center gap-1 animate-pulse">
+            <span>{taskSyncMessage}</span>
+          </div>
+        )}
       </div>
 
       {/* Module List Scroll Area */}

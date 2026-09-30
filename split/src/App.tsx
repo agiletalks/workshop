@@ -30,6 +30,7 @@ import {
 import {
   type TeamTaskItem,
   subscribeCustomTasks,
+  fetchCustomTasks,
   saveCustomTask,
   deleteCustomTask,
   mergeSlidesWithCustomTasks
@@ -51,8 +52,33 @@ import {
 } from "./services/notesService";
 
 function App() {
-  // 1. 學員進班 Session 狀態 (初始為 null，由 PasswordGate 嚴格非同步校驗後放行，防止舊過期 session 繞過)
-  const [userSession, setUserSession] = useState<UserSession | null>(null);
+  // 1. 學員進班 Session 狀態 (初始同步讀取本機快取以支援無縫重新整理，不中斷既有學習進度)
+  const [userSession, setUserSession] = useState<UserSession | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlClassId = (params.get("c") || params.get("class"))?.trim().toLowerCase();
+      if (urlClassId) {
+        const classKey = `split_user_session_${urlClassId}`;
+        const saved = localStorage.getItem(classKey) || localStorage.getItem('split_user_session');
+        if (saved) {
+          const parsed = JSON.parse(saved) as UserSession;
+          if (parsed.classId && parsed.classId.toLowerCase() === urlClassId) {
+            return parsed;
+          }
+        }
+      } else {
+        const saved = localStorage.getItem('split_user_session');
+        if (saved) {
+          const parsed = JSON.parse(saved) as UserSession;
+          if (parsed.classId && parsed.uid) {
+            return parsed;
+          }
+        }
+      }
+    } catch (e) {}
+    return null;
+  });
 
   // 2. 班級中繼資料 (偵測世代遞增與啟用狀態)
   const [classMetadata, setClassMetadata] = useState<ClassMetadata | null>(null);
@@ -64,16 +90,26 @@ function App() {
   const [isPrintHandbookOpen, setIsPrintHandbookOpen] = useState(false);
   const [isStudentQrOpen, setIsStudentQrOpen] = useState(false);
 
-  // 關鍵防護：若為講師身分，確認網址列已完全移除 adm, admin, role 等敏感參數，防止投影被截圖或掃碼直通
+  // 網址維護防護：確保網址列維持 ?c= 班級代碼，並在講師身分時安全抹除 adm, admin, role 等敏感參數
   useEffect(() => {
-    if (userSession?.role === 'instructor' && typeof window !== 'undefined') {
+    if (userSession?.classId && typeof window !== 'undefined') {
       try {
         const url = new URL(window.location.href);
-        if (url.searchParams.has('adm') || url.searchParams.has('admin') || url.searchParams.has('role') || url.searchParams.has('r')) {
-          url.searchParams.delete('adm');
-          url.searchParams.delete('admin');
-          url.searchParams.delete('role');
-          url.searchParams.delete('r');
+        let changed = false;
+        if (!url.searchParams.get('c') && !url.searchParams.get('class')) {
+          url.searchParams.set('c', userSession.classId);
+          changed = true;
+        }
+        if (userSession.role === 'instructor') {
+          if (url.searchParams.has('adm') || url.searchParams.has('admin') || url.searchParams.has('role') || url.searchParams.has('r')) {
+            url.searchParams.delete('adm');
+            url.searchParams.delete('admin');
+            url.searchParams.delete('role');
+            url.searchParams.delete('r');
+            changed = true;
+          }
+        }
+        if (changed) {
           window.history.replaceState({}, '', url.toString());
         }
       } catch (e) {}
@@ -271,13 +307,30 @@ function App() {
     };
   }, [userSession?.classId, classMetadata?.currentGeneration]);
 
-  // 監聽班級自訂演練任務清單 (模組 3: Team Task 動態插入)
+  // 監聽班級自訂演練任務清單 (模組 3: Team Task 動態插入與 On-the-fly 即時推送通知)
+  const [isSyncingTasks, setIsSyncingTasks] = useState(false);
+  const [taskSyncMessage, setTaskSyncMessage] = useState<string | null>(null);
+  const [newTaskToast, setNewTaskToast] = useState<{ id: string; title: string } | null>(null);
+  const initialTasksLoadedRef = useRef(false);
+  const prevTaskIdsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (!userSession?.classId) return;
 
     const unsub = subscribeCustomTasks(
       userSession.classId,
       (tasks) => {
+        // 偵測是否有新增的任務（若是初始載入後的更新，彈出輕量通知）
+        if (initialTasksLoadedRef.current) {
+          const newlyAdded = tasks.find(t => !prevTaskIdsRef.current.has(t.id));
+          if (newlyAdded) {
+            setNewTaskToast({ id: newlyAdded.id, title: newlyAdded.title });
+            setTimeout(() => setNewTaskToast(null), 7000);
+          }
+        } else {
+          initialTasksLoadedRef.current = true;
+        }
+        prevTaskIdsRef.current = new Set(tasks.map(t => t.id));
         setCustomTasks(tasks);
       },
       (err) => {
@@ -289,6 +342,24 @@ function App() {
       if (unsub) unsub();
     };
   }, [userSession?.classId]);
+
+  const handleManualRefreshTasks = async () => {
+    if (!userSession?.classId) return;
+    setIsSyncingTasks(true);
+    try {
+      const tasks = await fetchCustomTasks(userSession.classId);
+      setCustomTasks(tasks);
+      prevTaskIdsRef.current = new Set(tasks.map(t => t.id));
+      setTaskSyncMessage("✅ 目錄已就地同步完成");
+      setTimeout(() => setTaskSyncMessage(null), 3000);
+    } catch (err) {
+      console.warn('[App] Manual refresh tasks error:', err);
+      setTaskSyncMessage("⚠️ 同步失敗，請檢查網路連線");
+      setTimeout(() => setTaskSyncMessage(null), 3000);
+    } finally {
+      setIsSyncingTasks(false);
+    }
+  };
 
   // 監聽特定頁面與組別的隨堂筆記
   useEffect(() => {
@@ -857,6 +928,9 @@ function App() {
       recordingSlideId={lectureRecording.isRecording ? lectureRecording.slideId : null}
       recordingSeconds={lectureRecording.recordingSeconds}
       instructorLiveSlideId={instructorLiveSlide?.slideId}
+      onRefreshTasks={handleManualRefreshTasks}
+      isSyncingTasks={isSyncingTasks}
+      taskSyncMessage={taskSyncMessage}
     />
   );
 
@@ -1065,6 +1139,37 @@ function App() {
         classId={userSession?.classId || classMetadata?.id || ''}
         className={classMetadata?.name}
       />
+
+      {/* 課堂最新團隊演練任務即時推送浮動通知 (On the fly) */}
+      {newTaskToast && (
+        <div className="fixed top-14 md:top-16 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] sm:w-auto px-4 py-3 rounded-2xl bg-slate-900/95 border border-teal-500/60 text-white shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <span className="text-xl shrink-0">📢</span>
+            <div className="text-xs truncate">
+              <span className="text-teal-300 font-bold">新演練發布：</span>
+              <span className="text-slate-200">{newTaskToast.title}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                setActiveSlideId(newTaskToast.id);
+                setNewTaskToast(null);
+              }}
+              className="px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-bold transition-colors cursor-pointer shadow"
+            >
+              前往演練
+            </button>
+            <button
+              onClick={() => setNewTaskToast(null)}
+              className="text-slate-400 hover:text-slate-200 text-xs px-1"
+              title="關閉通知"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
