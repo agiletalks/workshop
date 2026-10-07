@@ -45,7 +45,37 @@
   <!-- Google Fonts: 手寫風字體 (Klee One & Zen Maru Gothic / 支援繁中字形手寫感) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- 門禁防閃爍 (FOUC Guard) 與極速身分預判 -->
+  <script>
+    (function() {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var c = (params.get('c') || params.get('class') || '').trim().toLowerCase();
+        var hasAuth = false;
+        if (c) {
+          var authKey = 'ai_arm_auth_user_' + c;
+          var saved = localStorage.getItem(authKey) || localStorage.getItem('ai_arm_auth_user');
+          if (saved) {
+            var u = JSON.parse(saved);
+            if (u && u.name && (u.team || u.role === 'instructor') && (!u.classId || u.classId.toLowerCase() === c)) {
+              hasAuth = true;
+            }
+          }
+        }
+        if (params.has('logout') || params.has('relogin')) {
+          hasAuth = false;
+        }
+        var style = document.createElement('style');
+        style.id = 'gatekeeper-fouc-guard';
+        if (hasAuth) {
+          style.textContent = '#gatekeeper-overlay { display: none !important; }';
+        } else {
+          style.textContent = '#gatekeeper-overlay { display: flex !important; }';
+        }
+        document.head.appendChild(style);
+      } catch (e) {}
+    })();
+  </script>
 
   <style>
     /* 3D 翻轉筆記板 */
@@ -1010,6 +1040,30 @@
           本工作坊採專屬分組空間實戰演練。<br>
           請輸入<strong class="text-amber-400">班級代碼</strong>、<strong class="text-white">您的姓名</strong>與<strong class="text-white">所屬組別</strong>以進入講義。
         </p>
+
+        <!-- 快速重返上次課堂迎賓卡 (若本機有活躍紀錄時動態顯示) -->
+        <div id="gatekeeper-resume-card" class="hidden mt-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-left shadow-lg">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-[11px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="history" class="w-3.5 h-3.5"></i>
+              <span>偵測到上次課堂紀錄</span>
+            </span>
+            <span id="gatekeeper-resume-time" class="text-[10px] text-slate-400 font-mono">剛剛</span>
+          </div>
+          <div class="mt-2">
+            <div id="gatekeeper-resume-title" class="text-sm font-black text-white">班級名稱</div>
+            <div id="gatekeeper-resume-sub" class="text-xs text-slate-300 mt-0.5">學員身分資訊</div>
+          </div>
+          <button type="button" onclick="resumeLastActiveSession()" class="mt-3 w-full py-2.5 bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-amber-500/20">
+            <span>🚀 一鍵直接重返課堂</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+          <div class="mt-2 text-center">
+            <button type="button" onclick="dismissResumeCard()" class="text-[11px] text-slate-400 hover:text-slate-200 underline cursor-pointer">
+              或輸入其他班級代碼報到
+            </button>
+          </div>
+        </div>
 
         <!-- 一體化報到 Form (代碼 + 姓名 + 選組) -->
         <form onsubmit="handleGatekeeperSubmit(event)" class="mt-5 space-y-3.5 text-left">
@@ -2245,6 +2299,9 @@
     }
 
     function showGatekeeperOverlay(prefillClassId = '') {
+      const guard = document.getElementById('gatekeeper-fouc-guard');
+      if (guard) guard.remove();
+
       const overlay = document.getElementById('gatekeeper-overlay');
       if (!overlay) return;
       overlay.classList.remove('hidden');
@@ -2256,6 +2313,50 @@
       const codeInput = document.getElementById('gatekeeper-code-input');
       const badge = document.getElementById('gatekeeper-class-badge');
       const badgeText = document.getElementById('gatekeeper-class-badge-text');
+
+      // 檢查是否有最近活躍的課堂紀錄 (7 天內)
+      const resumeCard = document.getElementById('gatekeeper-resume-card');
+      if (resumeCard) {
+        try {
+          const rawLast = localStorage.getItem('ai_arm_last_session');
+          if (rawLast) {
+            const lastSession = JSON.parse(rawLast);
+            const now = Date.now();
+            if (lastSession && lastSession.classId && lastSession.userName && (now - (lastSession.timestamp || 0) < 7 * 86400 * 1000)) {
+              const hasAuth = !!localStorage.getItem(`ai_arm_auth_user_${lastSession.classId}`);
+              if (hasAuth) {
+                const titleEl = document.getElementById('gatekeeper-resume-title');
+                const subEl = document.getElementById('gatekeeper-resume-sub');
+                const timeEl = document.getElementById('gatekeeper-resume-time');
+                if (titleEl) titleEl.innerText = lastSession.className || lastSession.classId;
+                const teamName = getTeamDisplayName(lastSession.userTeam || 'team-1');
+                const slideNum = `P${String(lastSession.slideIndex || 1).padStart(2, '0')}`;
+                if (subEl) subEl.innerText = `學員：${lastSession.userName} · ${teamName} · 停留 ${slideNum}`;
+                
+                const diffMin = Math.round((now - (lastSession.timestamp || 0)) / 60000);
+                let timeStr = '剛剛';
+                if (diffMin >= 60 * 24) {
+                  timeStr = `${Math.floor(diffMin / (60 * 24))} 天前`;
+                } else if (diffMin >= 60) {
+                  timeStr = `${Math.floor(diffMin / 60)} 小時前`;
+                } else if (diffMin > 1) {
+                  timeStr = `${diffMin} 分鐘前`;
+                }
+                if (timeEl) timeEl.innerText = timeStr;
+                resumeCard.classList.remove('hidden');
+              } else {
+                resumeCard.classList.add('hidden');
+              }
+            } else {
+              resumeCard.classList.add('hidden');
+            }
+          } else {
+            resumeCard.classList.add('hidden');
+          }
+        } catch (e) {
+          resumeCard.classList.add('hidden');
+        }
+      }
 
       if (targetCode) {
         if (codeInput) codeInput.value = targetCode;
@@ -2284,6 +2385,44 @@
     function hideGatekeeperOverlay() {
       const overlay = document.getElementById('gatekeeper-overlay');
       if (overlay) overlay.classList.add('hidden');
+      const guard = document.getElementById('gatekeeper-fouc-guard');
+      if (guard) guard.remove();
+    }
+
+    function resumeLastActiveSession() {
+      try {
+        const rawLast = localStorage.getItem('ai_arm_last_session');
+        if (!rawLast) return;
+        const lastSession = JSON.parse(rawLast);
+        if (!lastSession || !lastSession.classId) return;
+
+        currentClassId = lastSession.classId;
+        const authOk = checkExistingAuth();
+        if (authOk) {
+          try {
+            const newUrl = `${window.location.origin}${window.location.pathname}?c=${encodeURIComponent(currentClassId)}`;
+            window.history.replaceState({ classId: currentClassId }, '', newUrl);
+          } catch (e) {}
+          hideGatekeeperOverlay();
+          renderSlide(lastSession.slideIndex || 1);
+          showToast(`⚡ 歡迎回來，${lastSession.userName}！已重返【${lastSession.className || currentClassId}】`, 'emerald');
+        } else {
+          const codeInput = document.getElementById('gatekeeper-code-input');
+          const nameInput = document.getElementById('gatekeeper-name-input');
+          if (codeInput) codeInput.value = lastSession.classId;
+          if (nameInput) nameInput.value = lastSession.userName || '';
+          inspectGatekeeperClassCode(true, true);
+          dismissResumeCard();
+          showToast('上次課堂通行已過期，請輸入密碼重新報到', 'slate');
+        }
+      } catch (e) {
+        console.error('快速重返課堂異常:', e);
+      }
+    }
+
+    function dismissResumeCard() {
+      const resumeCard = document.getElementById('gatekeeper-resume-card');
+      if (resumeCard) resumeCard.classList.add('hidden');
     }
 
     function renderGatekeeperTeamOptions(teamCount = 6) {
@@ -2587,6 +2726,17 @@
           localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
           localStorage.setItem("ai_arm_auth_user", JSON.stringify(currentUser)); // 通用備援鍵
           localStorage.setItem(`ai_arm_class_teams_${currentClassId}`, String(TOTAL_TEAMS));
+          const sessionSummary = {
+            classId: resolvedClassId,
+            className: currentClassData?.name || resolvedClassId,
+            userName: name,
+            userTeam: currentUser.team,
+            role: currentUser.role,
+            slideIndex: currentSlideIndex || 1,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('ai_arm_last_session', JSON.stringify(sessionSummary));
+          localStorage.setItem('ai_arm_last_class_id', resolvedClassId);
         } catch (e) {}
 
         // 平滑更新瀏覽器網址 (帶入 ?c=代碼)，不刷新頁面
@@ -2964,6 +3114,19 @@
             if (currentUser.role === 'instructor') {
               if (typeof initVoiceNote === 'function') initVoiceNote();
             }
+            try {
+              const sessionSummary = {
+                classId: currentClassId,
+                className: currentClassData?.name || currentClassId,
+                userName: currentUser.name,
+                userTeam: currentUser.team,
+                role: currentUser.role,
+                slideIndex: currentSlideIndex || 1,
+                timestamp: Date.now()
+              };
+              localStorage.setItem('ai_arm_last_session', JSON.stringify(sessionSummary));
+              localStorage.setItem('ai_arm_last_class_id', currentClassId);
+            } catch(e) {}
             return true;
           }
         } catch (e) {}
@@ -2977,6 +3140,7 @@
         if (currentClassId) localStorage.removeItem(`ai_arm_auth_user_${currentClassId}`);
         localStorage.removeItem('ai_arm_auth_user');
         sessionStorage.removeItem('ai_arm_admin_auth');
+        localStorage.removeItem('ai_arm_last_session');
       } catch (e) {}
       currentUser = null;
       closeLoginModal();
@@ -3229,6 +3393,15 @@
       try {
         const slideStorageKey = currentClassId ? `ai_arm_${currentClassId}_slide_index` : `ai_arm_slide_index`;
         localStorage.setItem(slideStorageKey, String(index));
+        const rawLast = localStorage.getItem('ai_arm_last_session');
+        if (rawLast) {
+          const lastSession = JSON.parse(rawLast);
+          if (lastSession && (!currentClassId || lastSession.classId === currentClassId)) {
+            lastSession.slideIndex = index;
+            lastSession.timestamp = Date.now();
+            localStorage.setItem('ai_arm_last_session', JSON.stringify(lastSession));
+          }
+        }
       } catch (e) {}
 
       // 換頁時一律重設正面視角
