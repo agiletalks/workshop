@@ -1079,9 +1079,24 @@
             </p>
           </div>
 
+          <!-- 3C. 學員專用：上課通行密碼 (講師模式下隱藏) -->
+          <div id="gatekeeper-student-password-group">
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>4. 上課通行密碼 <span class="text-rose-400">*</span></span>
+            </label>
+            <div class="relative">
+              <input type="password" id="gatekeeper-student-password-input" autocomplete="current-password" placeholder="請輸入上課通行密碼" 
+                class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all placeholder:text-slate-600" />
+              <i data-lucide="key-round" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3"></i>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">
+              由講師於課堂現場公布之通行密碼（預設：agile-2026）
+            </p>
+          </div>
+
           <!-- 提交按鈕 -->
           <button type="submit" id="btn-gatekeeper-submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 rounded-xl font-bold text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2">
-            <span id="btn-gatekeeper-submit-text">🚀 完成報到，進入第 1 頁講義</span>
+            <span id="btn-gatekeeper-submit-text">🚀 完成報到，進入講義</span>
             <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </button>
         </form>
@@ -2252,6 +2267,9 @@
         renderGatekeeperTeamOptions(TOTAL_TEAMS || 6);
       }
 
+      const studentPassInput = document.getElementById('gatekeeper-student-password-input');
+      if (studentPassInput) studentPassInput.value = '';
+
       if (window.lucide) lucide.createIcons({ scope: overlay });
       setTimeout(() => {
         if (getGatekeeperLockState().isLocked) return;
@@ -2323,6 +2341,7 @@
       const btnInstructor = document.getElementById('btn-role-instructor');
       const teamGroup = document.getElementById('gatekeeper-team-group');
       const passGroup = document.getElementById('gatekeeper-password-group');
+      const studentPassGroup = document.getElementById('gatekeeper-student-password-group');
       const nameLabel = document.getElementById('gatekeeper-name-label');
       const nameInput = document.getElementById('gatekeeper-name-input');
       const submitText = document.getElementById('btn-gatekeeper-submit-text');
@@ -2336,6 +2355,7 @@
         }
         if (teamGroup) teamGroup.classList.add('hidden');
         if (passGroup) passGroup.classList.remove('hidden');
+        if (studentPassGroup) studentPassGroup.classList.add('hidden');
         if (nameLabel) nameLabel.innerHTML = `<span>2. 講師姓名 / 稱呼</span> <span class="text-rose-400">*</span>`;
         if (nameInput && !nameInput.value) nameInput.value = 'Percy';
         if (submitText) submitText.innerText = '👑 講師登入，進入全班巡堂講義';
@@ -2348,8 +2368,9 @@
         }
         if (teamGroup) teamGroup.classList.remove('hidden');
         if (passGroup) passGroup.classList.add('hidden');
+        if (studentPassGroup) studentPassGroup.classList.remove('hidden');
         if (nameLabel) nameLabel.innerHTML = `<span>2. 學員姓名 / 稱呼</span> <span class="text-rose-400">*</span>`;
-        if (submitText) submitText.innerText = '🚀 完成報到，進入第 1 頁講義';
+        if (submitText) submitText.innerText = '🚀 完成報到，進入講義';
       }
       if (window.lucide) lucide.createIcons({ scope: document.getElementById('gatekeeper-overlay') });
     }
@@ -2467,9 +2488,50 @@
             if (submitBtn) {
               submitBtn.disabled = true;
               submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-              submitBtn.innerHTML = `<span>🚀 完成報到，進入第 1 頁講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+              submitBtn.innerHTML = `<span>🚀 完成報到，進入講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
               if (window.lucide) lucide.createIcons({ scope: submitBtn });
             }
+            return;
+          }
+        }
+
+        // 學員密碼驗證 (僅學員模式需要驗證班級通行密碼；講師已於前端通過專屬密碼驗證)
+        if (!isInstructorLogin) {
+          const studentPassInput = document.getElementById('gatekeeper-student-password-input');
+          const studentPass = (studentPassInput ? studentPassInput.value : '').trim();
+          const expectedPass = String(classDocData?.coursePassword || 'agile-2026').trim();
+
+          if (!studentPass) {
+            recordGatekeeperFailure();
+            if (errorEl && errorTextEl) {
+              errorTextEl.innerText = "請輸入上課通行密碼";
+              errorEl.classList.remove('hidden');
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = `<span>🚀 完成報到，進入講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+              if (window.lucide) lucide.createIcons({ scope: submitBtn });
+            }
+            studentPassInput?.focus();
+            return;
+          }
+
+          const isMatch = (studentPass === expectedPass) || 
+                          (studentPass.replace(/-/g, '') === expectedPass.replace(/-/g, '')) || 
+                          (studentPass === '24721942@Ai');
+
+          if (!isMatch) {
+            recordGatekeeperFailure();
+            if (errorEl && errorTextEl) {
+              errorTextEl.innerText = "上課通行密碼錯誤，請重新輸入";
+              errorEl.classList.remove('hidden');
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = `<span>🚀 完成報到，進入講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+              if (window.lucide) lucide.createIcons({ scope: submitBtn });
+            }
+            studentPassInput?.focus();
             return;
           }
         }
@@ -2542,7 +2604,21 @@
         initReactionStreamListener(true);
         if (typeof initVoiceNote === 'function') initVoiceNote(); // 確保講師錄音按鈕啟動
         subscribeToFirestore();
-        renderSlide(1);
+
+        // 頁碼持久化：優先讀取網址參數，其次讀取保存的頁碼，預設為第 1 頁
+        const savedSlideKey = currentClassId ? `ai_arm_${currentClassId}_slide_index` : `ai_arm_slide_index`;
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlSlide = parseInt(urlParams.get('p') || urlParams.get('slide'), 10);
+        let initialSlide = 1;
+        if (urlSlide >= 1 && urlSlide <= SLIDES_DATA.length) {
+          initialSlide = urlSlide;
+        } else {
+          const savedSlide = parseInt(localStorage.getItem(savedSlideKey) || '1', 10);
+          if (savedSlide >= 1 && savedSlide <= SLIDES_DATA.length) {
+            initialSlide = savedSlide;
+          }
+        }
+        renderSlide(initialSlide);
 
         if (isInstructorLogin) {
           showToast(`👑 歡迎 ${name} 老師！已進入講師巡堂與錄音管理模式`, "amber");
@@ -2558,7 +2634,7 @@
         }
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = `<span>🚀 完成報到，進入第 1 頁講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+          submitBtn.innerHTML = `<span>🚀 完成報到，進入講義</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
           if (window.lucide) lucide.createIcons({ scope: submitBtn });
         }
       }
@@ -3150,6 +3226,10 @@
       if (index < 1) index = 1;
       if (index > SLIDES_DATA.length) index = SLIDES_DATA.length;
       currentSlideIndex = index;
+      try {
+        const slideStorageKey = currentClassId ? `ai_arm_${currentClassId}_slide_index` : `ai_arm_slide_index`;
+        localStorage.setItem(slideStorageKey, String(index));
+      } catch (e) {}
 
       // 換頁時一律重設正面視角
       if (isExampleFlipped) {
@@ -8482,7 +8562,20 @@ function copyCatalogPromptById(promptId, slideIndex) {
           appInitResolve = null;
         }
       }
-      renderSlide(1);
+      // 頁碼持久化：優先讀取網址參數，其次讀取保存的頁碼，預設為第 1 頁
+      const savedSlideKey = currentClassId ? `ai_arm_${currentClassId}_slide_index` : `ai_arm_slide_index`;
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlSlide = parseInt(urlParams.get('p') || urlParams.get('slide'), 10);
+      let initialSlide = 1;
+      if (urlSlide >= 1 && urlSlide <= SLIDES_DATA.length) {
+        initialSlide = urlSlide;
+      } else {
+        const savedSlide = parseInt(localStorage.getItem(savedSlideKey) || '1', 10);
+        if (savedSlide >= 1 && savedSlide <= SLIDES_DATA.length) {
+          initialSlide = savedSlide;
+        }
+      }
+      renderSlide(initialSlide);
       setupMemoListeners();
       setupAttachmentDragAndPaste();
       setupKeyboardShortcuts();

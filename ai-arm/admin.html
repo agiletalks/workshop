@@ -805,6 +805,7 @@
     // --- 儲存班級 (新增 or 更新) ---
     async function handleSaveClass(e) {
       e.preventDefault();
+      const isEdit = document.getElementById("form-is-edit").value === "true";
       const rawClassId = document.getElementById("form-class-id").value.trim();
       const classId = rawClassId.toLowerCase();
       const name = document.getElementById("form-class-name").value.trim();
