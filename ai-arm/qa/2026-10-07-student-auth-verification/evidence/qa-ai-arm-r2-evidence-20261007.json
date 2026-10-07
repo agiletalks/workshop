@@ -1,0 +1,326 @@
+{
+  "date": "2026-10-07",
+  "site": "https://aigile.tw/workshop/ai-arm/",
+  "devices": "Desktop Edge admin and separate Codex In-app Browser student; no physical device QR scan",
+  "cases": [
+    {
+      "case": "PRE-seeded",
+      "snapshot": "- banner:\n  - generic: ARM\n  - heading \"AI-ARM 班級管理系統 Multi-Cohort\" [level=1]:\n    - generic: AI-ARM 班級管理系統\n    - generic: Multi-Cohort\n  - paragraph: 各班獨立專屬網址、組數配置、資料隔離與即時啟用/停用\n  - button \"課堂通用 QR Code\":\n    - generic: 課堂通用 QR Code\n  - button \"建立新班級\":\n    - generic: 建立新班級\n  - link \"開門禁首頁\":\n    - /url: ./\n    - generic: 開門禁首頁\n  - button \"登出管理員\":\n- main:\n  - generic: 已建班級總數\n  - generic: \"10\"\n  - generic: 目前啟用中\n  - generic: \"9\"\n  - generic: 總配置組數\n  - generic: \"57\"\n  - generic: 系統資料庫\n  - generic: Firestore 即時連線\n  - heading \"班級清單與專屬入口 10 班\" [level=2]:\n    - generic: 班級清單與專屬入口\n    - generic: 10 班\n  - paragraph: 每一班擁有獨立命名空間，學員筆記、白板與提問完全隔離\n  - text: \"網址前綴:\"\n  - button \"線上正式 (aigile.tw)\"\n  - button \"本機 / 自動偵測\"\n  - textbox \"搜尋班級名稱或代碼...\"\n  - button \"重新整理班級清單\":\n  - generic: 已停用\n  - generic: 6 組\n  - button \"啟用\":\n    - generic: 啟用\n  - heading \"QA 停用測試班\" [level=3]\n  - 'button \"報到代碼: qa-disabled\"':\n    - text: \"報到代碼:\"\n    - strong: qa-disabled\n  - generic: \"建立: 10月7日 上午11:54\"\n  - paragraph: QA 停用驗收測試\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-disabled\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-disabled\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 10 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA 大型 10 組測試班\" [level=3]\n  - 'button \"報到代碼: qa-large\"':\n    - text: \"報到代碼:\"\n    - strong: qa-large\n  - generic: \"建立: 10月7日 上午11:54\"\n  - paragraph: QA 驗收測試專用\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-large\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-large\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 4 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA 標準 4 組測試班\" [level=3]\n  - 'button \"報到代碼: qa-standard\"':\n    - text: \"報到代碼:\"\n    - strong: qa-standard\n  - generic: \"建立: 10月7日 上午11:54\"\n  - paragraph: QA 驗收測試專用\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-standard\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-standard\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 6 組\n  - generic: 預設\n  - button \"停用\":\n    - generic: 停用\n  - heading \"AI-ARM 示範班（預設）\" [level=3]\n  - 'button \"報到代碼: default\"':\n    - text: \"報到代碼:\"\n    - strong: default\n  - generic: \"建立: 10月6日 下午03:48\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=default\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=default\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 6 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"IBM\" [level=3]\n  - 'button \"報到代碼: 202609-ibm\"':\n    - text: \"報到代碼:\"\n    - strong: 202609-ibm\n  - generic: \"建立: 9月23日 上午12:16\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=202609-ibm\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=202609-ibm\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 6 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"IBM\" [level=3]\n  - 'button \"報到代碼: 202609-IBM\"':\n    - text: \"報到代碼:\"\n    - strong: 202609-IBM\n  - generic: \"建立: 9月23日 上午12:16\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=202609-IBM\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=202609-IBM\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 6 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"凱基銀行\" [level=3]\n  - 'button \"報到代碼: 202609-kgi\"':\n    - text: \"報到代碼:\"\n    - strong: 202609-kgi\n  - generic: \"建立: 9月21日 上午11:59\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=202609-kgi\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=202609-kgi\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 2 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA 附件同步驗收 2026-test\" [level=3]\n  - 'button \"報到代碼: 2026-test\"':\n    - text: \"報到代碼:\"\n    - strong: 2026-test\n  - generic: \"建立: 9月20日 下午10:12\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=2026-test\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=2026-test\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 8 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA複測0920 B\" [level=3]\n  - 'button \"報到代碼: qa-retest-0920-b\"':\n    - text: \"報到代碼:\"\n    - strong: qa-retest-0920-b\n  - generic: \"建立: 9月20日 上午12:15\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-b\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-b\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 3 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA複測0920 A\" [level=3]\n  - 'button \"報到代碼: qa-retest-0920-a\"':\n    - text: \"報到代碼:\"\n    - strong: qa-retest-0920-a\n  - generic: \"建立: 9月20日 上午12:14\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-a\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-a\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空"
+    },
+    {
+      "case": "TC-01-gate",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 標準 4 組測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 1 組\n  - generic: \"|\"\n  - generic: 學員\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解\n- generic: ARM\n- generic: AgileTalks Workshops\n- link \"講師後台\":\n  - /url: admin.html\n  - generic: 講師後台\n- heading \"AI-ARM 課程專屬報到處\" [level=2]\n- generic: QA 標準 4 組測試班 (#qa-standard)\n- paragraph:\n  - text: 本工作坊採專屬分組空間實戰演練。\n  - text: 請輸入\n  - strong: 班級代碼\n  - text: 、\n  - strong: 您的姓名\n  - text: 與\n  - strong: 所屬組別\n  - text: 以進入講義。\n- generic: 1. 班級專屬代碼 (Class Code) *\n- textbox \"請輸入講師公布之專屬代碼\": qa-standard\n- button \"學員報到\":\n  - generic: 學員報到\n- button \"👑 講師專屬通道\":\n  - generic: 👑\n  - generic: 講師專屬通道\n- generic: 2. 學員姓名 / 稱呼 *\n- textbox \"例如：王小明、Alex、小美\" [active]\n- generic: 3. 選擇所屬組別 (共 4 組) *\n- button \"第 1 組\"\n- button \"第 2 組\"\n- button \"第 3 組\"\n- button \"第 4 組\"\n- button \"🚀 完成報到，進入第 1 頁講義\":\n  - generic: 🚀 完成報到，進入第 1 頁講義\n- paragraph:\n  - generic: 免切換頁面 · 報到完成直接進入講義開課\n- paragraph: 班級代碼由講師現場公布 (例如投影大螢幕或白板)\n- paragraph:\n  - text: 遇驗證問題或舊版本殘留？\n  - button \"點此清除快取重整\"\n- generic: © 2026 AgileTalks Workshops Portal",
+      "logs": [
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:56:25.434Z",
+          "url": "https://cdn.tailwindcss.com/"
+        }
+      ]
+    },
+    {
+      "case": "TC-01-login-without-password",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 標準 4 組測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 2 組\n  - generic: \"|\"\n  - generic: Tester-Alex\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解",
+      "logs": [
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:56:25.434Z",
+          "url": "https://cdn.tailwindcss.com/"
+        }
+      ]
+    },
+    {
+      "case": "ADMIN-create",
+      "snapshot": "- banner:\n  - generic: ARM\n  - heading \"AI-ARM 班級管理系統 Multi-Cohort\" [level=1]:\n    - generic: AI-ARM 班級管理系統\n    - generic: Multi-Cohort\n  - paragraph: 各班獨立專屬網址、組數配置、資料隔離與即時啟用/停用\n  - button \"課堂通用 QR Code\":\n    - generic: 課堂通用 QR Code\n  - button \"建立新班級\":\n    - generic: 建立新班級\n  - link \"開門禁首頁\":\n    - /url: ./\n    - generic: 開門禁首頁\n  - button \"登出管理員\":\n- main:\n  - generic: 已建班級總數\n  - generic: \"10\"\n  - generic: 目前啟用中\n  - generic: \"9\"\n  - generic: 總配置組數\n  - generic: \"57\"\n  - generic: 系統資料庫\n  - generic: Firestore 即時連線\n  - heading \"班級清單與專屬入口 10 班\" [level=2]:\n    - generic: 班級清單與專屬入口\n    - generic: 10 班\n  - paragraph: 每一班擁有獨立命名空間，學員筆記、白板與提問完全隔離\n  - text: \"網址前綴:\"\n  - button \"線上正式 (aigile.tw)\"\n  - button \"本機 / 自動偵測\"\n  - textbox \"搜尋班級名稱或代碼...\"\n  - button \"重新整理班級清單\":\n  - generic: 已停用\n  - generic: 6 組\n  - button \"啟用\":\n    - generic: 啟用\n  - heading \"QA 停用測試班\" [level=3]\n  - 'button \"報到代碼: qa-disabled\"':\n    - text: \"報到代碼:\"\n    - strong: qa-disabled\n  - generic: \"建立: 10月7日 上午11:54\"\n  - paragraph: QA 停用驗收測試\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-disabled\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-disabled\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 10 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA 大型 10 組測試班\" [level=3]\n  - 'button \"報到代碼: qa-large\"':\n    - text: \"報到代碼:\"\n    - strong: qa-large\n  - generic: \"建立: 10月7日 上午11:54\"\n  - paragraph: QA 驗收測試專用\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-large\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-large\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 4 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA 標準 4 組測試班\" [level=3]\n  - 'button \"報到代碼: qa-standard\"':\n    - text: \"報到代碼:\"\n    - strong: qa-standard\n  - generic: \"建立: 10月7日 上午11:54\"\n  - paragraph: QA 驗收測試專用\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-standard\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-standard\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 6 組\n  - generic: 預設\n  - button \"停用\":\n    - generic: 停用\n  - heading \"AI-ARM 示範班（預設）\" [level=3]\n  - 'button \"報到代碼: default\"':\n    - text: \"報到代碼:\"\n    - strong: default\n  - generic: \"建立: 10月6日 下午03:48\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=default\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=default\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 6 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"IBM\" [level=3]\n  - 'button \"報到代碼: 202609-ibm\"':\n    - text: \"報到代碼:\"\n    - strong: 202609-ibm\n  - generic: \"建立: 9月23日 上午12:16\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=202609-ibm\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=202609-ibm\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 6 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"IBM\" [level=3]\n  - 'button \"報到代碼: 202609-IBM\"':\n    - text: \"報到代碼:\"\n    - strong: 202609-IBM\n  - generic: \"建立: 9月23日 上午12:16\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=202609-IBM\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=202609-IBM\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 6 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"凱基銀行\" [level=3]\n  - 'button \"報到代碼: 202609-kgi\"':\n    - text: \"報到代碼:\"\n    - strong: 202609-kgi\n  - generic: \"建立: 9月21日 上午11:59\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=202609-kgi\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=202609-kgi\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 2 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA 附件同步驗收 2026-test\" [level=3]\n  - 'button \"報到代碼: 2026-test\"':\n    - text: \"報到代碼:\"\n    - strong: 2026-test\n  - generic: \"建立: 9月20日 下午10:12\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=2026-test\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=2026-test\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 8 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA複測0920 B\" [level=3]\n  - 'button \"報到代碼: qa-retest-0920-b\"':\n    - text: \"報到代碼:\"\n    - strong: qa-retest-0920-b\n  - generic: \"建立: 9月20日 上午12:15\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-b\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-b\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n  - generic: 啟用中\n  - generic: 3 組\n  - button \"停用\":\n    - generic: 停用\n  - heading \"QA複測0920 A\" [level=3]\n  - 'button \"報到代碼: qa-retest-0920-a\"':\n    - text: \"報到代碼:\"\n    - strong: qa-retest-0920-a\n  - generic: \"建立: 9月20日 上午12:14\"\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-a\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-retest-0920-a\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n- heading \"建立新班級\" [level=3]:\n  - generic: 建立新班級\n- button:\n- generic: 班級專屬代碼 (報到代碼 / ID) *\n- generic: \"#\"\n- textbox \"例：2026-cathay\": qa-save-r2-20261007\n- button \"隨機產生\"\n- paragraph:\n  - text: 💡\n  - strong: 學員報到好記代碼\n  - text: ：學員在首頁報到處只需輸入此代碼（例如\n  - code: 2026-cathay\n  - text: ）即可直接進入！系統同時自動相容完整網址與\n  - code: c=...\n  - text: 格式。\n- generic: 班級名稱 (顯示於學員端首頁與講義頂部) *\n- textbox \"例：國泰人壽 AI-ARM 需求實戰第一期\": QA 後台儲存回測 20261007\n- generic: 設定小組組數 *\n- combobox:\n  - option \"1 組 (個人演練)\"\n  - option \"2 組\"\n  - option \"3 組 (小型工作坊)\"\n  - option \"4 組\" [selected]\n  - option \"5 組\"\n  - option \"6 組 (標準推薦)\"\n  - option \"7 組\"\n  - option \"8 組\"\n  - option \"9 組\"\n  - option \"10 組\"\n  - option \"12 組 (大型企業班)\"\n- generic: 學員上課密碼\n- textbox: <redacted>\n- generic: 初始狀態\n- radio \"🟢 立即啟用 (學員可進入)\"\n- generic: 🟢 立即啟用 (學員可進入)\n- radio \"⚪ 暫不啟用 (先封存/籌備中)\" [checked]\n- generic: ⚪ 暫不啟用 (先封存/籌備中)\n- generic: 備註說明 (僅講師後台可見)\n- textbox \"例：實體課於國泰金融大樓 12F，每組配置 5 人...\"\n- button \"取消\"\n- button \"確認儲存班級\" [active]\n- generic: 儲存失敗：isEdit is not defined",
+      "logs": [
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:56:18.766Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        },
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:56:18.766Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        },
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:56:18.771Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        },
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:56:18.772Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        },
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:57:13.999Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        }
+      ]
+    },
+    {
+      "case": "TC-03-refresh",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 標準 4 組測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 2 組\n  - generic: \"|\"\n  - generic: Tester-Alex\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解"
+    },
+    {
+      "case": "ADMIN-edit",
+      "snapshot": "- banner:\n  - generic: ARM\n  - heading \"AI-ARM 班級管理系統 Multi-Cohort\" [level=1]:\n    - generic: AI-ARM 班級管理系統\n    - generic: Multi-Cohort\n  - paragraph: 各班獨立專屬網址、組數配置、資料隔離與即時啟用/停用\n  - button \"課堂通用 QR Code\":\n    - generic: 課堂通用 QR Code\n  - button \"建立新班級\":\n    - generic: 建立新班級\n  - link \"開門禁首頁\":\n    - /url: ./\n    - generic: 開門禁首頁\n  - button \"登出管理員\":\n- main:\n  - generic: 已建班級總數\n  - generic: \"10\"\n  - generic: 目前啟用中\n  - generic: \"9\"\n  - generic: 總配置組數\n  - generic: \"57\"\n  - generic: 系統資料庫\n  - generic: Firestore 即時連線\n  - heading \"班級清單與專屬入口 10 班\" [level=2]:\n    - generic: 班級清單與專屬入口\n    - generic: 10 班\n  - paragraph: 每一班擁有獨立命名空間，學員筆記、白板與提問完全隔離\n  - text: \"網址前綴:\"\n  - button \"線上正式 (aigile.tw)\"\n  - button \"本機 / 自動偵測\"\n  - textbox \"搜尋班級名稱或代碼...\": qa-disabled\n  - button \"重新整理班級清單\":\n  - generic: 已停用\n  - generic: 6 組\n  - button \"啟用\":\n    - generic: 啟用\n  - heading \"QA 停用測試班\" [level=3]\n  - 'button \"報到代碼: qa-disabled\"':\n    - text: \"報到代碼:\"\n    - strong: qa-disabled\n  - generic: \"建立: 10月7日 上午11:54\"\n  - paragraph: QA 停用驗收測試\n  - generic: \"講義:\"\n  - textbox: https://aigile.tw/workshop/ai-arm/?c=qa-disabled\n  - button \"複製講義\":\n    - generic: 複製講義\n  - button \"複製白板\":\n    - generic: 複製白板\n  - button \"QR Code\":\n    - generic: QR Code\n  - link \"進講義\":\n    - /url: https://aigile.tw/workshop/ai-arm/?c=qa-disabled\n    - generic: 進講義\n  - button \"設定\":\n    - generic: 設定\n  - button \"清空\":\n    - generic: 清空\n- heading \"編輯班級設定\" [level=3]:\n  - generic: 編輯班級設定\n- button:\n- generic: 班級專屬代碼 (報到代碼 / ID) *\n- generic: \"#\"\n- textbox \"例：2026-cathay\" [disabled]: qa-disabled\n- button \"隨機產生\"\n- paragraph:\n  - text: 💡\n  - strong: 學員報到好記代碼\n  - text: ：學員在首頁報到處只需輸入此代碼（例如\n  - code: 2026-cathay\n  - text: ）即可直接進入！系統同時自動相容完整網址與\n  - code: c=...\n  - text: 格式。\n- generic: 班級名稱 (顯示於學員端首頁與講義頂部) *\n- textbox \"例：國泰人壽 AI-ARM 需求實戰第一期\": QA 停用測試班（編輯回測）\n- generic: 設定小組組數 *\n- combobox:\n  - option \"1 組 (個人演練)\"\n  - option \"2 組\"\n  - option \"3 組 (小型工作坊)\"\n  - option \"4 組\"\n  - option \"5 組\"\n  - option \"6 組 (標準推薦)\" [selected]\n  - option \"7 組\"\n  - option \"8 組\"\n  - option \"9 組\"\n  - option \"10 組\"\n  - option \"12 組 (大型企業班)\"\n- generic: 學員上課密碼\n- textbox: <redacted>\n- generic: 初始狀態\n- radio \"🟢 立即啟用 (學員可進入)\"\n- generic: 🟢 立即啟用 (學員可進入)\n- radio \"⚪ 暫不啟用 (先封存/籌備中)\" [checked]\n- generic: ⚪ 暫不啟用 (先封存/籌備中)\n- generic: 備註說明 (僅講師後台可見)\n- textbox \"例：實體課於國泰金融大樓 12F，每組配置 5 人...\": QA 停用驗收測試\n- button \"取消\"\n- button \"確認儲存班級\" [active]\n- generic: 儲存失敗：isEdit is not defined",
+      "logs": [
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:56:18.766Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        },
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:56:18.766Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        },
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:56:18.771Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        },
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:56:18.772Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        },
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:57:13.999Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        },
+        {
+          "level": "error",
+          "message": "儲存班級失敗: ReferenceError: isEdit is not defined\n    at handleSaveClass (https://aigile.tw/workshop/ai-arm/admin.html:841:9)\n    at HTMLFormElement.onsubmit (https://aigile.tw/workshop/ai-arm/admin.html:222:101)",
+          "timestamp": "2026-10-07T03:57:37.317Z",
+          "url": "https://aigile.tw/workshop/ai-arm/admin.html"
+        }
+      ]
+    },
+    {
+      "case": "TC-03-P05-refresh-returned-P01",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 標準 4 組測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 2 組\n  - generic: \"|\"\n  - generic: Tester-Alex\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解"
+    },
+    {
+      "case": "TC-03-before-close-P05",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 標準 4 組測試班\n  - generic: WHY\n  - generic: Users 用戶\n  - button \"上一頁 (← / PageUp)\":\n  - button \"P05 / 46\":\n    - generic: P05 / 46\n  - button \"下一頁 (→ / PageDown / Space)\" [active]:\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 2 組\n  - generic: \"|\"\n  - generic: Tester-Alex\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P05 · Users 用戶\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解"
+    },
+    {
+      "case": "TC-03-reopen",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 標準 4 組測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 2 組\n  - generic: \"|\"\n  - generic: Tester-Alex\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解",
+      "logs": [
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:57:49.247Z",
+          "url": "https://cdn.tailwindcss.com/"
+        }
+      ]
+    },
+    {
+      "case": "TC-04-uppercase",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 標準 4 組測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 2 組\n  - generic: \"|\"\n  - generic: Tester-Alex\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解",
+      "url": "https://aigile.tw/workshop/ai-arm/?c=QA-STANDARD"
+    },
+    {
+      "case": "PRE-large-password-DOM",
+      "check": {
+        "isEmpty": false,
+        "isRedacted": true,
+        "length": 10,
+        "matchesSpecified": false
+      }
+    },
+    {
+      "case": "TC-02-large-blur",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 1 組\n  - generic: \"|\"\n  - generic: 學員\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解\n- generic: ARM\n- generic: AgileTalks Workshops\n- link \"講師後台\":\n  - /url: admin.html\n  - generic: 講師後台\n- heading \"AI-ARM 課程專屬報到處\" [level=2]\n- generic: QA 大型 10 組測試班 (#qa-large)\n- paragraph:\n  - text: 本工作坊採專屬分組空間實戰演練。\n  - text: 請輸入\n  - strong: 班級代碼\n  - text: 、\n  - strong: 您的姓名\n  - text: 與\n  - strong: 所屬組別\n  - text: 以進入講義。\n- generic: 1. 班級專屬代碼 (Class Code) *\n- textbox \"請輸入講師公布之專屬代碼\": qa-large\n- button \"學員報到\" [active]:\n  - generic: 學員報到\n- button \"👑 講師專屬通道\":\n  - generic: 👑\n  - generic: 講師專屬通道\n- generic: 2. 學員姓名 / 稱呼 *\n- textbox \"例如：王小明、Alex、小美\"\n- generic: 3. 選擇所屬組別 (共 10 組) *\n- button \"第 1 組\"\n- button \"第 2 組\"\n- button \"第 3 組\"\n- button \"第 4 組\"\n- button \"第 5 組\"\n- button \"第 6 組\"\n- button \"第 7 組\"\n- button \"第 8 組\"\n- button \"第 9 組\"\n- button \"第 10 組\"\n- button \"🚀 完成報到，進入第 1 頁講義\":\n  - generic: 🚀 完成報到，進入第 1 頁講義\n- paragraph:\n  - generic: 免切換頁面 · 報到完成直接進入講義開課\n- paragraph: 班級代碼由講師現場公布 (例如投影大螢幕或白板)\n- paragraph:\n  - text: 遇驗證問題或舊版本殘留？\n  - button \"點此清除快取重整\"\n- generic: © 2026 AgileTalks Workshops Portal",
+      "logs": [
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:57:49.247Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:00.408Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:09.444Z",
+          "url": "https://cdn.tailwindcss.com/"
+        }
+      ]
+    },
+    {
+      "case": "TC-02-large-enter-without-password",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 大型 10 組測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 10 組\n  - generic: \"|\"\n  - generic: Tester-Large\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解",
+      "logs": [
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:57:49.247Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:00.408Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:09.444Z",
+          "url": "https://cdn.tailwindcss.com/"
+        }
+      ],
+      "passwordNotEntered": true,
+      "backendPasswordVisuallyConfirmed": "matches supplied test password"
+    },
+    {
+      "case": "TC-02-large-material-groups",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 大型 10 組測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 10 組\n  - generic: \"|\"\n  - generic: Tester-Large\n  - button \"更換組別或姓名\" [active]:\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解\n- button:\n- generic: ARM\n- heading \"QA 大型 10 組測試班\" [level=2]\n- generic: \"班級代碼: #qa-large\"\n- paragraph: 隨時切換組別或更新稱呼，小組共筆與白板將即時同步\n- generic: 學員姓名 / 稱呼\n- textbox \"例如：Alex、小美\": <redacted>\n- generic: 選擇您所屬的組別 (共 10 組)\n- button \"第 1 組\"\n- button \"第 2 組\"\n- button \"第 3 組\"\n- button \"第 4 組\"\n- button \"第 5 組\"\n- button \"第 6 組\"\n- button \"第 7 組\"\n- button \"第 8 組\"\n- button \"第 9 組\"\n- button \"第 10 組\"\n- button \"確認儲存變更\":\n  - generic: 確認儲存變更\n- button \"切換為講師登入 / 重新報到\":\n  - generic: 切換為講師登入 / 重新報到"
+    },
+    {
+      "case": "TC-04-disabled",
+      "snapshot": "- heading \"【QA 停用測試班】尚未開放或已停用\" [level=2]\n- paragraph: 此班級目前處於停用或已封存狀態。若您是本班學員，請聯繫講師確認上課時段；若您需要複習，可切換為唯讀模式。\n- button \"以唯讀模式瀏覽講義\"\n- link \"前往管理後台\":\n  - /url: admin.html\n- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 停用測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 1 組\n  - generic: \"|\"\n  - generic: 學員\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解\n- generic: ARM\n- generic: AgileTalks Workshops\n- link \"講師後台\":\n  - /url: admin.html\n  - generic: 講師後台\n- heading \"AI-ARM 課程專屬報到處\" [level=2]\n- generic: QA 停用測試班 (已停用)\n- paragraph:\n  - text: 本工作坊採專屬分組空間實戰演練。\n  - text: 請輸入\n  - strong: 班級代碼\n  - text: 、\n  - strong: 您的姓名\n  - text: 與\n  - strong: 所屬組別\n  - text: 以進入講義。\n- generic: 1. 班級專屬代碼 (Class Code) *\n- textbox \"請輸入講師公布之專屬代碼\": qa-disabled\n- paragraph:\n  - generic: 班級【QA 停用測試班】目前已停用或未開放報到，請聯繫講師\n- button \"學員報到\":\n  - generic: 學員報到\n- button \"👑 講師專屬通道\":\n  - generic: 👑\n  - generic: 講師專屬通道\n- generic: 2. 學員姓名 / 稱呼 *\n- textbox \"例如：王小明、Alex、小美\" [active]\n- generic: 3. 選擇所屬組別 (共 6 組) *\n- button \"第 1 組\"\n- button \"第 2 組\"\n- button \"第 3 組\"\n- button \"第 4 組\"\n- button \"第 5 組\"\n- button \"第 6 組\"\n- button \"🚀 完成報到，進入第 1 頁講義\" [disabled]:\n  - generic: 🚀 完成報到，進入第 1 頁講義\n- paragraph:\n  - generic: 免切換頁面 · 報到完成直接進入講義開課\n- paragraph: 班級代碼由講師現場公布 (例如投影大螢幕或白板)\n- paragraph:\n  - text: 遇驗證問題或舊版本殘留？\n  - button \"點此清除快取重整\"\n- generic: © 2026 AgileTalks Workshops Portal",
+      "logs": [
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:57:49.247Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:00.408Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:09.444Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:59:05.233Z",
+          "url": "https://cdn.tailwindcss.com/"
+        }
+      ],
+      "submitDisabled": true
+    },
+    {
+      "case": "TC-01-material-four-and-scrub",
+      "url": "https://aigile.tw/workshop/ai-arm/?c=qa-standard",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: QA 標準 4 組測試班\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 2 組\n  - generic: \"|\"\n  - generic: Tester-Alex\n  - button \"更換組別或姓名\" [active]:\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解\n- button:\n- generic: ARM\n- heading \"QA 標準 4 組測試班\" [level=2]\n- generic: \"班級代碼: #qa-standard\"\n- paragraph: 隨時切換組別或更新稱呼，小組共筆與白板將即時同步\n- generic: 學員姓名 / 稱呼\n- textbox \"例如：Alex、小美\": <redacted>\n- generic: 選擇您所屬的組別 (共 4 組)\n- button \"第 1 組\"\n- button \"第 2 組\"\n- button \"第 3 組\"\n- button \"第 4 組\"\n- button \"確認儲存變更\":\n  - generic: 確認儲存變更\n- button \"切換為講師登入 / 重新報到\":\n  - generic: 切換為講師登入 / 重新報到",
+      "logs": [
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:57:49.247Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:00.408Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:09.444Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:59:05.233Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:59:18.970Z",
+          "url": "https://cdn.tailwindcss.com/"
+        }
+      ]
+    },
+    {
+      "case": "TC-04-invalid",
+      "snapshot": "- banner:\n  - button \"目錄\":\n    - generic: 目錄\n  - generic: ARM\n  - heading \"AI 需求建模\" [level=1]\n  - generic: INTRO\n  - generic: AI 賦能敏捷\n  - button \"上一頁 (← / PageUp)\" [disabled]:\n  - button \"P01 / 46\":\n    - generic: P01 / 46\n  - button \"下一頁 (→ / PageDown / Space)\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"小組白板\":\n    - generic: 小組白板\n  - button \"10:00\":\n    - generic: 10:00\n  - button \"開始 / 暫停倒數\":\n  - button \"切換為劇院滿版大圖模式\":\n  - button \"列印全課程小組筆記為 PDF (依主題章節彙整)\":\n  - generic: 第 1 組\n  - generic: \"|\"\n  - generic: 學員\n  - button \"更換組別或姓名\":\n  - link \"開啟 AI-ARM 班級管理後台\":\n    - /url: admin.html\n  - button \"切換全螢幕\":\n- complementary:\n  - generic: AI\n  - generic: 課程目錄 ｜ 46 頁完整教材\n  - button \"收合目錄\":\n  - button \"學習公約\":\n    - generic: 學習公約\n  - button \"Prompt & 工具\":\n    - generic: Prompt & 工具\n  - button \"列印筆記\":\n    - generic: 列印筆記\n  - generic: P01 / 46\n- main:\n  - img \"投影片內容\"\n  - button \"適應視窗 / 100% 原始比例\":\n  - button \"❤️\"\n  - button \"🎆\"\n  - button \"👍\"\n  - button \"👏\"\n  - button \"💡\"\n  - button \"🤯\"\n  - button \"提問/便利貼 0\":\n    - generic: 提問/便利貼\n    - generic: \"0\"\n  - complementary:\n    - generic: 隨堂講義\n    - generic: P01 · AI 賦能敏捷\n    - paragraph: 本頁隨堂講義待講授中\n    - paragraph: 講授結束後將自動呈現隨堂重點便籤與深入講義詳解\n- generic: ARM\n- generic: AgileTalks Workshops\n- link \"講師後台\":\n  - /url: admin.html\n  - generic: 講師後台\n- heading \"AI-ARM 課程專屬報到處\" [level=2]\n- paragraph:\n  - text: 本工作坊採專屬分組空間實戰演練。\n  - text: 請輸入\n  - strong: 班級代碼\n  - text: 、\n  - strong: 您的姓名\n  - text: 與\n  - strong: 所屬組別\n  - text: 以進入講義。\n- generic: 1. 班級專屬代碼 (Class Code) *\n- textbox \"請輸入講師公布之專屬代碼\": non-exist-class-999\n- paragraph:\n  - generic: 查無班級代碼【non-exist-class-999】，請確認後重新輸入\n- button \"學員報到\":\n  - generic: 學員報到\n- button \"👑 講師專屬通道\":\n  - generic: 👑\n  - generic: 講師專屬通道\n- generic: 2. 學員姓名 / 稱呼 *\n- textbox \"例如：王小明、Alex、小美\" [active]\n- generic: 3. 選擇所屬組別 (共 6 組) *\n- button \"第 1 組\"\n- button \"第 2 組\"\n- button \"第 3 組\"\n- button \"第 4 組\"\n- button \"第 5 組\"\n- button \"第 6 組\"\n- button \"🚀 完成報到，進入第 1 頁講義\":\n  - generic: 🚀 完成報到，進入第 1 頁講義\n- paragraph:\n  - generic: 免切換頁面 · 報到完成直接進入講義開課\n- paragraph: 班級代碼由講師現場公布 (例如投影大螢幕或白板)\n- paragraph:\n  - text: 遇驗證問題或舊版本殘留？\n  - button \"點此清除快取重整\"\n- generic: © 2026 AgileTalks Workshops Portal",
+      "logs": [
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:57:49.247Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:00.408Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:58:09.444Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:59:05.233Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:59:18.970Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+          "timestamp": "2026-10-07T03:59:36.274Z",
+          "url": "https://cdn.tailwindcss.com/"
+        },
+        {
+          "level": "warn",
+          "message": "班級【non-exist-class-999】不存在於資料庫，引導至報到處",
+          "timestamp": "2026-10-07T03:59:38.804Z",
+          "url": "https://aigile.tw/workshop/ai-arm/?c=non-exist-class-999"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Password evaluate equality was false because scope redacts the value as <redacted>; not evidence of wrong config. Screenshot of large class confirms agile-pass-888.",
+    "Admin build/deployment version not independently identified; live create/edit still fail.",
+    "One create submission and one edit submission this run; duplicate historical logs not counted as new attempts."
+  ]
+}
