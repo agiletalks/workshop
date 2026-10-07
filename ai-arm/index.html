@@ -2324,13 +2324,17 @@
             const now = Date.now();
             if (lastSession && lastSession.classId && lastSession.userName && (now - (lastSession.timestamp || 0) < 7 * 86400 * 1000)) {
               const hasAuth = !!localStorage.getItem(`ai_arm_auth_user_${lastSession.classId}`);
-              if (hasAuth) {
+              // 若有指定目標代碼且與上次代碼不同，不顯示快捷卡，避免混淆
+              const matchesTarget = !targetCode || targetCode.toLowerCase() === lastSession.classId.toLowerCase();
+              if (hasAuth && matchesTarget) {
                 const titleEl = document.getElementById('gatekeeper-resume-title');
                 const subEl = document.getElementById('gatekeeper-resume-sub');
                 const timeEl = document.getElementById('gatekeeper-resume-time');
                 if (titleEl) titleEl.innerText = lastSession.className || lastSession.classId;
                 const teamName = getTeamDisplayName(lastSession.userTeam || 'team-1');
-                const slideNum = `P${String(lastSession.slideIndex || 1).padStart(2, '0')}`;
+                const savedClassSlide = parseInt(localStorage.getItem(`ai_arm_${lastSession.classId}_slide_index`) || String(lastSession.slideIndex || 1), 10);
+                const displaySlide = (savedClassSlide >= 1 && savedClassSlide <= SLIDES_DATA.length) ? savedClassSlide : (lastSession.slideIndex || 1);
+                const slideNum = `P${String(displaySlide).padStart(2, '0')}`;
                 if (subEl) subEl.innerText = `學員：${lastSession.userName} · ${teamName} · 停留 ${slideNum}`;
                 
                 const diffMin = Math.round((now - (lastSession.timestamp || 0)) / 60000);
@@ -2389,7 +2393,7 @@
       if (guard) guard.remove();
     }
 
-    function resumeLastActiveSession() {
+    async function resumeLastActiveSession() {
       try {
         const rawLast = localStorage.getItem('ai_arm_last_session');
         if (!rawLast) return;
@@ -2397,15 +2401,56 @@
         if (!lastSession || !lastSession.classId) return;
 
         currentClassId = lastSession.classId;
+
+        // 1. 檢查該班級之學員身分驗證是否存在
+        const authKey = `ai_arm_auth_user_${currentClassId}`;
+        const savedAuth = localStorage.getItem(authKey);
+        if (!savedAuth) {
+          const codeInput = document.getElementById('gatekeeper-code-input');
+          const nameInput = document.getElementById('gatekeeper-name-input');
+          if (codeInput) codeInput.value = lastSession.classId;
+          if (nameInput) nameInput.value = lastSession.userName || '';
+          inspectGatekeeperClassCode(true, true);
+          dismissResumeCard();
+          showToast('上次課堂通行已過期，請輸入密碼重新報到', 'slate');
+          return;
+        }
+
+        // 2. 立即預先展示頂部班級徽章（避免 Firebase 非同步載入時的空白）
+        const classBadge = document.getElementById('header-class-badge');
+        if (classBadge) {
+          classBadge.innerText = lastSession.className || currentClassId;
+          classBadge.classList.remove('hidden');
+        }
+
+        // 3. 更新網址參數 (?c=代碼)，不刷新頁面
+        try {
+          const newUrl = `${window.location.origin}${window.location.pathname}?c=${encodeURIComponent(currentClassId)}`;
+          window.history.replaceState({ classId: currentClassId }, '', newUrl);
+        } catch (e) {}
+
+        // 4. 初始化班級配置（連線 Firebase 載入最新班級資訊、組數、唯讀狀態等）
+        await initClassConfig();
+
+        // 5. 執行身分驗證並套用身分 UI
         const authOk = checkExistingAuth();
         if (authOk) {
-          try {
-            const newUrl = `${window.location.origin}${window.location.pathname}?c=${encodeURIComponent(currentClassId)}`;
-            window.history.replaceState({ classId: currentClassId }, '', newUrl);
-          } catch (e) {}
+          applyUserIdentityUI();
           hideGatekeeperOverlay();
-          renderSlide(lastSession.slideIndex || 1);
-          showToast(`⚡ 歡迎回來，${lastSession.userName}！已重返【${lastSession.className || currentClassId}】`, 'emerald');
+          closeLoginModal();
+          initSyncChannel();
+          initReactionStreamListener(true);
+          if (typeof initVoiceNote === 'function') initVoiceNote();
+          subscribeToFirestore();
+
+          // 6. 精準恢復頁碼：優先使用該班級專屬保存頁碼，其次使用上次 session 保存頁碼
+          const savedSlideKey = `ai_arm_${currentClassId}_slide_index`;
+          const savedSlide = parseInt(localStorage.getItem(savedSlideKey) || String(lastSession.slideIndex || 1), 10);
+          const targetSlide = (savedSlide >= 1 && savedSlide <= SLIDES_DATA.length) ? savedSlide : (lastSession.slideIndex || 1);
+
+          renderSlide(targetSlide);
+
+          showToast(`⚡ 歡迎回來，${currentUser?.name || lastSession.userName}！已重返【${currentClassData?.name || lastSession.className || currentClassId}】`, 'emerald');
         } else {
           const codeInput = document.getElementById('gatekeeper-code-input');
           const nameInput = document.getElementById('gatekeeper-name-input');
@@ -2726,13 +2771,16 @@
           localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(currentUser));
           localStorage.setItem("ai_arm_auth_user", JSON.stringify(currentUser)); // 通用備援鍵
           localStorage.setItem(`ai_arm_class_teams_${currentClassId}`, String(TOTAL_TEAMS));
+          const savedSlideKey = `ai_arm_${resolvedClassId}_slide_index`;
+          const savedSlide = parseInt(localStorage.getItem(savedSlideKey) || '1', 10);
+          const initialSlide = (savedSlide >= 1 && savedSlide <= SLIDES_DATA.length) ? savedSlide : (currentSlideIndex || 1);
           const sessionSummary = {
             classId: resolvedClassId,
             className: currentClassData?.name || resolvedClassId,
             userName: name,
             userTeam: currentUser.team,
             role: currentUser.role,
-            slideIndex: currentSlideIndex || 1,
+            slideIndex: initialSlide,
             timestamp: Date.now()
           };
           localStorage.setItem('ai_arm_last_session', JSON.stringify(sessionSummary));
@@ -3115,13 +3163,34 @@
               if (typeof initVoiceNote === 'function') initVoiceNote();
             }
             try {
+              const savedSlideKey = `ai_arm_${currentClassId}_slide_index`;
+              const savedSlide = parseInt(localStorage.getItem(savedSlideKey) || '0', 10);
+              const existingRaw = localStorage.getItem('ai_arm_last_session');
+              let existingClassName = '';
+              let existingSlide = 1;
+              if (existingRaw) {
+                try {
+                  const parsedLast = JSON.parse(existingRaw);
+                  if (parsedLast && parsedLast.classId === currentClassId) {
+                    existingClassName = parsedLast.className || '';
+                    existingSlide = parsedLast.slideIndex || 1;
+                  }
+                } catch (e) {}
+              }
+
+              const bestSlide = (currentSlideIndex && currentSlideIndex > 1)
+                ? currentSlideIndex
+                : (savedSlide >= 1 && savedSlide <= SLIDES_DATA.length ? savedSlide : existingSlide);
+
+              const bestClassName = currentClassData?.name || existingClassName || currentClassId;
+
               const sessionSummary = {
                 classId: currentClassId,
-                className: currentClassData?.name || currentClassId,
+                className: bestClassName,
                 userName: currentUser.name,
                 userTeam: currentUser.team,
                 role: currentUser.role,
-                slideIndex: currentSlideIndex || 1,
+                slideIndex: bestSlide,
                 timestamp: Date.now()
               };
               localStorage.setItem('ai_arm_last_session', JSON.stringify(sessionSummary));
@@ -3394,9 +3463,9 @@
         const slideStorageKey = currentClassId ? `ai_arm_${currentClassId}_slide_index` : `ai_arm_slide_index`;
         localStorage.setItem(slideStorageKey, String(index));
         const rawLast = localStorage.getItem('ai_arm_last_session');
-        if (rawLast) {
+        if (rawLast && currentClassId && currentUser) {
           const lastSession = JSON.parse(rawLast);
-          if (lastSession && (!currentClassId || lastSession.classId === currentClassId)) {
+          if (lastSession && lastSession.classId === currentClassId) {
             lastSession.slideIndex = index;
             lastSession.timestamp = Date.now();
             localStorage.setItem('ai_arm_last_session', JSON.stringify(lastSession));
