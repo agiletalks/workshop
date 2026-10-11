@@ -186,6 +186,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /ai_arm_board_presence/{presenceId} {
+      allow read, write: if true;
+    }
+
     // ==========================================
     // 3. 棉花糖挑戰等既有專案集合
     // ==========================================

@@ -1066,8 +1066,8 @@
     const MY_CLIENT_ID = getOrCreateClientId();
     const CLIENT_ID = MY_CLIENT_ID;
 
-    // 白板在線 Presence 集合
-    const BOARD_PRESENCE_COLLECTION = 'ai_arm_board_presence';
+    // 白板在線 Presence 集合 (採用具公開讀寫權限之 ai_arm_presence 集合)
+    const BOARD_PRESENCE_COLLECTION = 'ai_arm_presence';
     let boardPresenceUnsubscribe = null;
     let boardPresenceHeartbeatTimer = null;
     let viewportBroadcastChannel = null;
@@ -1713,24 +1713,19 @@
       return map;
     }
 
-    // --- 1. 阿基米德螺旋防碰撞生成演算法 (Spiral Anti-Collision Placement) ---
+    // --- 1. 阿基米德/費馬螺旋防碰撞生成演算法 (Spiral Anti-Collision Placement) ---
     function calculateNonOverlappingPosition(existingNotes, centerPos, options = {}) {
-      const cardWidth = options.cardWidth || 220;
-      const cardHeight = options.cardHeight || 180;
-      const minDistanceX = options.minDistanceX || 70;
-      const minDistanceY = options.minDistanceY || 60;
-      const maxAttempts = options.maxAttempts || 60;
-      const bounds = options.bounds || { minX: 200, minY: 200, maxX: 7600, maxY: 7600 };
+      const cardWidth = 220;
+      const cardHeight = 220;
+      // 卡片實際寬高為 220px，加上 20px 安全間隔，最小判定距離需為 240px，徹底避免重疊遮擋
+      const minDistanceX = options.minDistanceX || 240;
+      const minDistanceY = options.minDistanceY || 240;
+      const maxAttempts = options.maxAttempts || 100;
+      const bounds = options.bounds || { minX: 300, minY: 300, maxX: 7500, maxY: 7500 };
 
       const baseX = (centerPos && typeof centerPos.x === 'number') ? centerPos.x - (cardWidth / 2) : 3900;
       const baseY = (centerPos && typeof centerPos.y === 'number') ? centerPos.y - (cardHeight / 2) : 3900;
 
-      // 1. 隨機抖動 (±40px)
-      let testX = baseX + (Math.random() - 0.5) * 80;
-      let testY = baseY + (Math.random() - 0.5) * 80;
-
-      // 2. 螺旋避障檢測
-      let attempts = 0;
       const isColliding = (x, y) => {
         return (existingNotes || []).some(note => {
           if (!note || typeof note.x !== 'number' || typeof note.y !== 'number') return false;
@@ -1738,16 +1733,31 @@
         });
       };
 
-      while (attempts < maxAttempts && isColliding(testX, testY)) {
-        attempts++;
-        // 阿基米德螺線: r = a + b * theta
-        const angle = attempts * 0.85;
-        const radius = 40 + attempts * 14;
-        testX = baseX + Math.cos(angle) * radius;
-        testY = baseY + Math.sin(angle) * radius;
+      // 若原定目標位置無任何卡片重疊，直接採用
+      if (!isColliding(baseX, baseY)) {
+        return {
+          x: Math.max(bounds.minX, Math.min(bounds.maxX, Math.round(baseX))),
+          y: Math.max(bounds.minY, Math.min(bounds.maxY, Math.round(baseY)))
+        };
       }
 
-      // 3. 限制於邊界安全框
+      let attempts = 0;
+      let testX = baseX;
+      let testY = baseY;
+
+      while (attempts < maxAttempts) {
+        attempts++;
+        // 螺線幾何擴散：以 250px 為基準步長開平方根向外推進，搭配黃金角 (137.5度 = 2.399963 rad) 均勻布滿畫布
+        const radius = 250 * Math.sqrt(attempts);
+        const angle = attempts * 2.399963;
+        testX = baseX + Math.cos(angle) * radius;
+        testY = baseY + Math.sin(angle) * radius;
+
+        if (!isColliding(testX, testY)) {
+          break;
+        }
+      }
+
       testX = Math.max(bounds.minX, Math.min(bounds.maxX, Math.round(testX)));
       testY = Math.max(bounds.minY, Math.min(bounds.maxY, Math.round(testY)));
 
@@ -2034,8 +2044,8 @@
           let remoteNotes = Array.isArray(remoteData.notes) ? remoteData.notes : [];
           let remoteLines = Array.isArray(remoteData.lines) ? remoteData.lines : [];
 
-          // 拖曳卡片期間，暫存遠端快照至佇列，絕不打斷 DOM 指標捕捉
-          if (isUserDraggingNote) {
+          // 拖曳卡片期間或交易進行期間，暫存遠端快照至佇列，絕不打斷 DOM 指標捕捉或衝撞交易
+          if (isUserDraggingNote || isSyncWriteInFlight) {
             pendingRemoteNotes = remoteNotes;
             pendingRemoteLines = remoteLines;
             return;
@@ -2151,10 +2161,15 @@
 
           transaction.set(roomDocRef, toSave, { merge: true });
 
-          boardState.notes = mergedNotes;
-          boardState.lines = mergedLines;
+          // 1. 將伺服器確認成功的資料更新為最新同步基準
           syncBaseNotes = buildSyncBaseMap(mergedNotes);
           syncBaseLines = buildSyncBaseMap(mergedLines);
+
+          // 2. 核心修正：計算交易傳輸期間本機發生的後續異動 (如連續新建「螺旋2」卡片)，重新嫁接保留！
+          const concurrentNotesDelta = computeLocalDelta(boardState.notes, syncBaseNotes);
+          const concurrentLinesDelta = computeLocalDelta(boardState.lines, syncBaseLines);
+          boardState.notes = applyDeltaOntoNotes(mergedNotes, concurrentNotesDelta, false);
+          boardState.lines = applyDeltaOntoLines(mergedLines, concurrentLinesDelta, false);
           boardState._metaDirty = false;
         });
 
@@ -2174,6 +2189,10 @@
           }, { merge: true });
           syncBaseNotes = buildSyncBaseMap(cleanNotes);
           syncBaseLines = buildSyncBaseMap(cleanLines);
+          const concurrentNotesDelta = computeLocalDelta(boardState.notes, syncBaseNotes);
+          const concurrentLinesDelta = computeLocalDelta(boardState.lines, syncBaseLines);
+          boardState.notes = applyDeltaOntoNotes(cleanNotes, concurrentNotesDelta, false);
+          boardState.lines = applyDeltaOntoLines(cleanLines, concurrentLinesDelta, false);
           boardState._metaDirty = false;
           setSyncStatus('synced', '全組即時協作中');
           localStorage.setItem(APP_ID + '_' + CURRENT_ROOM_ID, JSON.stringify(boardState));
@@ -2183,6 +2202,17 @@
         }
       } finally {
         isSyncWriteInFlight = false;
+        // 處理寫入期間暫存的遠端快照
+        if (pendingRemoteNotes) {
+          const snapNotes = pendingRemoteNotes;
+          const snapLines = pendingRemoteLines;
+          pendingRemoteNotes = null;
+          pendingRemoteLines = null;
+          mergeRemoteNotes(snapNotes);
+          if (snapLines) mergeRemoteLines(snapLines);
+          renderNotes();
+          renderConnections();
+        }
         if (hasPendingSyncWrite) {
           hasPendingSyncWrite = false;
           saveState(false);
@@ -2503,7 +2533,7 @@
 
     function sendBoardPresenceHeartbeat(isOnline = true) {
       if (!db || !CURRENT_ROOM_ID) return;
-      const docId = `${CURRENT_ROOM_ID}_${MY_CLIENT_ID}`;
+      const docId = `board_${CURRENT_ROOM_ID}_${MY_CLIENT_ID}`;
       const docRef = db.collection(BOARD_PRESENCE_COLLECTION).doc(docId);
       if (!isOnline) {
         docRef.delete().catch(() => {});
@@ -2631,7 +2661,7 @@
 
     function sendViewportToFirestore(msg) {
       if (!db || !CURRENT_ROOM_ID) return;
-      const docId = `${CURRENT_ROOM_ID}_${MY_CLIENT_ID}`;
+      const docId = `board_${CURRENT_ROOM_ID}_${MY_CLIENT_ID}`;
       db.collection(BOARD_PRESENCE_COLLECTION).doc(docId).set({
         lastSeen: Date.now(),
         viewport: {
