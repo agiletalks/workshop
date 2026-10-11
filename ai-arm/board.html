@@ -1055,14 +1055,34 @@
 
     // 唯一用戶端 ID (Client UUID) 解決同名或無名時鎖定失效問題
     function getOrCreateClientId() {
-      let cid = sessionStorage.getItem('aigile_client_id');
+      let cid = sessionStorage.getItem('aigile_client_id') || sessionStorage.getItem('aigile_board_cli_id');
       if (!cid) {
-        cid = 'cli_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        cid = 'cli_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
         sessionStorage.setItem('aigile_client_id', cid);
+        sessionStorage.setItem('aigile_board_cli_id', cid);
       }
       return cid;
     }
-    const CLIENT_ID = getOrCreateClientId();
+    const MY_CLIENT_ID = getOrCreateClientId();
+    const CLIENT_ID = MY_CLIENT_ID;
+
+    // 白板在線 Presence 集合
+    const BOARD_PRESENCE_COLLECTION = 'ai_arm_board_presence';
+    let boardPresenceUnsubscribe = null;
+    let boardPresenceHeartbeatTimer = null;
+    let viewportBroadcastChannel = null;
+    let activePresencesMap = new Map();
+
+    // 輕量 Presence 編輯鎖 (Ephemeral Lock)
+    let myEditingNoteId = null;
+    let myEditingSince = 0;
+
+    // 同步基準與差分狀態 (3-Way Rebase Merge)
+    let syncBaseNotes = new Map();
+    let syncBaseLines = new Map();
+    let isSyncBaseInitialized = false;
+    let isSyncWriteInFlight = false;
+    let hasPendingSyncWrite = false;
 
     let boardState = {
       boardName: initialBoardTitle,
@@ -1156,16 +1176,58 @@
     let modalSelectedTextColor = 'auto';
     let noteLockHeartbeatTimer = null;
 
-    function isNoteLockedByOther(note) {
-      if (!note || !note.lock || !note.lock.isLocked) return false;
-      const lockAge = Date.now() - (note.lock.lockedAt || 0);
-      // 45 秒自動逾時過期保護，防止使用者離線時造成卡片死鎖
-      if (lockAge > 45000) return false;
-      if (note.lock.lockedByClientId) {
-        return note.lock.lockedByClientId !== CLIENT_ID;
+    function getNoteLockHolder(noteId) {
+      if (!noteId) return null;
+      const now = Date.now();
+      for (const [cid, p] of activePresencesMap.entries()) {
+        if (cid !== MY_CLIENT_ID && p && p.editingNoteId === noteId) {
+          if (now - (p.lastSeen || 0) < 35000) {
+            return p;
+          }
+        }
       }
-      const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '';
-      return Boolean(note.lock.lockedBy && note.lock.lockedBy !== myName);
+      return null;
+    }
+
+    function isNoteLockedByOther(note) {
+      if (!note || !note.id) return false;
+      const holder = getNoteLockHolder(note.id);
+      if (holder) return true;
+      if (note.lock && note.lock.isLocked) {
+        const lockAge = Date.now() - (note.lock.lockedAt || 0);
+        if (lockAge < 30000) {
+          if (note.lock.lockedByClientId) {
+            return note.lock.lockedByClientId !== MY_CLIENT_ID;
+          }
+          const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '';
+          return Boolean(note.lock.lockedBy && note.lock.lockedBy !== myName);
+        }
+      }
+      return false;
+    }
+
+    function releaseEditLock() {
+      if (!myEditingNoteId) return;
+      myEditingNoteId = null;
+      myEditingSince = 0;
+      sendBoardPresenceHeartbeat(true);
+      broadcastPresenceEphemeralLock(null, 0);
+    }
+
+    function broadcastPresenceEphemeralLock(editingNoteId, editingSince) {
+      if (viewportBroadcastChannel) {
+        try {
+          viewportBroadcastChannel.postMessage({
+            type: 'EDIT_LOCK_UPDATE',
+            roomId: CURRENT_ROOM_ID,
+            clientId: MY_CLIENT_ID,
+            userName: (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '組員',
+            editingNoteId: editingNoteId,
+            editingSince: editingSince,
+            t: Date.now()
+          });
+        } catch(e) {}
+      }
     }
 
     // 匯入檔案暫存
@@ -1607,95 +1669,324 @@
       ];
     }
 
-    // --- 單卡智慧增量調和演算法 (Per-Note Smart Merge) ---
-    function mergeRemoteNotes(remoteNotes) {
-      if (!Array.isArray(remoteNotes)) return;
-      const localMap = new Map((boardState.notes || []).map(n => [n.id, n]));
-      const remoteMap = new Map(remoteNotes.map(n => [n.id, n]));
-      const merged = [];
+    // --- 排除於內容簽章比對的中繼欄位 ---
+    const SYNC_META_KEYS = new Set([
+      'updatedAt',
+      'updatedBy',
+      'posUpdatedAt',
+      'rev',
+      'lock',
+      '_isDragging'
+    ]);
 
-      for (const [id, remoteNote] of remoteMap.entries()) {
-        const localNote = localMap.get(id);
+    function stableStringify(v) {
+      if (v === null || typeof v !== 'object') {
+        const s = JSON.stringify(v);
+        return s === undefined ? 'null' : s;
+      }
+      if (Array.isArray(v)) {
+        return '[' + v.map(stableStringify).join(',') + ']';
+      }
+      const keys = Object.keys(v).filter(k => v[k] !== undefined).sort();
+      return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
+    }
 
-        // 本機正在編輯視窗中，保護本地未儲存輸入免遭遠端刷新覆蓋
-        if (activeModalMode === 'edit' && activeEditingNoteId === id) {
-          merged.push(localNote);
-          continue;
-        }
+    function computeItemSignature(item) {
+      if (!item || typeof item !== 'object') return 'null';
+      const clean = {};
+      Object.keys(item).forEach(k => {
+        if (!SYNC_META_KEYS.has(k)) clean[k] = item[k];
+      });
+      return stableStringify(clean);
+    }
 
-        // 本機正在拖曳中，保留本地座標，其餘屬性可更新
-        if (selectedNoteIds.has(id) && isUserDraggingNote && localNote) {
-          merged.push({
-            ...remoteNote,
-            x: localNote.x,
-            y: localNote.y
+    function buildSyncBaseMap(arr) {
+      const map = new Map();
+      (arr || []).forEach(item => {
+        if (item && item.id) {
+          map.set(item.id, {
+            obj: JSON.parse(JSON.stringify(item)),
+            sig: computeItemSignature(item)
           });
-          continue;
         }
+      });
+      return map;
+    }
 
-        if (!localNote) {
-          merged.push(remoteNote);
-          continue;
-        }
+    // --- 1. 阿基米德螺旋防碰撞生成演算法 (Spiral Anti-Collision Placement) ---
+    function calculateNonOverlappingPosition(existingNotes, centerPos, options = {}) {
+      const cardWidth = options.cardWidth || 220;
+      const cardHeight = options.cardHeight || 180;
+      const minDistanceX = options.minDistanceX || 70;
+      const minDistanceY = options.minDistanceY || 60;
+      const maxAttempts = options.maxAttempts || 60;
+      const bounds = options.bounds || { minX: 200, minY: 200, maxX: 7600, maxY: 7600 };
 
-        const remoteTime = new Date(remoteNote.updatedAt || 0).getTime();
-        const localTime = new Date(localNote.updatedAt || 0).getTime();
+      const baseX = (centerPos && typeof centerPos.x === 'number') ? centerPos.x - (cardWidth / 2) : 3900;
+      const baseY = (centerPos && typeof centerPos.y === 'number') ? centerPos.y - (cardHeight / 2) : 3900;
 
-        if (remoteTime >= localTime) {
-          merged.push(remoteNote);
-        } else {
-          merged.push(localNote);
-        }
+      // 1. 隨機抖動 (±40px)
+      let testX = baseX + (Math.random() - 0.5) * 80;
+      let testY = baseY + (Math.random() - 0.5) * 80;
+
+      // 2. 螺旋避障檢測
+      let attempts = 0;
+      const isColliding = (x, y) => {
+        return (existingNotes || []).some(note => {
+          if (!note || typeof note.x !== 'number' || typeof note.y !== 'number') return false;
+          return Math.abs(note.x - x) < minDistanceX && Math.abs(note.y - y) < minDistanceY;
+        });
+      };
+
+      while (attempts < maxAttempts && isColliding(testX, testY)) {
+        attempts++;
+        // 阿基米德螺線: r = a + b * theta
+        const angle = attempts * 0.85;
+        const radius = 40 + attempts * 14;
+        testX = baseX + Math.cos(angle) * radius;
+        testY = baseY + Math.sin(angle) * radius;
       }
 
-      // 本機剛建立且未滿 15 秒的新卡片，防止被尚未同步的舊 Snapshot 衝掉
-      for (const [id, localNote] of localMap.entries()) {
-        if (!remoteMap.has(id)) {
-          const age = Date.now() - new Date(localNote.createdAt || 0).getTime();
-          if (age < 15000) {
-            merged.push(localNote);
+      // 3. 限制於邊界安全框
+      testX = Math.max(bounds.minX, Math.min(bounds.maxX, Math.round(testX)));
+      testY = Math.max(bounds.minY, Math.min(bounds.maxY, Math.round(testY)));
+
+      return { x: testX, y: testY };
+    }
+
+    // --- 2. 差分計算 (Delta Compute) ---
+    function computeLocalDelta(localItems, baseMap) {
+      const upserts = [];
+      const deletes = new Set();
+      const localIds = new Set();
+
+      (localItems || []).forEach(item => {
+        if (!item || !item.id) return;
+        localIds.add(item.id);
+
+        const base = baseMap.get(item.id);
+        if (!base) {
+          // 本地新增項目 (Base 中不存在)
+          upserts.push({ id: item.id, item, fields: null });
+          return;
+        }
+
+        // 檢查內容簽章是否一致
+        if (computeItemSignature(item) === base.sig) {
+          return; // 無任何修改
+        }
+
+        // 逐欄位比對出 Dirty Fields
+        const fields = [];
+        const allKeys = new Set([...Object.keys(item), ...Object.keys(base.obj)]);
+        allKeys.forEach(k => {
+          if (SYNC_META_KEYS.has(k)) return;
+          if (stableStringify(item[k]) !== stableStringify(base.obj[k])) {
+            fields.push(k);
           }
+        });
+
+        if (fields.length > 0) {
+          if (fields.includes('x') || fields.includes('y')) {
+            if (!item.posUpdatedAt) item.posUpdatedAt = new Date().toISOString();
+            item.updatedBy = MY_CLIENT_ID;
+          }
+          upserts.push({ id: item.id, item, fields });
+        }
+      });
+
+      // 本地刪除檢測 (Base 有，但本地清單已無)
+      baseMap.forEach((_, id) => {
+        if (!localIds.has(id)) {
+          deletes.add(id);
+        }
+      });
+
+      return { upserts, deletes };
+    }
+
+    // --- 3. 差分嫁接至遠端陣列 (Apply Delta Onto Remote) ---
+    function applyDeltaOntoNotes(remoteNotes, delta, stampWithClientMeta = false) {
+      const result = (remoteNotes || []).filter(r => r && r.id && !delta.deletes.has(r.id)).map(r => JSON.parse(JSON.stringify(r)));
+      const indexById = new Map(result.map((r, i) => [r.id, i]));
+      const nowIso = new Date().toISOString();
+
+      const stampItem = (obj) => {
+        delete obj.lock;
+        if (!stampWithClientMeta) return obj;
+        obj.updatedAt = nowIso;
+        obj.updatedBy = MY_CLIENT_ID;
+        obj.rev = (obj.rev || 0) + 1;
+        return obj;
+      };
+
+      delta.upserts.forEach(({ id, item, fields }) => {
+        const idx = indexById.get(id);
+
+        // (a) 本地新建立卡片
+        if (fields === null) {
+          const fresh = stampItem(JSON.parse(JSON.stringify(item)));
+          if (idx === undefined) {
+            indexById.set(id, result.length);
+            result.push(fresh);
+          } else {
+            result[idx] = fresh;
+          }
+          return;
+        }
+
+        // (b) 遠端已被刪除：不復活
+        if (idx === undefined) return;
+
+        const target = result[idx];
+
+        // (c) 獨立座標時間戳 LWW 仲裁 (Strict Position Arbitration)
+        const remoteTime = target.posUpdatedAt ? new Date(target.posUpdatedAt).getTime() : 0;
+        const localTime = item.posUpdatedAt ? new Date(item.posUpdatedAt).getTime() : 0;
+        const isRemotePosNewerByOther = Boolean(
+          target.updatedBy && target.updatedBy !== MY_CLIENT_ID &&
+          remoteTime > 0 && localTime > 0 &&
+          remoteTime > localTime
+        );
+
+        let modified = false;
+        let modifiedPos = false;
+
+        fields.forEach(k => {
+          if ((k === 'x' || k === 'y') && isRemotePosNewerByOther) {
+            // 遠端其他人在更晚的時間點移動了卡片，以遠端最新座標為準，放棄本地落後的舊座標
+            return;
+          }
+          if (k === 'x' || k === 'y') modifiedPos = true;
+
+          if (item[k] === undefined) {
+            delete target[k];
+            modified = true;
+          } else {
+            target[k] = JSON.parse(JSON.stringify(item[k]));
+            modified = true;
+          }
+        });
+
+        if (modifiedPos) {
+          target.posUpdatedAt = item.posUpdatedAt || nowIso;
+        }
+        if (modified) {
+          stampItem(target);
+        }
+
+        // 若本地過期位移被遠端否決，本地立即認同遠端座標，避免下次重複發送陳舊差異
+        if ((fields.includes('x') || fields.includes('y')) && isRemotePosNewerByOther) {
+          item.x = target.x;
+          item.y = target.y;
+          item.posUpdatedAt = target.posUpdatedAt;
+          item.updatedBy = target.updatedBy;
+        }
+      });
+
+      return result;
+    }
+
+    function applyDeltaOntoLines(remoteLines, delta, stampWithClientMeta = false) {
+      const result = (remoteLines || []).filter(r => r && r.id && !delta.deletes.has(r.id)).map(r => JSON.parse(JSON.stringify(r)));
+      const indexById = new Map(result.map((r, i) => [r.id, i]));
+      const nowIso = new Date().toISOString();
+
+      delta.upserts.forEach(({ id, item, fields }) => {
+        const idx = indexById.get(id);
+        if (fields === null) {
+          const fresh = JSON.parse(JSON.stringify(item));
+          if (stampWithClientMeta) {
+            fresh.updatedAt = nowIso;
+            fresh.updatedBy = MY_CLIENT_ID;
+          }
+          if (idx === undefined) {
+            indexById.set(id, result.length);
+            result.push(fresh);
+          } else {
+            result[idx] = fresh;
+          }
+          return;
+        }
+
+        if (idx === undefined) return;
+        const target = result[idx];
+        let modified = false;
+        fields.forEach(k => {
+          if (item[k] === undefined) {
+            delete target[k];
+            modified = true;
+          } else {
+            target[k] = JSON.parse(JSON.stringify(item[k]));
+            modified = true;
+          }
+        });
+        if (modified && stampWithClientMeta) {
+          target.updatedAt = nowIso;
+          target.updatedBy = MY_CLIENT_ID;
+        }
+      });
+
+      return result;
+    }
+
+    // --- Git 式三向重整合併演算法 (3-Way Rebase Merge) ---
+    function mergeRemoteNotes(remoteNotes) {
+      if (!Array.isArray(remoteNotes)) return;
+
+      if (!isSyncBaseInitialized) {
+        boardState.notes = remoteNotes.map(n => JSON.parse(JSON.stringify(n)));
+        syncBaseNotes = buildSyncBaseMap(remoteNotes);
+        return;
+      }
+
+      // 計算本地相對於上次同步基準的 Delta
+      const localDelta = computeLocalDelta(boardState.notes, syncBaseNotes);
+      const hasLocalChanges = localDelta.upserts.length > 0 || localDelta.deletes.size > 0;
+
+      // 將本地未送出的草稿 Delta 重新嫁接在最新遠端快照之上
+      const merged = applyDeltaOntoNotes(remoteNotes, localDelta, false);
+
+      // 若當前正於彈窗編輯的卡片被遠端刪除，及時提醒並關閉
+      if (activeModalMode === 'edit' && activeEditingNoteId && typeof activeEditingNoteId === 'string') {
+        if (!merged.some(n => n.id === activeEditingNoteId)) {
+          showToast('您正在編輯的卡片已被其他成員刪除', 'warning');
+          closeNoteModal();
         }
       }
 
       boardState.notes = merged;
+      syncBaseNotes = buildSyncBaseMap(remoteNotes);
+
+      // 自我修復回寫機制：本地有尚未寫入遠端的草稿，自動排程送出至雲端
+      if (hasLocalChanges && !isBoardReadOnly) {
+        saveState(false);
+      }
     }
 
-    // --- 連線增量調和演算法 (Per-Line Smart Merge) ---
+    // --- 連線三向重整合併演算法 (3-Way Rebase Merge for Lines) ---
     function mergeRemoteLines(remoteLines) {
       if (!Array.isArray(remoteLines)) {
         boardState.lines = boardState.lines || [];
         return;
       }
-      const localMap = new Map((boardState.lines || []).map(l => [l.id, l]));
-      const remoteMap = new Map(remoteLines.map(l => [l.id, l]));
-      const merged = [];
 
-      for (const [id, remoteLine] of remoteMap.entries()) {
-        const localLine = localMap.get(id);
-        if (!localLine) {
-          merged.push(remoteLine);
-          continue;
-        }
-        const remoteTime = new Date(remoteLine.updatedAt || 0).getTime();
-        const localTime = new Date(localLine.updatedAt || 0).getTime();
-        if (remoteTime >= localTime) {
-          merged.push(remoteLine);
-        } else {
-          merged.push(localLine);
-        }
+      if (!isSyncBaseInitialized) {
+        boardState.lines = remoteLines.map(l => JSON.parse(JSON.stringify(l)));
+        syncBaseLines = buildSyncBaseMap(remoteLines);
+        return;
       }
 
-      for (const [id, localLine] of localMap.entries()) {
-        if (!remoteMap.has(id)) {
-          const age = Date.now() - new Date(localLine.createdAt || 0).getTime();
-          if (age < 5000) {
-            merged.push(localLine);
-          }
-        }
-      }
+      const localDelta = computeLocalDelta(boardState.lines, syncBaseLines);
+      const hasLocalChanges = localDelta.upserts.length > 0 || localDelta.deletes.size > 0;
 
+      const merged = applyDeltaOntoLines(remoteLines, localDelta, false);
       boardState.lines = merged;
+      syncBaseLines = buildSyncBaseMap(remoteLines);
+
+      if (hasLocalChanges && !isBoardReadOnly) {
+        saveState(false);
+      }
     }
 
     // 初始化 Firestore 訂閱
@@ -1723,6 +2014,9 @@
             console.log(`[Firestore] 房間 ${CURRENT_ROOM_ID} 初次建立，寫入預設畫布。`);
             boardState.notes = getDefaultTemplateNotes();
             boardState.lines = [];
+            syncBaseNotes = buildSyncBaseMap(boardState.notes);
+            syncBaseLines = buildSyncBaseMap(boardState.lines);
+            isSyncBaseInitialized = true;
             renderNotes();
             renderConnections();
             updateStickyNotesCount();
@@ -1740,7 +2034,7 @@
           let remoteNotes = Array.isArray(remoteData.notes) ? remoteData.notes : [];
           let remoteLines = Array.isArray(remoteData.lines) ? remoteData.lines : [];
 
-          // 拖曳卡片期間，暫存遠端快照至佇列，絕不直接拋棄他人新增
+          // 拖曳卡片期間，暫存遠端快照至佇列，絕不打斷 DOM 指標捕捉
           if (isUserDraggingNote) {
             pendingRemoteNotes = remoteNotes;
             pendingRemoteLines = remoteLines;
@@ -1759,6 +2053,7 @@
 
           mergeRemoteNotes(remoteNotes);
           mergeRemoteLines(remoteLines);
+          isSyncBaseInitialized = true;
           renderNotes();
           renderConnections();
           updateStickyNotesCount();
@@ -1809,31 +2104,89 @@
       }
     }
 
-    function doFirestoreWrite() {
+    async function doFirestoreWrite() {
       if (!roomDocRef) return;
-      try {
-        const cleanNotes = JSON.parse(JSON.stringify(boardState.notes || []));
-        const cleanLines = JSON.parse(JSON.stringify(boardState.lines || []));
-        const dataToSave = {
-          boardName: boardState.boardName || '線上協作白板',
-          background: boardState.background || '#FFFFFF',
-          notes: cleanNotes,
-          lines: cleanLines,
-          updatedAt: boardState.updatedAt || new Date().toISOString()
-        };
+      if (isSyncWriteInFlight) {
+        hasPendingSyncWrite = true;
+        return;
+      }
+      isSyncWriteInFlight = true;
 
-        roomDocRef.set(dataToSave, { merge: true })
-          .then(() => {
-            setSyncStatus('synced', '全組即時協作中');
-            localStorage.setItem(APP_ID + '_' + CURRENT_ROOM_ID, JSON.stringify(boardState));
-          })
-          .catch((err) => {
-            console.error("[Firestore] Write Error:", err);
-            setSyncStatus('error', '同步失敗');
-          });
+      try {
+        const deltaNotes = computeLocalDelta(boardState.notes, syncBaseNotes);
+        const deltaLines = computeLocalDelta(boardState.lines, syncBaseLines);
+
+        // 若無任何實質變更且未強制 dirty，跳過空寫入
+        if (isSyncBaseInitialized &&
+            deltaNotes.upserts.length === 0 && deltaNotes.deletes.size === 0 &&
+            deltaLines.upserts.length === 0 && deltaLines.deletes.size === 0 &&
+            !boardState._metaDirty) {
+          isSyncWriteInFlight = false;
+          setSyncStatus('synced', isBoardReadOnly ? '唯讀觀摩模式' : '全組即時協作中');
+          return;
+        }
+
+        // 採用 Firestore Transaction 保障伺服器端資料合併不相互覆寫
+        await db.runTransaction(async (transaction) => {
+          const doc = await transaction.get(roomDocRef);
+          let serverNotes = [];
+          let serverLines = [];
+          let serverData = {};
+          if (doc.exists) {
+            serverData = doc.data() || {};
+            serverNotes = Array.isArray(serverData.notes) ? serverData.notes : [];
+            serverLines = Array.isArray(serverData.lines) ? serverData.lines : [];
+          }
+
+          const mergedNotes = applyDeltaOntoNotes(serverNotes, deltaNotes, true);
+          const mergedLines = applyDeltaOntoLines(serverLines, deltaLines, true);
+
+          const toSave = {
+            boardName: boardState.boardName || serverData.boardName || '線上協作白板',
+            background: boardState.background || serverData.background || { type: 'dots', color: '#FFFFFF' },
+            notes: mergedNotes,
+            lines: mergedLines,
+            updatedAt: new Date().toISOString()
+          };
+
+          transaction.set(roomDocRef, toSave, { merge: true });
+
+          boardState.notes = mergedNotes;
+          boardState.lines = mergedLines;
+          syncBaseNotes = buildSyncBaseMap(mergedNotes);
+          syncBaseLines = buildSyncBaseMap(mergedLines);
+          boardState._metaDirty = false;
+        });
+
+        setSyncStatus('synced', '全組即時協作中');
+        localStorage.setItem(APP_ID + '_' + CURRENT_ROOM_ID, JSON.stringify(boardState));
       } catch (err) {
-        console.error("[Firestore] Write Exception:", err);
-        setSyncStatus('error', '同步發生例外');
+        console.warn("[Firestore] Transaction write error, falling back to direct write:", err);
+        try {
+          const cleanNotes = JSON.parse(JSON.stringify(boardState.notes || []));
+          const cleanLines = JSON.parse(JSON.stringify(boardState.lines || []));
+          await roomDocRef.set({
+            boardName: boardState.boardName || '線上協作白板',
+            background: boardState.background || { type: 'dots', color: '#FFFFFF' },
+            notes: cleanNotes,
+            lines: cleanLines,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+          syncBaseNotes = buildSyncBaseMap(cleanNotes);
+          syncBaseLines = buildSyncBaseMap(cleanLines);
+          boardState._metaDirty = false;
+          setSyncStatus('synced', '全組即時協作中');
+          localStorage.setItem(APP_ID + '_' + CURRENT_ROOM_ID, JSON.stringify(boardState));
+        } catch (fallbackErr) {
+          console.error("[Firestore] Direct set fallback failed:", fallbackErr);
+          setSyncStatus('error', '同步失敗');
+        }
+      } finally {
+        isSyncWriteInFlight = false;
+        if (hasPendingSyncWrite) {
+          hasPendingSyncWrite = false;
+          saveState(false);
+        }
       }
     }
 
@@ -2074,18 +2427,6 @@
     // =========================================================================
     // === 白板在線在場系統與視角跟隨 (Presence & Follow Mode System) ===
     // =========================================================================
-    const MY_CLIENT_ID = 'cli_' + (sessionStorage.getItem('aigile_board_cli_id') || (function() {
-      const id = Math.random().toString(36).substring(2, 10);
-      sessionStorage.setItem('aigile_board_cli_id', id);
-      return id;
-    })());
-
-    const BOARD_PRESENCE_COLLECTION = 'ai_arm_board_presence';
-    let boardPresenceUnsubscribe = null;
-    let boardPresenceHeartbeatTimer = null;
-    let viewportBroadcastChannel = null;
-    let activePresencesMap = new Map();
-
     const AVATAR_PALETTE = ['#4f46e5', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#c026d3', '#2563eb', '#0d9488', '#ea580c'];
     function getDeterministicAvatarColor(str) {
       let hash = 0;
@@ -2180,6 +2521,8 @@
         isObserver: !!TEAM_INFO.isObserver,
         isInstructor: !!TEAM_INFO.isInstructor,
         avatarColor: MY_AVATAR_COLOR,
+        editingNoteId: myEditingNoteId || null,
+        editingSince: myEditingSince || 0,
         lastSeen: Date.now(),
         viewport: {
           cx: Math.round(vp.cx),
@@ -2214,6 +2557,21 @@
 
           activePresencesMap = updatedMap;
           renderBoardPresenceAvatars();
+
+          // 臨場編輯鎖競態裁決 (Tie-Breaking)
+          if (myEditingNoteId) {
+            const holder = getNoteLockHolder(myEditingNoteId);
+            if (holder) {
+              const theirs = holder.editingSince || 0;
+              const iLose = theirs < myEditingSince || (theirs === myEditingSince && holder.clientId < MY_CLIENT_ID);
+              if (iLose) {
+                const who = holder.userName || '其他成員';
+                releaseEditLock();
+                closeNoteModal();
+                showToast(`🔒「${who}」已搶先一步編輯此便利貼，您的編輯視窗已安全讓出`, "warning");
+              }
+            }
+          }
 
           // 若正處於跟隨狀態，檢查目標是否離線或有新座標
           if (followState.isFollowing && followState.targetClientId) {
@@ -2309,6 +2667,26 @@
             scale: data.scale,
             t: data.t
           });
+        }
+      } else if (data.type === 'EDIT_LOCK_UPDATE') {
+        let p = activePresencesMap.get(data.clientId);
+        if (!p) {
+          p = { clientId: data.clientId, userName: data.userName, lastSeen: Date.now() };
+          activePresencesMap.set(data.clientId, p);
+        }
+        p.editingNoteId = data.editingNoteId;
+        p.editingSince = data.editingSince;
+        p.lastSeen = Date.now();
+
+        if (myEditingNoteId && data.editingNoteId === myEditingNoteId && data.clientId !== MY_CLIENT_ID) {
+          const theirs = data.editingSince || 0;
+          const iLose = theirs < myEditingSince || (theirs === myEditingSince && data.clientId < MY_CLIENT_ID);
+          if (iLose) {
+            const who = data.userName || '其他成員';
+            releaseEditLock();
+            closeNoteModal();
+            showToast(`🔒「${who}」已搶先一步編輯此便利貼，您的編輯視窗已安全讓出`, "warning");
+          }
         }
       } else if (data.type === 'LEAVE') {
         if (followState.isFollowing && followState.targetClientId === data.clientId) {
@@ -5105,9 +5483,19 @@
 
           lastCardDragEndTimestamp = Date.now();
           pushHistory(pendingNotesStateBeforeDrag);
-          saveState(true);
 
-          // 處理拖曳期間暫存的遠端快照
+          // 更新所有被拖曳移動卡片的座標時間戳 (posUpdatedAt LWW 仲裁保護)
+          const nowIso = new Date().toISOString();
+          selectedNoteIds.forEach(id => {
+            const n = boardState.notes.find(noteObj => noteObj.id === id);
+            if (n) {
+              n.posUpdatedAt = nowIso;
+              n.updatedAt = nowIso;
+              n.updatedBy = MY_CLIENT_ID;
+            }
+          });
+
+          // 核心修復：先將拖曳期間暫存的遠端快照合併，絕不可在合併前盲目寫入覆蓋！
           if (pendingRemoteNotes) {
             mergeRemoteNotes(pendingRemoteNotes);
             pendingRemoteNotes = null;
@@ -5122,6 +5510,9 @@
 
           pendingNotesStateBeforeDrag = null;
           updateMinimap();
+
+          // 遠端快照合併完成後，送出最新完整狀態
+          saveState(true);
         } else {
           // 未超過 6px 閾值：判定為單純點擊 / 選取卡片！
           isDragging = false;
@@ -5161,6 +5552,16 @@
           card.releasePointerCapture(e.pointerId);
         } catch(err) {}
 
+        const nowIso = new Date().toISOString();
+        selectedNoteIds.forEach(id => {
+          const n = boardState.notes.find(noteObj => noteObj.id === id);
+          if (n) {
+            n.posUpdatedAt = nowIso;
+            n.updatedAt = nowIso;
+            n.updatedBy = MY_CLIENT_ID;
+          }
+        });
+
         if (pendingRemoteNotes) {
           mergeRemoteNotes(pendingRemoteNotes);
           pendingRemoteNotes = null;
@@ -5175,6 +5576,7 @@
 
         pendingNotesStateBeforeDrag = null;
         updateMinimap();
+        saveState(true);
       });
 
       // AC 懸浮卡顯示 (滑鼠懸停 800ms 延遲)
@@ -5472,6 +5874,13 @@
         });
       }
       
+      const nowIso = new Date().toISOString();
+      notesToAlign.forEach(n => {
+        n.posUpdatedAt = nowIso;
+        n.updatedAt = nowIso;
+        n.updatedBy = MY_CLIENT_ID;
+      });
+
       saveState(true);
       renderNotes();
       updateNotesSelectionVisuals();
@@ -5576,24 +5985,13 @@
       tooltip.style.opacity = '0';
     }
 
-    // --- 便利貼編輯鎖定心跳排程器 (預防編輯中斷導致死鎖) ---
+    // --- 便利貼編輯鎖定心跳排程器 (改由 Presence 機制維護，消除持久化死鎖與無端存檔衝擊) ---
     function startLockHeartbeat(noteId) {
-      stopLockHeartbeat();
-      noteLockHeartbeatTimer = setInterval(() => {
-        const note = boardState.notes.find(n => n.id === noteId);
-        const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '組員';
-        if (note && note.lock && note.lock.isLocked && note.lock.lockedBy === myName) {
-          note.lock.lockedAt = Date.now();
-          saveState(true);
-        }
-      }, 15000);
+      // 輕量 Presence 鎖由 sendBoardPresenceHeartbeat 維護，不寫入白板本體 Firestore 狀態
     }
 
     function stopLockHeartbeat() {
-      if (noteLockHeartbeatTimer) {
-        clearInterval(noteLockHeartbeatTimer);
-        noteLockHeartbeatTimer = null;
-      }
+      // 輕量 Presence 鎖由 releaseEditLock() 安全釋放
     }
 
     // --- Modal 對話框控制與資料儲存 ---
@@ -5642,22 +6040,18 @@
         acInput.value = '';
         deleteBtn.classList.add('hidden');
         
+        let centerPos = null;
         if (spawnCoordinates && typeof spawnCoordinates.x === 'number') {
-          activeEditingNoteId = spawnCoordinates;
+          centerPos = spawnCoordinates;
         } else {
-          // 在畫布中心生成 (若中心已有卡片則微幅錯開 35px，避免完全被覆蓋遮擋)
+          // 在畫布中心生成 (結合阿基米德螺旋防碰撞演算法)
           const rect = container.getBoundingClientRect();
           const cx = rect.width / 2;
           const cy = rect.height / 2;
-          const boardPos = containerToBoard(cx, cy);
-          let spawnX = boardPos.x - 110;
-          let spawnY = boardPos.y - 110;
-          while (boardState.notes.some(n => Math.abs(n.x - spawnX) < 15 && Math.abs(n.y - spawnY) < 15)) {
-            spawnX += 35;
-            spawnY += 35;
-          }
-          activeEditingNoteId = { x: Math.round(spawnX), y: Math.round(spawnY) };
+          centerPos = containerToBoard(cx, cy);
         }
+        const safePos = calculateNonOverlappingPosition(boardState.notes, centerPos);
+        activeEditingNoteId = safePos;
 
         const randomPreset = presetColors[Math.floor(Math.random() * presetColors.length)];
         selectModalColor(randomPreset.hex);
@@ -5669,20 +6063,18 @@
         const note = boardState.notes.find(n => n.id === noteId);
         if (!note) return;
 
-        if (isNoteLockedByOther(note)) {
-          showToast(`🔒「${note.lock?.lockedBy || '其他成員'}」正在編輯此便利貼，已被鎖定！`, "warning");
+        const holder = getNoteLockHolder(note.id);
+        if (holder) {
+          const who = holder.userName || '其他成員';
+          showToast(`🔒「${who}」正在編輯此便利貼，已被鎖定！`, "warning");
           return;
         }
 
-        // 鎖定此便利貼並啟動心跳
-        const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '組員';
-        note.lock = {
-          isLocked: true,
-          lockedBy: myName,
-          lockedAt: Date.now()
-        };
-        saveState(true);
-        startLockHeartbeat(note.id);
+        // 取得臨時臨場編輯鎖 (Ephemeral Lock) 並廣播
+        myEditingNoteId = note.id;
+        myEditingSince = Date.now();
+        sendBoardPresenceHeartbeat(true);
+        broadcastPresenceEphemeralLock(myEditingNoteId, myEditingSince);
 
         if (note.type === 'image' || note.thumbUrl) {
           title.innerHTML = `<i data-lucide="image" class="text-indigo-600 w-5 h-5"></i> 編輯圖片卡片說明與色彩`;
@@ -5729,15 +6121,7 @@
       if (acInput) acInput.readOnly = false;
       if (submitBtn) submitBtn.classList.remove('hidden');
 
-      if (activeModalMode === 'edit' && activeEditingNoteId && typeof activeEditingNoteId === 'string' && !isBoardReadOnly) {
-        const note = boardState.notes.find(n => n.id === activeEditingNoteId);
-        const myName = (typeof TEAM_INFO !== 'undefined' && TEAM_INFO.userName) ? TEAM_INFO.userName : '組員';
-        if (note && note.lock && note.lock.lockedBy === myName) {
-          note.lock = { isLocked: false, lockedBy: '', lockedAt: 0 };
-          saveState(true);
-        }
-      }
-      stopLockHeartbeat();
+      releaseEditLock();
       const modal = document.getElementById('note-modal');
       if (modal) {
         modal.classList.remove('opacity-100');
@@ -5765,6 +6149,7 @@
       pushHistory();
 
       try {
+        const nowIso = new Date().toISOString();
         if (activeModalMode === 'create') {
           const isBigPref = (localStorage.getItem('aigile_board_font_fit') === 'true');
           const targetX = (activeEditingNoteId && typeof activeEditingNoteId.x === 'number' && !isNaN(activeEditingNoteId.x)) ? Math.round(activeEditingNoteId.x) : 3900;
@@ -5778,8 +6163,11 @@
             isBigText: isBigPref,
             x: targetX,
             y: targetY,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            createdAt: nowIso,
+            updatedAt: nowIso,
+            posUpdatedAt: nowIso,
+            updatedBy: MY_CLIENT_ID,
+            rev: 1
           };
           if (modalSelectedTextColor && modalSelectedTextColor !== 'auto') {
             newNote.textColor = modalSelectedTextColor;
@@ -5800,8 +6188,9 @@
             } else {
               delete note.textColor;
             }
-            note.updatedAt = new Date().toISOString();
-            note.lock = { isLocked: false, lockedBy: '', lockedAt: 0 };
+            note.updatedAt = nowIso;
+            note.updatedBy = MY_CLIENT_ID;
+            delete note.lock;
             showToast("卡片已成功儲存！");
           }
         }
@@ -5816,7 +6205,7 @@
         modal.classList.add('hidden');
       }
       activeEditingNoteId = null;
-      stopLockHeartbeat();
+      releaseEditLock();
 
       // 2. 立即重繪白板與選取光圈
       try {
@@ -5843,7 +6232,7 @@
       if (activeModalMode === 'edit' && activeEditingNoteId) {
         showCustomConfirm("刪除確認", "確定要永久刪除此敏捷卡片嗎？", function() {
           pushHistory();
-          stopLockHeartbeat();
+          releaseEditLock();
           const noteIdToDelete = activeEditingNoteId;
           boardState.notes = boardState.notes.filter(n => n.id !== noteIdToDelete);
           if (boardState.lines) {

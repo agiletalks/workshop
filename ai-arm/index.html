@@ -5928,7 +5928,7 @@
 
       // 輸入權限 (學員必須是本組、未被隊友鎖定、且非班級唯讀)
       const canEdit = isMyTeam && !isLockedByOther && !isClassReadOnly;
-      memoInput.disabled = !canEdit;
+      memoInput.readOnly = !canEdit;
       const memoWrapper = document.getElementById('memo-input-wrapper');
       if (memoWrapper) {
         if (!canEdit) {

@@ -2024,7 +2024,7 @@
 
       // 輸入權限
       const canEdit = isMyTeam && !isLockedByOther;
-      memoInput.disabled = !canEdit;
+      memoInput.readOnly = !canEdit;
       const memoWrapper = document.getElementById('memo-input-wrapper');
       if (memoWrapper) {
         if (!isMyTeam) {
