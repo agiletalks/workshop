@@ -1417,8 +1417,8 @@
                         </div>
 
                         <div style="text-align: center;">
-                            <button id="btnViewResult" class="btn btn-pink" style="padding: 14px 28px; width: 100%; font-size:15px;" onclick="goToSlide(11)" disabled>
-                                🔓 查看大家通常怎麼選 (完成填寫解鎖)
+                            <button id="btnViewResult" class="btn btn-pink" style="padding: 14px 28px; width: 100%; font-size:15px; cursor: pointer;" onclick="goToSlide(11)">
+                                🔓 查看大家通常怎麼選 (點擊進入下一頁揭曉)
                             </button>
                         </div>
                     </div>
@@ -2589,13 +2589,7 @@
 
             if (slideNum < 1 || slideNum > TOTAL_SLIDES) return;
 
-            // Page 10 locks check
-            if (slideNum === 11 && currentSlide === 10) {
-                if (!checkSlide10Completed()) {
-                    alert("請先完成本頁面中的書寫練習與信心評分，以解讀您的直覺結果。");
-                    return;
-                }
-            }
+            // Page 10 locks check - non-blocking to allow presentation and smooth navigation
 
             const currentEl = document.getElementById(`slide-${currentSlide}`);
             const nextEl = document.getElementById(`slide-${slideNum}`);
@@ -2769,8 +2763,7 @@
         function checkSlideUnlocks() {
             const btn = document.getElementById('btnViewResult');
             if (btn) {
-                const complete = checkSlide10Completed();
-                btn.disabled = !complete;
+                btn.disabled = false;
             }
 
             // Disable next/prev actions on boundaries
