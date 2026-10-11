@@ -2122,6 +2122,10 @@
       }
       isSyncWriteInFlight = true;
 
+      // 記錄本次交易發起時的本地快照基準 (用於在交易完成後，精確計算發起後產生的本地並行異動)
+      const localNotesAtStart = buildSyncBaseMap(boardState.notes);
+      const localLinesAtStart = buildSyncBaseMap(boardState.lines);
+
       try {
         const deltaNotes = computeLocalDelta(boardState.notes, syncBaseNotes);
         const deltaLines = computeLocalDelta(boardState.lines, syncBaseLines);
@@ -2135,6 +2139,9 @@
           setSyncStatus('synced', isBoardReadOnly ? '唯讀觀摩模式' : '全組即時協作中');
           return;
         }
+
+        let committedNotes = null;
+        let committedLines = null;
 
         // 採用 Firestore Transaction 保障伺服器端資料合併不相互覆寫
         await db.runTransaction(async (transaction) => {
@@ -2161,17 +2168,28 @@
 
           transaction.set(roomDocRef, toSave, { merge: true });
 
-          // 1. 將伺服器確認成功的資料更新為最新同步基準
-          syncBaseNotes = buildSyncBaseMap(mergedNotes);
-          syncBaseLines = buildSyncBaseMap(mergedLines);
-
-          // 2. 核心修正：計算交易傳輸期間本機發生的後續異動 (如連續新建「螺旋2」卡片)，重新嫁接保留！
-          const concurrentNotesDelta = computeLocalDelta(boardState.notes, syncBaseNotes);
-          const concurrentLinesDelta = computeLocalDelta(boardState.lines, syncBaseLines);
-          boardState.notes = applyDeltaOntoNotes(mergedNotes, concurrentNotesDelta, false);
-          boardState.lines = applyDeltaOntoLines(mergedLines, concurrentLinesDelta, false);
-          boardState._metaDirty = false;
+          // 僅記錄待提交內容，不提前於交易回調內改動外部本地狀態 (防止交易衝突重試導致髒狀態)
+          committedNotes = mergedNotes;
+          committedLines = mergedLines;
         });
+
+        // 交易成功提交後，更新本地狀態與同步基準：
+        if (committedNotes) {
+          // 1. 將伺服器確認成功的資料更新為最新同步基準
+          syncBaseNotes = buildSyncBaseMap(committedNotes);
+          syncBaseLines = buildSyncBaseMap(committedLines);
+
+          // 2. 核心修正：計算交易傳輸期間本機發生的後續異動 (如連續新建卡片)，
+          // 基準必須相對於交易開始時的本地狀態 localNotesAtStart 計算，不可誤將伺服器新增卡片當成本地刪除！
+          const concurrentNotesDelta = computeLocalDelta(boardState.notes, localNotesAtStart);
+          const concurrentLinesDelta = computeLocalDelta(boardState.lines, localLinesAtStart);
+          boardState.notes = applyDeltaOntoNotes(committedNotes, concurrentNotesDelta, false);
+          boardState.lines = applyDeltaOntoLines(committedLines, concurrentLinesDelta, false);
+          boardState._metaDirty = false;
+
+          renderNotes();
+          renderConnections();
+        }
 
         setSyncStatus('synced', '全組即時協作中');
         localStorage.setItem(APP_ID + '_' + CURRENT_ROOM_ID, JSON.stringify(boardState));
@@ -2189,11 +2207,13 @@
           }, { merge: true });
           syncBaseNotes = buildSyncBaseMap(cleanNotes);
           syncBaseLines = buildSyncBaseMap(cleanLines);
-          const concurrentNotesDelta = computeLocalDelta(boardState.notes, syncBaseNotes);
-          const concurrentLinesDelta = computeLocalDelta(boardState.lines, syncBaseLines);
+          const concurrentNotesDelta = computeLocalDelta(boardState.notes, localNotesAtStart);
+          const concurrentLinesDelta = computeLocalDelta(boardState.lines, localLinesAtStart);
           boardState.notes = applyDeltaOntoNotes(cleanNotes, concurrentNotesDelta, false);
           boardState.lines = applyDeltaOntoLines(cleanLines, concurrentLinesDelta, false);
           boardState._metaDirty = false;
+          renderNotes();
+          renderConnections();
           setSyncStatus('synced', '全組即時協作中');
           localStorage.setItem(APP_ID + '_' + CURRENT_ROOM_ID, JSON.stringify(boardState));
         } catch (fallbackErr) {
