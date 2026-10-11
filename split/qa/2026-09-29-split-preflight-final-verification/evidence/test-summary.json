@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-09-29T15:09:12.305Z",
+  "commit": "36f9844",
+  "classId": "qa-split-test-01",
+  "testResults": {
+    "tc01_real_voice_and_gemini_api": {
+      "pass": true,
+      "details": "Google Gemini generateContent HTTP 200 OK (1 次呼叫). 產出 2 張高質量便利貼，語音錯字修復（三酸來吃->姍姍來遲，無奉前見->無縫銜接），零 AI 機器人字眼。"
+    },
+    "tc02_clean_transcript_and_student_isolation": {
+      "pass": true,
+      "details": "講師端逐字稿清稿去除「呃，然後」並智慧校正錯別字；學員端完全隔離逐字稿分頁 (count=0)，且新便籤無刷新即時浮現。"
+    },
+    "tc03_textbook_generation_and_print_preview": {
+      "pass": true,
+      "details": "全日教材專書順暢生成，四大標準章節結構完整，封面具備姓名、組別與出刊日期個人化標籤，收錄投影片高清插圖、隨堂重點便籤與雙附錄（提示詞工具箱與小組討論成果）。"
+    },
+    "tc04_responsive_dpi_125_zoom_1366x768": {
+      "pass": true,
+      "details": "在 1366x768 筆電解析度與 125% DPI 縮放情境下，TopBar 頂部列按鈕強制維持單行 (whitespace-nowrap)，絕無文字折行或碎裂破格；Workbook 講義面板四大標籤與右側動態按鈕排版流暢無重疊。"
+    }
+  },
+  "consoleErrors": {
+    "instructor": [],
+    "student": []
+  },
+  "networkCallsCount": 14
+}

@@ -72,6 +72,18 @@ const builtinPrompts: Record<string, SlidePromptItem> = {
   }
 };
 
+// 便利貼高質感印刷配色輔助
+const getStickyBgColor = (color?: string) => {
+  switch (color) {
+    case 'yellow': return 'bg-amber-50/90 border-amber-200 text-amber-950 shadow-xs';
+    case 'blue': return 'bg-sky-50/90 border-sky-200 text-sky-950 shadow-xs';
+    case 'green': return 'bg-emerald-50/90 border-emerald-200 text-emerald-950 shadow-xs';
+    case 'pink': return 'bg-rose-50/90 border-rose-200 text-rose-950 shadow-xs';
+    case 'purple': return 'bg-purple-50/90 border-purple-200 text-purple-950 shadow-xs';
+    default: return 'bg-amber-50/90 border-amber-200 text-amber-950 shadow-xs';
+  }
+};
+
 // 輕量級高質感教科書 Markdown 排版元件
 const MarkdownTextbookChapter: React.FC<{ content: string }> = ({ content }) => {
   const lines = content.split('\n');
@@ -486,7 +498,7 @@ export const PrintHandbookModal: React.FC<PrintHandbookModalProps> = ({
                               return (
                                 <div
                                   key={ms.id}
-                                  className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 print:border-slate-300 print:p-2"
+                                  className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 print:border-slate-300 print:p-2 print:break-inside-avoid"
                                 >
                                   {sUrl && (
                                     <div className="rounded-xl overflow-hidden border border-slate-200 bg-white">
@@ -509,6 +521,47 @@ export const PrintHandbookModal: React.FC<PrintHandbookModalProps> = ({
                                   </div>
                                 </div>
                               );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 隨堂重點便籤精選 (Key Highlights Stickies) */}
+                      {modSlides.some((s) => lectureNotesMap[s.id]?.stickies?.length > 0) && (
+                        <div className="pt-8 border-t border-slate-200 print:break-inside-avoid">
+                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                            <span>📌 本章隨堂重點便籤 (Key Highlights)</span>
+                          </h4>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {modSlides.map((ms) => {
+                              const slideStickies = lectureNotesMap[ms.id]?.stickies || [];
+                              if (slideStickies.length === 0) return null;
+                              return slideStickies.map((stk) => (
+                                <div
+                                  key={stk.id}
+                                  className={`p-4 rounded-2xl border shadow-xs print:border-slate-300 print:break-inside-avoid ${getStickyBgColor(
+                                    stk.color
+                                  )}`}
+                                >
+                                  <div className="flex items-center justify-between mb-2 pb-1 border-b border-black/10">
+                                    <h5 className="font-black text-xs sm:text-sm text-slate-900 truncate">
+                                      {stk.title}
+                                    </h5>
+                                    <span className="text-[10px] font-mono text-slate-500 shrink-0 ml-2">
+                                      第 {ms.page} 頁
+                                    </span>
+                                  </div>
+                                  <ul className="space-y-1.5 text-xs leading-relaxed">
+                                    {stk.points.map((pt, pIdx) => (
+                                      <li key={pIdx} className="flex items-start gap-1.5">
+                                        <span className="font-bold shrink-0">•</span>
+                                        <span>{pt}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ));
                             })}
                           </div>
                         </div>
@@ -593,11 +646,12 @@ export const PrintHandbookModal: React.FC<PrintHandbookModalProps> = ({
 
                 <div className="space-y-6">
                   {slides
-                    .filter((s) => s.slideKind === 'task' || s.teamTask)
+                    .filter((s) => s.slideKind === 'task' || s.teamTask || Boolean(teamNotesMap[s.id]?.memo?.trim()))
                     .map((ts, tIdx) => {
                       const note = teamNotesMap[ts.id];
                       const hasNote = Boolean(note?.memo?.trim());
                       const atts = note?.attachments || [];
+                      const isTaskSlide = ts.slideKind === 'task' || Boolean(ts.teamTask);
 
                       return (
                         <div
@@ -607,7 +661,7 @@ export const PrintHandbookModal: React.FC<PrintHandbookModalProps> = ({
                           <div className="flex items-center justify-between border-b border-teal-200/80 pb-2">
                             <div className="flex items-center gap-2">
                               <span className="px-2 py-0.5 bg-teal-700 text-white rounded text-[10px] font-black">
-                                演練任務 {tIdx + 1}
+                                {isTaskSlide ? `演練任務 ${tIdx + 1}` : '隨堂成果筆記'}
                               </span>
                               <h4 className="font-black text-sm text-teal-950">
                                 {ts.title}

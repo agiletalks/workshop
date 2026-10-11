@@ -1408,7 +1408,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab("note")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === "note"
                   ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
                   : "text-slate-600 hover:text-slate-900"
@@ -1422,7 +1422,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab("stickies")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === "stickies"
                 ? "bg-white text-emerald-800 shadow-xs border border-slate-200/80"
                 : "text-slate-600 hover:text-slate-900"
@@ -1438,7 +1438,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab("prompts")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === "prompts"
                 ? "bg-white text-indigo-800 shadow-xs border border-slate-200/80"
                 : "text-slate-600 hover:text-slate-900"
@@ -1454,7 +1454,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab("examples")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === "examples"
                 ? "bg-white text-fubon-blue shadow-xs border border-slate-200/80"
                 : "text-slate-600 hover:text-slate-900"
@@ -1471,7 +1471,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab("transcript")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === "transcript"
                   ? "bg-white text-rose-800 shadow-xs border border-slate-200/80"
                   : "text-rose-700 hover:text-rose-900"
@@ -1488,7 +1488,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
         </div>
 
         {/* 右側動態工具列 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* 講師專屬：單一共享教材資源上傳按鈕 (支援提示詞/附件) */}
           {isInstructor && (
             <button
@@ -1497,7 +1497,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 setUnifiedModalInitialType(activeTab === "examples" ? "attachment" : "prompt");
                 setShowUnifiedModal(true);
               }}
-              className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
+              className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer whitespace-nowrap shrink-0"
               title="上傳本頁教材資源（AI 提示詞或範例附件）"
             >
               <span>➕ 上傳資源</span>
@@ -1505,10 +1505,10 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
           )}
 
           {activeTab === "stickies" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {/* 講述時間標籤 */}
               {hasLectureContent && lectureData?.recordedSeconds ? (
-                <span className="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-1 rounded-lg border border-slate-200/60 hidden sm:inline-block">
+                <span className="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-1 rounded-lg border border-slate-200/60 hidden sm:inline-block whitespace-nowrap shrink-0">
                   講述 {formatTimer(lectureData.recordedSeconds)}
                 </span>
               ) : null}
@@ -1525,7 +1525,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                       points: ["重點一"]
                     });
                   }}
-                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap shrink-0"
                   title="手動新增一張重點便利貼"
                 >
                   <span>➕ 新增便籤</span>
@@ -1538,7 +1538,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowRerecordModal(true)}
-                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap shrink-0"
                     title="補充講述或重新錄製此頁"
                   >
                     <span className="w-2 h-2 rounded-full bg-rose-500" />
@@ -1548,7 +1548,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => onStartLectureRecord?.(slide.id, slide.title, slide.page, 'fresh')}
-                    className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-black transition-all flex items-center gap-1.5 shadow-sm shadow-rose-600/20 cursor-pointer active:scale-95"
+                    className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-black transition-all flex items-center gap-1.5 shadow-sm shadow-rose-600/20 cursor-pointer active:scale-95 whitespace-nowrap shrink-0"
                     title="開始講課錄音，講完小編將自動為全班整理重點"
                   >
                     <span className="w-2 h-2 rounded-full bg-white animate-pulse" />

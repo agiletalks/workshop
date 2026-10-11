@@ -1,6 +1,6 @@
 # SPLIT 專案目前待驗收任務總覽 (Current QA Tasks)
 
-> **最後更新**：2026-09-28  
+> **最後更新**：2026-09-29  
 > **維護端**：DEV 開發團隊  
 > **適用對象**：AgileTalks 中央 QA 驗收工程師  
 
@@ -22,6 +22,7 @@ QA 工程師接單時，請直接點擊對應的「驗收需求委託書」開�
 | **TASK-SPLIT-08** | **四大支柱內容架構、統一資源上傳器與全日教材專書生成** | 全新功能驗收<br>(R1 Verification) | 🟢 **驗收通過 (CLOSED)**<br>(QA 雙端 E2E 驗收完成) | [`split/qa/2026-09-28-split-textbook-and-resources/QA_BRIEF_TEXTBOOK_AND_RESOURCES.md`](file:///c:/Antigravity/workshop/split/qa/2026-09-28-split-textbook-and-resources/QA_BRIEF_TEXTBOOK_AND_RESOURCES.md) | [`split/qa/2026-09-28-split-textbook-and-resources/reports/QA_VERIFICATION_R1_textbook_resources_18078dd_20260928.md`](file:///c:/Antigravity/workshop/split/qa/2026-09-28-split-textbook-and-resources/reports/QA_VERIFICATION_R1_textbook_resources_18078dd_20260928.md) |
 | **TASK-SPLIT-09** | **隨堂小編深度思索提煉、逐字稿修潤與一體化自動整理** | 全新功能驗收<br>(R1 Verification) | 🟢 **驗收通過 (CLOSED)**<br>(QA 雙端 E2E 驗收完成) | [`split/qa/2026-09-29-split-voice-synthesis-and-transcript/QA_BRIEF_VOICE_SYNTHESIS.md`](file:///c:/Antigravity/workshop/split/qa/2026-09-29-split-voice-synthesis-and-transcript/QA_BRIEF_VOICE_SYNTHESIS.md) | [`split/qa/2026-09-29-split-voice-synthesis-and-transcript/reports/QA_VERIFICATION_R1_voice_synthesis_2e915bb_20260929.md`](file:///c:/Antigravity/workshop/split/qa/2026-09-29-split-voice-synthesis-and-transcript/reports/QA_VERIFICATION_R1_voice_synthesis_2e915bb_20260929.md) |
 | **TASK-SPLIT-10** | **投影畫面 QR Code 旁路直通修復與學員密碼明文輸入** | 安全與體驗驗收<br>(R1 Verification) | 🟢 **驗收通過 (CLOSED)**<br>(QA 多端 E2E 驗收完成) | [`split/qa/2026-09-29-split-gate-qrcode-and-plaintext-password/QA_BRIEF_QR_SECURITY_AND_PASS.md`](file:///c:/Antigravity/workshop/split/qa/2026-09-29-split-gate-qrcode-and-plaintext-password/QA_BRIEF_QR_SECURITY_AND_PASS.md) | [`split/qa/2026-09-29-split-gate-qrcode-and-plaintext-password/reports/QA_VERIFICATION_R1_qr_security_and_pass_b28d35a_20260929.md`](file:///c:/Antigravity/workshop/split/qa/2026-09-29-split-gate-qrcode-and-plaintext-password/reports/QA_VERIFICATION_R1_qr_security_and_pass_b28d35a_20260929.md) |
+| **TASK-SPLIT-11** | **開課前終極現場防線與交付價值驗收** | 上線前綜合驗收<br>(R1 Final) | 🟢 **驗收通過 (CLOSED)**<br>(QA 雙端 E2E 驗收完成) | [`split/qa/2026-09-29-split-preflight-final-verification/QA_BRIEF_PREFLIGHT_FINAL.md`](file:///c:/Antigravity/workshop/split/qa/2026-09-29-split-preflight-final-verification/QA_BRIEF_PREFLIGHT_FINAL.md) | [`split/qa/2026-09-29-split-preflight-final-verification/reports/QA_VERIFICATION_R1_preflight_final_36f9844_20260929.md`](file:///c:/Antigravity/workshop/split/qa/2026-09-29-split-preflight-final-verification/reports/QA_VERIFICATION_R1_preflight_final_36f9844_20260929.md) |
 
 
 ---
