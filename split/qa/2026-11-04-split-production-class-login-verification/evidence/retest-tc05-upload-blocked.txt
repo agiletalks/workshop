@@ -1,0 +1,1 @@
+Chrome and Edge fileChooser.setFiles both rejected local file upload: ChatGPT extension requires Allow access to file URLs. No image was uploaded. Test file: retest-tc05-test-image.png, 4042 bytes. Browser permission settings were not changed.

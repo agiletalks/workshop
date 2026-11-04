@@ -1,0 +1,206 @@
+- banner:
+  - button "收合單元進度":
+  - generic: SP
+  - heading "SPLIT 需求拆解實戰" [level=1]
+  - combobox:
+    - option "第 1 組 (我的組)" [selected]
+    - option "第 2 組 (觀摩)"
+    - option "第 3 組 (觀摩)"
+    - option "第 4 組 (觀摩)"
+    - option "第 5 組 (觀摩)"
+    - option "第 6 組 (觀摩)"
+  - button "📋 小組白板":
+    - generic: 📋 小組白板
+  - generic "點擊切換使用者或班級":
+    - generic: Q
+    - generic "QA-20261104-MobileSim"
+  - button "🖨️ 列印筆記":
+    - generic: 🖨️ 列印筆記
+- complementary:
+  - generic: 課程單元與進度
+  - button "🔄":
+    - generic: 🔄
+  - generic: 28 SLIDES
+  - heading "E 敏捷需求基本概念" [level=3]:
+    - generic: E
+    - text: 敏捷需求基本概念
+  - generic: 0%
+  - button "P.01 SPLIT 需求分解的技術":
+    - generic: P.01
+    - generic: SPLIT 需求分解的技術
+  - button "P.02 目錄":
+    - generic: P.02
+    - generic: 目錄
+  - button "P.03 Ready & DONE":
+    - generic: P.03
+    - generic: Ready & DONE
+  - button "🎯 【團隊演練】DoR 準備就緒檢核實戰（QA 驗收演練頁） 演練":
+    - generic: 🎯
+    - generic: 【團隊演練】DoR 準備就緒檢核實戰（QA 驗收演練頁）
+    - generic: 演練
+  - button "P.05 User Story":
+    - generic: P.05
+    - generic: User Story
+  - button "P.06 需求的階層":
+    - generic: P.06
+    - generic: 需求的階層
+  - heading "S 結構與價值脈絡" [level=3]:
+    - generic: S
+    - text: 結構與價值脈絡
+  - generic: 0%
+  - button "P.07 Structure":
+    - generic: P.07
+    - generic: Structure
+  - button "P.08 WBS":
+    - generic: P.08
+    - generic: WBS
+  - button "P.09 Impact Map":
+    - generic: P.09
+    - generic: Impact Map
+  - button "P.10 Story Map":
+    - generic: P.10
+    - generic: Story Map
+  - heading "P 流程與價值流" [level=3]:
+    - generic: P
+    - text: 流程與價值流
+  - generic: 0%
+  - button "P.11 Process":
+    - generic: P.11
+    - generic: Process
+  - button "P.12 Road Map":
+    - generic: P.12
+    - generic: Road Map
+  - button "P.13 Value Stream":
+    - generic: P.13
+    - generic: Value Stream
+  - button "P.14 Kanban Board":
+    - generic: P.14
+    - generic: Kanban Board
+  - button "P.15 Scenario":
+    - generic: P.15
+    - generic: Scenario
+  - heading "L 實驗與不確定性" [level=3]:
+    - generic: L
+    - text: 實驗與不確定性
+  - generic: 0%
+  - button "P.16 Learn":
+    - generic: P.16
+    - generic: Learn
+  - button "P.17 MVP":
+    - generic: P.17
+    - generic: MVP
+  - button "P.18 Spike":
+    - generic: P.18
+    - generic: Spike
+  - heading "I 可增量交付計劃" [level=3]:
+    - generic: I
+    - text: 可增量交付計劃
+  - generic: 0%
+  - button "P.19 Increment":
+    - generic: P.19
+    - generic: Increment
+  - button "P.20 A and B":
+    - generic: P.20
+    - generic: A and B
+  - button "P.21 Dependency":
+    - generic: P.21
+    - generic: Dependency
+  - button "P.22 Discount":
+    - generic: P.22
+    - generic: Discount
+  - button "P.23 Decision Table":
+    - generic: P.23
+    - generic: Decision Table
+  - heading "T 可執行工作拆解" [level=3]:
+    - generic: T
+    - text: 可執行工作拆解
+  - generic: 0%
+  - button "P.24 Task":
+    - generic: P.24
+    - generic: Task
+  - button "P.25 Spider":
+    - generic: P.25
+    - generic: Spider
+  - button "P.26 Timetable":
+    - generic: P.26
+    - generic: Timetable
+  - button "P.27 Gannt":
+    - generic: P.27
+    - generic: Gannt
+  - button "P.28 Are You Ready":
+    - generic: P.28
+    - generic: Are You Ready
+- generic: E
+- generic: 【團隊演練】DoR 準備就緒檢核實戰（QA 驗收演練頁）
+- generic: 頁碼 4 / 28
+- generic: 🎯 小組討論 & 成果上傳
+- generic: ⏱️
+- generic: 建議時間：15 分鐘
+- heading "【團隊演練】DoR 準備就緒檢核實戰（QA 驗收演練頁）" [level=2]
+- paragraph: ⏱️ 建議時間：15 分鐘｜小組共創與成果交付
+- generic: 📋
+- generic: 任務情境背景
+- paragraph: 產品負責人提出一項跨部門需求：「新增企業客戶批次匯入與權限審核功能」，預計下個 Sprint 進入開發。請各組運用 INVEST 原則與 DoR 清單進行需求體檢。
+- generic: 🎯
+- generic: 小組核心挑戰目標
+- paragraph: 辨識需求進入 Sprint 前的缺失資訊，並於右側「📝 小組成果筆記」完成文字記錄、圖片上傳與外部連結交付。
+- generic: 📤
+- heading "第 1 組實作成果交付庫" [level=3]
+- generic: 0 項產出
+- paragraph: 支援圖檔截圖、PDF 報告、HTML 網頁原型與 Figma/Miro 網頁外鏈
+- button "📁 上傳檔案":
+  - generic: 📁
+  - generic: 上傳檔案
+- button "🔗 提交外鏈":
+  - generic: 🔗
+  - generic: 提交外鏈
+- generic: 第 1 組尚未提交成果，請點擊上方按鈕上傳圖檔、PDF、HTML 或提交網頁外鏈
+- generic: 🔢
+- generic: 執行步驟指引
+- generic: "1"
+- generic: 點擊右側「📝 小組成果筆記」頁籤，按下「爭取編輯權」並輸入小組共識結論。
+- generic: "2"
+- generic: 於下方「成果交付與附件上傳」區塊，測試上傳一張小於 800KB 的圖片或截圖。
+- generic: "3"
+- generic: 點擊「＋ 新增成果連結」，提交一筆外部協作連結（如 Miro / Figma / Google Docs 測試網址）。
+- generic: 📦
+- generic: 成果交付與驗收標準
+- paragraph: 1. 小組共識筆記文字 1 則 2. 測試圖片附件 1 張 3. 測試外部連結 1 筆
+- button "🎨 開啟第 1 組專屬協作白板進行演練":
+  - generic: 🎨
+  - generic: 開啟第 1 組專屬協作白板進行演練
+- generic: 💡
+- generic: 課堂提示詞範本 (點擊一鍵複製)：
+- button "請協助我們根據 INVEST 原則檢視「企業客戶批次匯入與權限審核功能」，列出 3 個最關鍵的 DoR 驗收提問。 複製":
+  - generic: 請協助我們根據 INVEST 原則檢視「企業客戶批次匯入與權限審核功能」，列出 3 個最關鍵的 DoR 驗收提問。
+  - generic: 複製
+- button "上一頁 (左方向鍵)":
+- button "下一頁 (右方向鍵)":
+- button "上一頁":
+  - text: 上一頁
+- generic: SLIDE 4 / 28
+- button "下一頁":
+  - text: 下一頁
+- button "📝 小組成果筆記" [active]:
+  - generic: 📝 小組成果筆記
+- button "📌 重點便利貼 0":
+  - generic: 📌 重點便利貼
+  - generic: "0"
+- button "💡 提示詞工具 0":
+  - generic: 💡 提示詞工具
+  - generic: "0"
+- button "🖼️ 範例與附件 0":
+  - generic: 🖼️ 範例與附件
+  - generic: "0"
+- generic: 0 / 10,000 字
+- button "🎙️ 語音筆記":
+  - generic: 🎙️ 語音筆記
+- textbox "請在此記錄小組討論結論與共識，全員皆可於下方上傳成果……"
+- generic: 📎 小組產出與附件 (0)
+- button "📁 上傳檔案":
+  - generic: 📁 上傳檔案
+- button "🔗 提交連結":
+  - generic: 🔗 提交連結
+- button "💬 課堂提問":
+  - generic: 💬
+  - generic: 課堂提問

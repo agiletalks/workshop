@@ -1,0 +1,159 @@
+- banner:
+  - button "收合單元進度":
+  - generic: SP
+  - heading "SPLIT 需求拆解實戰" [level=1]
+  - combobox:
+    - option "第 1 組 (我的組)" [selected]
+    - option "第 2 組 (觀摩)"
+    - option "第 3 組 (觀摩)"
+    - option "第 4 組 (觀摩)"
+    - option "第 5 組 (觀摩)"
+    - option "第 6 組 (觀摩)"
+  - button "📋 小組白板":
+    - generic: 📋 小組白板
+  - generic "點擊切換使用者或班級":
+    - generic: Q
+    - generic "QA-Retest-PC"
+  - button "🖨️ 列印筆記":
+    - generic: 🖨️ 列印筆記
+- complementary:
+  - generic: 課程單元與進度
+  - button "🔄":
+    - generic: 🔄
+  - generic: 28 SLIDES
+  - heading "E 敏捷需求基本概念" [level=3]:
+    - generic: E
+    - text: 敏捷需求基本概念
+  - generic: 0%
+  - button "P.01 SPLIT 需求分解的技術":
+    - generic: P.01
+    - generic: SPLIT 需求分解的技術
+  - button "P.02 目錄":
+    - generic: P.02
+    - generic: 目錄
+  - button "P.03 Ready & DONE":
+    - generic: P.03
+    - generic: Ready & DONE
+  - button "🎯 【團隊演練】DoR 準備就緒檢核實戰（QA 驗收演練頁） 演練":
+    - generic: 🎯
+    - generic: 【團隊演練】DoR 準備就緒檢核實戰（QA 驗收演練頁）
+    - generic: 演練
+  - button "P.05 User Story":
+    - generic: P.05
+    - generic: User Story
+  - button "P.06 需求的階層":
+    - generic: P.06
+    - generic: 需求的階層
+  - heading "S 結構與價值脈絡" [level=3]:
+    - generic: S
+    - text: 結構與價值脈絡
+  - generic: 0%
+  - button "P.07 Structure":
+    - generic: P.07
+    - generic: Structure
+  - button "P.08 WBS":
+    - generic: P.08
+    - generic: WBS
+  - button "P.09 Impact Map":
+    - generic: P.09
+    - generic: Impact Map
+  - button "P.10 Story Map":
+    - generic: P.10
+    - generic: Story Map
+  - heading "P 流程與價值流" [level=3]:
+    - generic: P
+    - text: 流程與價值流
+  - generic: 0%
+  - button "P.11 Process":
+    - generic: P.11
+    - generic: Process
+  - button "P.12 Road Map":
+    - generic: P.12
+    - generic: Road Map
+  - button "P.13 Value Stream":
+    - generic: P.13
+    - generic: Value Stream
+  - button "P.14 Kanban Board":
+    - generic: P.14
+    - generic: Kanban Board
+  - button "P.15 Scenario":
+    - generic: P.15
+    - generic: Scenario
+  - heading "L 實驗與不確定性" [level=3]:
+    - generic: L
+    - text: 實驗與不確定性
+  - generic: 0%
+  - button "P.16 Learn":
+    - generic: P.16
+    - generic: Learn
+  - button "P.17 MVP":
+    - generic: P.17
+    - generic: MVP
+  - button "P.18 Spike":
+    - generic: P.18
+    - generic: Spike
+  - heading "I 可增量交付計劃" [level=3]:
+    - generic: I
+    - text: 可增量交付計劃
+  - generic: 0%
+  - button "P.19 Increment":
+    - generic: P.19
+    - generic: Increment
+  - button "P.20 A and B":
+    - generic: P.20
+    - generic: A and B
+  - button "P.21 Dependency":
+    - generic: P.21
+    - generic: Dependency
+  - button "P.22 Discount":
+    - generic: P.22
+    - generic: Discount
+  - button "P.23 Decision Table":
+    - generic: P.23
+    - generic: Decision Table
+  - heading "T 可執行工作拆解" [level=3]:
+    - generic: T
+    - text: 可執行工作拆解
+  - generic: 0%
+  - button "P.24 Task":
+    - generic: P.24
+    - generic: Task
+  - button "P.25 Spider":
+    - generic: P.25
+    - generic: Spider
+  - button "P.26 Timetable":
+    - generic: P.26
+    - generic: Timetable
+  - button "P.27 Gannt":
+    - generic: P.27
+    - generic: Gannt
+  - button "P.28 Are You Ready":
+    - generic: P.28
+    - generic: Are You Ready
+- generic: E
+- generic: SPLIT 需求分解的技術
+- generic: 頁碼 1 / 28
+- img "第 1 頁：SPLIT 需求分解的技術"
+- text: 點擊放大
+- button "上一頁 (左方向鍵)":
+- button "下一頁 (右方向鍵)":
+- button "上一頁" [disabled]:
+  - text: 上一頁
+- generic: SLIDE 1 / 28
+- button "下一頁":
+  - text: 下一頁
+- button "📌 重點便利貼 0":
+  - generic: 📌 重點便利貼
+  - generic: "0"
+- button "💡 提示詞工具 0":
+  - generic: 💡 提示詞工具
+  - generic: "0"
+- button "🖼️ 範例與附件 0":
+  - generic: 🖼️ 範例與附件
+  - generic: "0"
+- generic: ✨
+- heading "✨ 本頁隨堂重點整理中" [level=4]
+- paragraph: 課堂進行講授後，隨堂重點與精華內容將在此為大家即時呈現。
+- button "💬 課堂提問":
+  - generic: 💬
+  - generic: 課堂提問
