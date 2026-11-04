@@ -1,0 +1,1 @@
+2026-11-04: User reported file URL access enabled. Current Chrome and Edge sessions both still rejected fileChooser.setFiles for retest-tc05-test-image.png (4042 bytes): To enable file upload, go to chrome://extensions (Edge: edge://extensions), click Details under ChatGPT extension, enable Allow access to file URLs. No image submitted. No product upload result inferred.
