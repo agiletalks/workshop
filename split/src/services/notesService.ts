@@ -9,7 +9,8 @@ import {
   type Unsubscribe,
   type Firestore
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from './firebase';
 
 export interface NoteAttachment {
   id: string;
@@ -468,4 +469,65 @@ export async function removeNoteAttachment(
       updatedBy: user.uid
     });
   });
+}
+
+/**
+ * 讀取本地檔案為 DataURL (離線或小檔備援)
+ */
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve((e.target?.result as string) || '');
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * 上傳附件檔案 (支援至 5MB)
+ * 優先上傳至 Firebase Cloud Storage，若 Storage 不可用且檔案小於 800KB 則降級為 DataURL
+ */
+export async function uploadAttachmentFile(
+  classId: string,
+  generationId: number,
+  slideId: string,
+  teamId: number,
+  file: File
+): Promise<{ url: string; mime: string; name: string; size: number }> {
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('FILE_TOO_LARGE');
+  }
+
+  let mime = file.type;
+  if (!mime) {
+    if (/\.html?$/i.test(file.name)) mime = 'text/html';
+    else if (/\.pdf$/i.test(file.name)) mime = 'application/pdf';
+    else mime = 'application/octet-stream';
+  }
+
+  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const timestamp = Date.now();
+  const storagePath = `workshop_attachments/${classId}/gen_${generationId}/${slideId}_team${teamId}/${timestamp}_${cleanName}`;
+
+  if (storage) {
+    try {
+      const storageRef = ref(storage, storagePath);
+      const snapshot = await uploadBytes(storageRef, file, { contentType: mime });
+      const downloadUrl = await getDownloadURL(snapshot.ref);
+      return { url: downloadUrl, mime, name: file.name, size: file.size };
+    } catch (storageErr) {
+      console.warn('[Storage] Cloud storage upload failed, attempting fallback:', storageErr);
+      if (file.size <= 800 * 1024) {
+        const dataUrl = await readFileAsDataUrl(file);
+        return { url: dataUrl, mime, name: file.name, size: file.size };
+      }
+      throw storageErr;
+    }
+  }
+
+  if (file.size <= 800 * 1024) {
+    const dataUrl = await readFileAsDataUrl(file);
+    return { url: dataUrl, mime, name: file.name, size: file.size };
+  }
+  throw new Error('CLOUD_STORAGE_REQUIRED');
 }
