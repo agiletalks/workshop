@@ -136,6 +136,7 @@ export function subscribeClassMetadata(
         teamCount: Number(d.teamCount) || 6,
         status: d.status === 'active' ? 'active' : 'inactive',
         currentGeneration: Number(d.currentGeneration) || 1,
+        passcodeHash: d.passcodeHash,
         notes: d.notes || ''
       });
     } else {

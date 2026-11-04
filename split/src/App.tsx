@@ -902,7 +902,21 @@ function App() {
       questionsCount={questions.length}
       unansweredQuestionsCount={unansweredCount}
       isInstructor={userSession?.role === 'instructor'}
-      onOpenCheckIn={() => setUserSession(null)}
+      onOpenCheckIn={() => {
+        if (userSession?.classId) {
+          localStorage.removeItem(`split_user_session_${userSession.classId.toLowerCase()}`);
+        }
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const urlClass = (params.get("c") || params.get("class"))?.trim().toLowerCase();
+          if (urlClass) {
+            localStorage.removeItem(`split_user_session_${urlClass}`);
+          }
+        } catch (_) {}
+        localStorage.removeItem('split_user_session');
+        sessionStorage.removeItem("split_courseware_authorized");
+        setUserSession(null);
+      }}
       onInsertTask={() => handleOpenCreateTask(activeSlide?.id)}
       onOpenPrintHandbook={() => setIsPrintHandbookOpen(true)}
       activeSlideId={workbook.activeSlideId}

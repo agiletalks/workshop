@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { appConfig } from "../data/app-config";
@@ -90,10 +90,12 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
   const [classId, setClassId] = useState("");
   const [isUrlClassLocked, setIsUrlClassLocked] = useState(false);
   const [teamId, setTeamId] = useState(1);
+  const [teamCount, setTeamCount] = useState(6);
   const [name, setName] = useState("");
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const prefetchedClassRef = useRef<{ id: string; data: any; fetchedAt: number } | null>(null);
 
   const [verifyingSession, setVerifyingSession] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -249,6 +251,12 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
           }
 
           const classData = snap.data();
+          prefetchedClassRef.current = { id: normalizedClass, data: classData, fetchedAt: Date.now() };
+          const count = Number(classData.teamCount) || 6;
+          if (isMounted) {
+            setTeamCount(count);
+          }
+
           // 1. 若班級處於停用狀態，立即清除快取並阻擋
           if (classData.status === 'inactive') {
             localStorage.removeItem(classKey);
@@ -290,6 +298,41 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
     };
   }, [onAuthorized]);
 
+  // 根據班級代碼預先讀取雲端班級設定（同步組別上限 teamCount 並預熱登入驗證快取以加速進班）
+  useEffect(() => {
+    const normalizedClass = classId.trim().toLowerCase();
+    if (!normalizedClass || !db) {
+      setTeamCount(6);
+      return;
+    }
+
+    let isMounted = true;
+    const timer = setTimeout(async () => {
+      try {
+        if (!db) return;
+        const classRef = doc(db, 'split_classes', normalizedClass);
+        const snap = await getDoc(classRef);
+        if (!isMounted) return;
+        if (snap.exists()) {
+          const data = snap.data();
+          prefetchedClassRef.current = { id: normalizedClass, data, fetchedAt: Date.now() };
+          const count = Number(data.teamCount) || 6;
+          setTeamCount(count);
+          setTeamId((prev) => (prev > count ? 1 : prev));
+        } else {
+          setTeamCount(6);
+        }
+      } catch (err) {
+        console.warn('[PasswordGate] Prefetch class metadata failed:', err);
+      }
+    }, isUrlClassLocked ? 0 : 250);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [classId, isUrlClassLocked]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedClass = classId.trim().toLowerCase();
@@ -314,16 +357,24 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
         return;
       }
 
-      // 嚴格校驗 1：班級必須存在於 Firestore 中！未在後台開立之班級絕對禁止進入！
+      // 嚴格校驗 1：班級必須存在於 Firestore 中！優先使用 60 秒內預熱之班級設定以達成毫秒級進班回應
       const classRef = doc(db, 'split_classes', normalizedClass);
-      const snap = await getDoc(classRef);
-      if (!snap.exists()) {
-        setError(`找不到班級【${normalizedClass}】。請先由講師於管理後台開立班級，或確認班級專屬網址是否正確。`);
-        setLoading(false);
-        return;
-      }
+      const cached = prefetchedClassRef.current;
+      let classData: any =
+        cached && cached.id === normalizedClass && Date.now() - cached.fetchedAt < 60000
+          ? cached.data
+          : null;
 
-      const classData = snap.data();
+      if (!classData) {
+        const snap = await getDoc(classRef);
+        if (!snap.exists()) {
+          setError(`找不到班級【${normalizedClass}】。請先由講師於管理後台開立班級，或確認班級專屬網址是否正確。`);
+          setLoading(false);
+          return;
+        }
+        classData = snap.data();
+        prefetchedClassRef.current = { id: normalizedClass, data: classData, fetchedAt: Date.now() };
+      }
 
       // 嚴格校驗 2：檢查班級狀態，若為停用狀態則阻擋學員進入
       if (!classData || classData.status === 'inactive') {
@@ -340,9 +391,18 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
         if (classData.passcodeHash) {
           // 專屬班級：嚴格要求輸入之雜湊等於該班 passcodeHash，絕不允許通用密碼旁路！
           if (inputHash !== classData.passcodeHash) {
-            setError("驗證密碼不符，請輸入此班級專屬之驗證密碼");
-            setLoading(false);
-            return;
+            // 若使用快取比對失敗，重新抓取最新設定一次（防範講師剛於後台更新密碼）
+            const freshSnap = await getDoc(classRef);
+            const freshData = freshSnap.exists() ? freshSnap.data() : null;
+            if (freshData) {
+              classData = freshData;
+              prefetchedClassRef.current = { id: normalizedClass, data: freshData, fetchedAt: Date.now() };
+            }
+            if (!freshData || inputHash !== freshData.passcodeHash) {
+              setError("驗證密碼不符，請輸入此班級專屬之驗證密碼");
+              setLoading(false);
+              return;
+            }
           }
         } else {
           // 未設定專屬雜湊之舊班級：比對預設通行密碼 "split-2026"
@@ -354,11 +414,14 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
         }
       }
 
+      const maxTeams = Number(classData.teamCount) || 6;
+      const validTeamId = Math.min(Math.max(1, teamId), maxTeams);
+
       const session: UserSession = {
         uid: "usr_" + Math.random().toString(36).substring(2, 9),
         sessionId: "sess_" + Math.random().toString(36).substring(2, 9),
-        name: name.trim() || `學員 (第 ${teamId} 組)`,
-        teamId: teamId,
+        name: name.trim() || `學員 (第 ${validTeamId} 組)`,
+        teamId: validTeamId,
         classId: normalizedClass,
         passcodeHash: inputHash,
         role: "student"
@@ -446,7 +509,7 @@ export const PasswordGate: React.FC<PasswordGateProps> = ({ onAuthorized }) => {
                   onChange={(e) => setTeamId(Number(e.target.value))}
                   className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
                 >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                  {Array.from({ length: teamCount }, (_, i) => i + 1).map((num) => (
                     <option key={num} value={num}>第 {num} 組</option>
                   ))}
                 </select>

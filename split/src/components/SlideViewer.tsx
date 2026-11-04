@@ -102,7 +102,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
   }, [slide, onNext, onPrev]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative p-4 md:p-6 justify-between select-none">
+    <div className="flex-1 flex flex-col overflow-hidden relative p-3 lg:p-6 justify-between select-none">
       {/* Top Slide Meta Bar */}
       <div className="flex items-center justify-between mb-4 bg-white/70 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-200/50 shadow-sm shrink-0">
         <div className="flex items-center gap-2">
@@ -230,7 +230,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
       </div>
 
       {/* Bottom Control Bar */}
-      <div className="flex items-center justify-between mt-4 bg-white/50 px-4 py-2 rounded-2xl shrink-0">
+      <div className="flex items-center justify-between gap-2 mt-3 lg:mt-4 bg-white/50 px-3 lg:px-4 py-1.5 lg:py-2 rounded-2xl shrink-0">
         <button
           id="nav-first-btn"
           onClick={() => {
@@ -247,7 +247,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
         <button
           onClick={onPrev}
           disabled={slide.page === 1}
-          className="px-4 py-2 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:hover:border-slate-200 bg-white text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition-all active:scale-[0.98] select-none"
+          className="px-3 lg:px-4 py-1.5 lg:py-2 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:hover:border-slate-200 bg-white text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition-all active:scale-[0.98] select-none whitespace-nowrap shrink-0"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -255,14 +255,14 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
           上一頁
         </button>
 
-        <span className="text-[11px] font-mono text-slate-500 font-bold">
+        <span className="text-[10px] lg:text-[11px] font-mono text-slate-500 font-bold whitespace-nowrap">
           SLIDE {slide.page} / {maxPages}
         </span>
 
         <button
           onClick={onNext}
           disabled={slide.page === maxPages}
-          className="px-4 py-2 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:hover:border-slate-200 bg-white text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition-all active:scale-[0.98] select-none"
+          className="px-3 lg:px-4 py-1.5 lg:py-2 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:hover:border-slate-200 bg-white text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition-all active:scale-[0.98] select-none whitespace-nowrap shrink-0"
         >
           下一頁
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

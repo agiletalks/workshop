@@ -75,13 +75,13 @@ export const TopBar: React.FC<TopBarProps> = ({
   };
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-white shadow-lg z-30 relative shrink-0">
+    <header className={`bg-slate-900 border-b border-slate-800 text-white shadow-lg ${mobileMenuOpen ? 'z-[60]' : 'z-30'} relative shrink-0`}>
       {/* ======================================================== */}
-      {/* 1. 電腦與平板寬螢幕模式 (>= md: 768px)                     */}
+      {/* 1. 電腦、平板與手機橫向寬螢幕模式 (>= md: 768px)           */}
       {/* ======================================================== */}
-      <div className="hidden md:flex h-16 px-4 sm:px-6 items-center justify-between w-full overflow-x-auto no-scrollbar gap-2">
+      <div className="hidden md:flex h-14 lg:h-16 px-3 lg:px-6 items-center justify-between w-full overflow-x-auto no-scrollbar gap-1.5 lg:gap-2">
         {/* Left Area: Title, Sidebar toggle, and Class tag */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 lg:gap-3 shrink-0">
           <button
             onClick={onToggleSidebar}
             className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-all focus:outline-none flex items-center justify-center shrink-0 cursor-pointer"
@@ -92,17 +92,17 @@ export const TopBar: React.FC<TopBarProps> = ({
             </svg>
           </button>
 
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-sm select-none shrink-0">
+          <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-xs lg:text-sm select-none shrink-0">
             SP
           </div>
 
           <div className="shrink-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-bold leading-tight tracking-wide m-0 text-white whitespace-nowrap">
+              <h1 className="text-xs sm:text-sm lg:text-base font-bold leading-tight tracking-wide m-0 text-white whitespace-nowrap">
                 SPLIT 需求拆解實戰
               </h1>
               {classMetadata && (
-                <span className="text-[10px] bg-slate-800 border border-slate-700 text-emerald-400 px-2 py-0.5 rounded-full font-mono font-bold whitespace-nowrap shrink-0">
+                <span className="hidden xl:inline-flex text-[10px] bg-slate-800 border border-slate-700 text-emerald-400 px-2 py-0.5 rounded-full font-mono font-bold whitespace-nowrap shrink-0">
                   {classMetadata.id} · Gen {classMetadata.currentGeneration}
                 </span>
               )}
@@ -119,10 +119,10 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Middle Area: Team Switcher, Global Whiteboard & Observation Mode Indicator */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 lg:gap-2.5 shrink-0">
           {/* 組別下拉選單 */}
-          <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 shrink-0">
-            <span className="text-[11px] font-bold text-slate-400 whitespace-nowrap">當前視角:</span>
+          <div className="flex items-center gap-1.5 bg-slate-950 px-2 lg:px-2.5 py-1 lg:py-1.5 rounded-xl border border-slate-800 shrink-0">
+            <span className="hidden lg:inline text-[11px] font-bold text-slate-400 whitespace-nowrap">當前視角:</span>
             <select
               value={activeTeamId}
               onChange={(e) => onSwitchTeam(Number(e.target.value))}
@@ -142,7 +142,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           {/* 全域小組協作白板按鈕 (全組共用唯一白板) */}
           <button
             onClick={handleOpenWhiteboard}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer whitespace-nowrap shrink-0"
+            className="px-2.5 lg:px-3 py-1 lg:py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer whitespace-nowrap shrink-0"
             title={`點擊在新分頁開啟【第 ${activeTeamId} 組】共用協作白板`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -155,7 +155,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           {!isInstructor && !isMyTeam && userSession && (
             <button
               onClick={() => onSwitchTeam(userSession.teamId)}
-              className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1 shadow-md shadow-amber-500/20 cursor-pointer whitespace-nowrap shrink-0"
+              className="px-2 lg:px-2.5 py-1 lg:py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1 shadow-md shadow-amber-500/20 cursor-pointer whitespace-nowrap shrink-0"
               title="點擊立即切回您所屬組別以進行編輯"
             >
               <span>切回我組 (第 {userSession.teamId} 組)</span>
@@ -192,17 +192,17 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Right Area: Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 lg:gap-2 shrink-0">
           {userSession && (
             <div
               onClick={onOpenCheckIn}
-              className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-800 text-xs cursor-pointer hover:opacity-80 shrink-0 whitespace-nowrap"
+              className="hidden md:flex items-center gap-1.5 lg:gap-2 pl-1.5 lg:pl-2 border-l border-slate-800 text-xs cursor-pointer hover:opacity-80 shrink-0 whitespace-nowrap"
               title="點擊切換使用者或班級"
             >
               <span className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300 shrink-0">
                 {userSession.name.charAt(0)}
               </span>
-              <span className="text-slate-300 font-medium truncate max-w-[80px]" title={userSession.name}>
+              <span className="text-slate-300 font-medium truncate max-w-[72px] lg:max-w-[96px]" title={userSession.name}>
                 {userSession.name}
               </span>
             </div>
@@ -213,11 +213,12 @@ export const TopBar: React.FC<TopBarProps> = ({
             instructorLiveSlide.slideId !== activeSlideId ? (
               <button
                 onClick={() => onJumpToInstructorSlide?.(instructorLiveSlide.slideId)}
-                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95 animate-pulse cursor-pointer shrink-0 whitespace-nowrap"
+                className="px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95 animate-pulse cursor-pointer shrink-0 whitespace-nowrap"
                 title={`老師正在投影：第 ${instructorLiveSlide.pageNumber} 頁 · ${instructorLiveSlide.slideTitle}，點此跳回`}
               >
                 <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping" />
-                <span>🎯 回到老師投影 (P.{String(instructorLiveSlide.pageNumber).padStart(2, '0')})</span>
+                <span className="lg:hidden">🎯 P.{String(instructorLiveSlide.pageNumber).padStart(2, '0')}</span>
+                <span className="hidden lg:inline">🎯 回到老師投影 (P.{String(instructorLiveSlide.pageNumber).padStart(2, '0')})</span>
               </button>
             ) : (
               <div
@@ -234,7 +235,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           {isInstructor && onOpenAiConfig && (
             <button
               onClick={onOpenAiConfig}
-              className={`inline-flex px-3 py-1.5 rounded-xl border text-xs font-bold items-center gap-1.5 transition-all cursor-pointer shadow-sm shrink-0 whitespace-nowrap ${
+              className={`inline-flex px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-xl border text-xs font-bold items-center gap-1.5 transition-all cursor-pointer shadow-sm shrink-0 whitespace-nowrap ${
                 geminiKeyConfigured
                   ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50'
                   : 'bg-amber-950/40 border-amber-500/40 text-amber-300 hover:bg-amber-900/50 animate-pulse'
@@ -250,7 +251,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           {onOpenPrintHandbook && (
             <button
               onClick={onOpenPrintHandbook}
-              className="inline-flex px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-all items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
+              className="inline-flex px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-all items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
               title="印出或匯出全天隨堂講義手冊與重點便利貼"
             >
               <span>🖨️ 列印筆記</span>
@@ -261,7 +262,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           {isInstructor && onOpenStudentQr && (
             <button
               onClick={onOpenStudentQr}
-              className="inline-flex px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black transition-all items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
+              className="inline-flex px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black transition-all items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
               title="開啟大螢幕學員報到 QR Code (純學員入口，絕不洩漏免密權限)"
             >
               <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -372,7 +373,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* 3. 手機版操作選單抽屜 (Action Sheet Drawer)                  */}
       {/* ======================================================== */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+        <div className="fixed inset-0 z-[70] md:hidden flex flex-col justify-end">
           {/* 背景暗色遮罩 */}
           <div
             className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs animate-in fade-in"
@@ -380,7 +381,10 @@ export const TopBar: React.FC<TopBarProps> = ({
           />
 
           {/* 滑出底部抽屜 */}
-          <div className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl p-5 shadow-2xl z-10 flex flex-col gap-3.5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+          <div
+            className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl p-5 pb-8 shadow-2xl z-10 flex flex-col gap-3 max-h-[88dvh] overflow-y-auto animate-in slide-in-from-bottom duration-200"
+            style={{ paddingBottom: "max(1.75rem, env(safe-area-inset-bottom))" }}
+          >
             {/* 抽屜頂部資訊列 */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2.5">
@@ -500,8 +504,8 @@ export const TopBar: React.FC<TopBarProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onOpenCheckIn();
                   setMobileMenuOpen(false);
+                  onOpenCheckIn();
                 }}
                 className="w-full py-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
               >
