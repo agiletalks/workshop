@@ -48,7 +48,8 @@ import {
   releaseNoteLock,
   saveTeamMemo,
   addNoteAttachment,
-  removeNoteAttachment
+  removeNoteAttachment,
+  uploadAttachmentFile
 } from "./services/notesService";
 
 function App() {
@@ -393,7 +394,22 @@ function App() {
       activeSlide.id,
       activeTeamId,
       (note) => {
-        setTeamNote(note);
+        setTeamNote((prev) => {
+          if (!note) return null;
+          // 若當前本人持有編輯鎖且本地尚在輸入/等待 ACK (debounce 計時器未歸零)，保留本地最新文字
+          if (
+            prev &&
+            note.lock?.isLocked &&
+            note.lock?.holderUid === userSession?.uid &&
+            saveDebounceTimer.current !== null
+          ) {
+            return {
+              ...note,
+              memo: prev.memo
+            };
+          }
+          return note;
+        });
         if (classMetadata?.status === 'inactive') {
           setCloudSyncStatus('readonly');
         } else {
@@ -429,8 +445,9 @@ function App() {
   const saveDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleUpdateMemo = useCallback((slideId: string, newMemo: string) => {
-    // 1. 先更新本地響應狀態
+    // 1. 先更新本地響應狀態與同步樂觀更新 teamNote，避免受控 textarea 在 React 重新渲染時被舊快照覆蓋導致字元重複與游標跳位
     updateNote(slideId, newMemo);
+    setTeamNote(prev => prev ? { ...prev, memo: newMemo, updatedAt: Date.now() } : null);
 
     if (!userSession) return;
     const currentGen = classMetadata?.currentGeneration || 1;
@@ -450,9 +467,11 @@ function App() {
     saveDebounceTimer.current = setTimeout(async () => {
       try {
         await saveTeamMemo(userSession.classId, currentGen, slideId, activeTeamId, newMemo, userSession);
+        saveDebounceTimer.current = null;
         setCloudSyncStatus('online'); // 取得伺服器 ACK 後才標記同步成功
       } catch (err) {
         console.error('[App] Failed to save memo to cloud:', err);
+        saveDebounceTimer.current = null;
         setCloudSyncStatus('offline');
       }
     }, 800);
@@ -472,35 +491,39 @@ function App() {
     await releaseNoteLock(userSession.classId, currentGen, activeSlide.id, activeTeamId, userSession);
   };
 
-  // 上傳附件檔案 (轉換為 DataURL，支援圖檔、PDF、HTML網頁、文件，防呆限制 800KB)
+  // 上傳附件檔案 (支援至 5MB，透過 Cloud Storage 上傳或備援 DataURL)
   const handleAddAttachment = async (file: File) => {
     if (!userSession) return;
-    if (file.size > 800 * 1024) {
-      alert("⚠️ 檔案過大：為確保雲端同步效能與文檔容量，請上傳小於 800KB 的圖片、PDF 或 HTML 檔案。");
+    if (file.size > 5 * 1024 * 1024) {
+      alert("⚠️ 檔案過大：附件檔案上限為 5MB，請上傳小於 5MB 的圖片、PDF、HTML 網頁或文件。");
       return;
     }
     const currentGen = classMetadata?.currentGeneration || 1;
+    setCloudSyncStatus('syncing');
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result as string;
+    try {
+      const uploadRes = await uploadAttachmentFile(
+        userSession.classId,
+        currentGen,
+        activeSlide.id,
+        activeTeamId,
+        file
+      );
       const attId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      let mime = file.type;
-      if (!mime) {
-        if (/\.html?$/i.test(file.name)) mime = 'text/html';
-        else if (/\.pdf$/i.test(file.name)) mime = 'application/pdf';
-        else mime = 'application/octet-stream';
-      }
       await addNoteAttachment(userSession.classId, currentGen, activeSlide.id, activeTeamId, {
         id: attId,
-        name: file.name,
-        size: file.size,
-        mime: mime,
+        name: uploadRes.name,
+        size: uploadRes.size,
+        mime: uploadRes.mime,
         createdAt: Date.now(),
-        dataUrl: dataUrl
+        dataUrl: uploadRes.url
       }, userSession);
-    };
-    reader.readAsDataURL(file);
+      setCloudSyncStatus('online');
+    } catch (err: any) {
+      console.error('[App] Failed to upload attachment:', err);
+      setCloudSyncStatus('offline');
+      alert("⚠️ 檔案上傳失敗：" + (err?.message || "請檢查網路連線或稍後再試。"));
+    }
   };
 
   // 提交成果網頁連結 (Figma, Miro, Google Docs, 成果網址等)

@@ -76,8 +76,8 @@ export const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setError('圖片大小限制為 2MB 以內，請壓縮後再上傳');
+    if (file.size > 5 * 1024 * 1024) {
+      setError('檔案大小限制為 5MB 以內，請重新選擇');
       return;
     }
 

@@ -1015,9 +1015,22 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
   onNavigateToSlide
 }) => {
   const response = getResponse(slide.id);
-  const noteLength = response.personalNote.length;
   const isTask = slide.slideKind === 'task' || !!slide.teamTask;
   const isInstructor = userSession?.role === 'instructor';
+
+  // 本地 Memo 即時狀態 (消除 React 受控輸入重渲染時字元重複與游標跳躍)
+  const currentServerMemo = teamNote ? teamNote.memo : response.personalNote;
+  const [localMemo, setLocalMemo] = useState(currentServerMemo);
+  const isComposingRef = useRef(false);
+  const isFocusedRef = useRef(false);
+  const noteLength = localMemo.length;
+
+  // 換頁或未聚焦時同步遠端/外部最新內容
+  useEffect(() => {
+    if (!isFocusedRef.current && !isComposingRef.current) {
+      setLocalMemo(currentServerMemo);
+    }
+  }, [slide.id, currentServerMemo]);
 
   // 頁籤切換：演練頁預設小組成果筆記，講述頁預設展示重點便利貼
   const [activeTab, setActiveTab] = useState<"stickies" | "prompts" | "examples" | "transcript" | "note">("stickies");
@@ -1278,9 +1291,10 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
 
   const handleAppendVoiceText = (text: string) => {
     if (!text || isInputDisabled) return;
-    const currentMemo = teamNote ? teamNote.memo : response.personalNote;
+    const currentMemo = localMemo;
     const separator = currentMemo && !currentMemo.endsWith("\n") ? "\n" : "";
     const newMemo = currentMemo ? `${currentMemo}${separator}${text}` : text;
+    setLocalMemo(newMemo);
     updateNote(slide.id, newMemo);
   };
 
@@ -1342,24 +1356,29 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
 
   const handleAttachmentClick = (att: NoteAttachment) => {
     if (!att.dataUrl) return;
-    const isLink = att.mime === 'text/x-uri' || att.dataUrl.startsWith('http://') || att.dataUrl.startsWith('https://');
+    const isExplicitLink = att.mime === 'text/x-uri';
     const isHtml = att.mime === 'text/html' || att.name?.toLowerCase().endsWith('.html') || att.name?.toLowerCase().endsWith('.htm');
     const isImage = att.mime?.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(att.name || '');
     const isPdf = att.mime === 'application/pdf' || att.name?.toLowerCase().endsWith('.pdf');
+    const isGenericUrl = !isHtml && !isImage && !isPdf && (att.dataUrl.startsWith('http://') || att.dataUrl.startsWith('https://'));
 
-    if (isLink) {
-      window.open(att.dataUrl, '_blank', 'noopener,noreferrer');
-    } else if (isImage && onImageClick) {
-      onImageClick(att.dataUrl);
+    if (isImage) {
+      if (onImageClick) {
+        onImageClick(att.dataUrl);
+      } else {
+        window.open(att.dataUrl, '_blank', 'noopener,noreferrer');
+      }
     } else if (isHtml) {
       setPreviewHtmlData({ title: att.name, dataUrl: att.dataUrl });
     } else if (isPdf) {
       try {
-        const win = window.open(att.dataUrl, '_blank');
+        const win = window.open(att.dataUrl, '_blank', 'noopener,noreferrer');
         if (!win) handleDownloadAttachment(att);
       } catch {
         handleDownloadAttachment(att);
       }
+    } else if (isExplicitLink || isGenericUrl) {
+      window.open(att.dataUrl, '_blank', 'noopener,noreferrer');
     } else {
       handleDownloadAttachment(att);
     }
@@ -2100,7 +2119,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
 
           {/* Input Area (Textarea) */}
           <textarea
-            value={teamNote ? teamNote.memo : response.personalNote}
+            value={localMemo}
             disabled={isInputDisabled}
             readOnly={isInputDisabled}
             onClick={() => {
@@ -2109,11 +2128,33 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
               }
             }}
             onFocus={async () => {
+              isFocusedRef.current = true;
               if (!isInputDisabled && onAcquireLock) {
                 await onAcquireLock();
               }
             }}
-            onChange={(e) => updateNote(slide.id, e.target.value)}
+            onBlur={() => {
+              isFocusedRef.current = false;
+              if (localMemo !== currentServerMemo) {
+                updateNote(slide.id, localMemo);
+              }
+            }}
+            onCompositionStart={() => {
+              isComposingRef.current = true;
+            }}
+            onCompositionEnd={(e) => {
+              isComposingRef.current = false;
+              const val = e.currentTarget.value;
+              setLocalMemo(val);
+              updateNote(slide.id, val);
+            }}
+            onChange={(e) => {
+              const val = e.target.value;
+              setLocalMemo(val);
+              if (!isComposingRef.current) {
+                updateNote(slide.id, val);
+              }
+            }}
             placeholder={
               isObservationMode
                 ? "👀 觀摩模式中，筆記為唯讀狀態。"
@@ -2204,10 +2245,11 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             {teamNote?.attachments && teamNote.attachments.length > 0 ? (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {teamNote.attachments.map((att) => {
-                  const isLink = att.mime === 'text/x-uri' || att.dataUrl?.startsWith('http://') || att.dataUrl?.startsWith('https://');
+                  const isExplicitLink = att.mime === 'text/x-uri';
                   const isHtml = att.mime === 'text/html' || att.name?.toLowerCase().endsWith('.html') || att.name?.toLowerCase().endsWith('.htm');
                   const isPdf = att.mime === 'application/pdf' || att.name?.toLowerCase().endsWith('.pdf');
                   const isImage = att.mime?.startsWith("image/") || /\.(png|jpe?g|webp|gif|svg)$/i.test(att.name || '');
+                  const isLink = isExplicitLink || (!isHtml && !isPdf && !isImage && (att.dataUrl?.startsWith('http://') || att.dataUrl?.startsWith('https://')));
 
                   return (
                     <div

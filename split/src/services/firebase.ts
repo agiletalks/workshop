@@ -1,5 +1,6 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBRVKNOnj3DB4QY9IgCBzC4JcG09XNKVhQ",
@@ -11,12 +12,15 @@ const firebaseConfig = {
 };
 
 let dbInstance: Firestore | null = null;
+let storageInstance: FirebaseStorage | null = null;
 
 try {
   const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
   dbInstance = getFirestore(app);
+  storageInstance = getStorage(app);
 } catch (error) {
   console.error('[SPLIT] Failed to initialize Firebase:', error);
 }
 
 export const db = dbInstance;
+export const storage = storageInstance;
