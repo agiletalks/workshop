@@ -138,7 +138,7 @@ async function testBrowser(browserName, browserExe, debugPort, serverPort) {
   await sendSessionCmd('Page.enable');
   await sendSessionCmd('Runtime.enable');
 
-  const targetUrl = `http://localhost:${serverPort}/workshop/split/board.html?class=qa-split-collab-20261104&type=qa-collab-r1&team=1`;
+  const targetUrl = process.env.TEST_URL || `http://localhost:${serverPort}/workshop/split/board.html?class=qa-split-collab-20261104&type=qa-collab-r1&team=1`;
   console.log(`Navigating to: ${targetUrl}`);
   await sendSessionCmd('Page.navigate', { url: targetUrl });
 
