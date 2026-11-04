@@ -1,0 +1,156 @@
+{
+  "date": "2026-11-04T03:36:33.599Z",
+  "method": "Browser performance.now click capture to visible header MutationObserver; two requestAnimationFrame paint opportunity; isolated headless Edge contexts; 3s prewarm; no network throttle",
+  "results": [
+    {
+      "label": "desktop",
+      "trial": 1,
+      "prewarmWaitMs": 3000,
+      "url": "https://agiletalks-workshop.web.app/workshop/split/?c=202611-split#/module/E/slide/1",
+      "groups": [
+        "第 1 組",
+        "第 2 組",
+        "第 3 組",
+        "第 4 組",
+        "第 5 組",
+        "第 6 組"
+      ],
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0",
+      "scripts": [
+        "https://agiletalks-workshop.web.app/workshop/split/assets/index-DgBrz1rL.js"
+      ],
+      "domMs": 98.30000001192093,
+      "twoRafMs": 107.40000003576279,
+      "header": "SPSPLIT 需求拆解實戰進度: 0% (0/27頁)當前視角:第 1 組 (我的組)第 2 組 (觀摩)第 3 組 (觀摩)第 4 組 (觀摩)第 5 組 (觀摩)第 6 組 (觀摩)📋 小組白板同步中...QQA-Retest-desktop-1🖨️ 列印筆記SPSPLIT第 1 組 (我)第 2 組 第 3 組 第 4 組 第 5 組 第 6 組 ",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      }
+    },
+    {
+      "label": "desktop",
+      "trial": 2,
+      "prewarmWaitMs": 3000,
+      "url": "https://agiletalks-workshop.web.app/workshop/split/?c=202611-split#/module/E/slide/1",
+      "groups": [
+        "第 1 組",
+        "第 2 組",
+        "第 3 組",
+        "第 4 組",
+        "第 5 組",
+        "第 6 組"
+      ],
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0",
+      "scripts": [
+        "https://agiletalks-workshop.web.app/workshop/split/assets/index-DgBrz1rL.js"
+      ],
+      "domMs": 85.60000002384186,
+      "twoRafMs": 96,
+      "header": "SPSPLIT 需求拆解實戰202611-split · Gen 1進度: 0% (0/27頁)當前視角:第 1 組 (我的組)第 2 組 (觀摩)第 3 組 (觀摩)第 4 組 (觀摩)第 5 組 (觀摩)第 6 組 (觀摩)📋 小組白板同步中...QQA-Retest-desktop-2🖨️ 列印筆記SPSPLIT第 1 組 (我)第 2 組 第 3 組 第 4 組 第 5 組 第 6 組 ",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      }
+    },
+    {
+      "label": "desktop",
+      "trial": 3,
+      "prewarmWaitMs": 3000,
+      "url": "https://agiletalks-workshop.web.app/workshop/split/?c=202611-split#/module/E/slide/1",
+      "groups": [
+        "第 1 組",
+        "第 2 組",
+        "第 3 組",
+        "第 4 組",
+        "第 5 組",
+        "第 6 組"
+      ],
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0",
+      "scripts": [
+        "https://agiletalks-workshop.web.app/workshop/split/assets/index-DgBrz1rL.js"
+      ],
+      "domMs": 108.10000002384186,
+      "twoRafMs": 116.30000001192093,
+      "header": "SPSPLIT 需求拆解實戰進度: 0% (0/27頁)當前視角:第 1 組 (我的組)第 2 組 (觀摩)第 3 組 (觀摩)第 4 組 (觀摩)第 5 組 (觀摩)第 6 組 (觀摩)📋 小組白板同步中...QQA-Retest-desktop-3🖨️ 列印筆記SPSPLIT第 1 組 (我)第 2 組 第 3 組 第 4 組 第 5 組 第 6 組 ",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      }
+    },
+    {
+      "label": "mobile-emulated",
+      "trial": 1,
+      "prewarmWaitMs": 3000,
+      "url": "https://agiletalks-workshop.web.app/workshop/split/?c=202611-split#/module/E/slide/1",
+      "groups": [
+        "第 1 組",
+        "第 2 組",
+        "第 3 組",
+        "第 4 組",
+        "第 5 組",
+        "第 6 組"
+      ],
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0",
+      "scripts": [
+        "https://agiletalks-workshop.web.app/workshop/split/assets/index-DgBrz1rL.js"
+      ],
+      "domMs": 72.5,
+      "twoRafMs": 84.80000001192093,
+      "header": "SPSPLIT 需求拆解實戰進度: 0% (0/27頁)當前視角:第 1 組 (我的組)第 2 組 (觀摩)第 3 組 (觀摩)第 4 組 (觀摩)第 5 組 (觀摩)第 6 組 (觀摩)📋 小組白板同步中...QQA-Retest-mobile-emulated-1🖨️ 列印筆記SPSPLIT第 1 組 (我)第 2 組 第 3 組 第 4 組 第 5 組 第 6 組 ",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "label": "mobile-emulated",
+      "trial": 2,
+      "prewarmWaitMs": 3000,
+      "url": "https://agiletalks-workshop.web.app/workshop/split/?c=202611-split#/module/E/slide/1",
+      "groups": [
+        "第 1 組",
+        "第 2 組",
+        "第 3 組",
+        "第 4 組",
+        "第 5 組",
+        "第 6 組"
+      ],
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0",
+      "scripts": [
+        "https://agiletalks-workshop.web.app/workshop/split/assets/index-DgBrz1rL.js"
+      ],
+      "domMs": 69,
+      "twoRafMs": 82.09999996423721,
+      "header": "SPSPLIT 需求拆解實戰進度: 0% (0/27頁)當前視角:第 1 組 (我的組)第 2 組 (觀摩)第 3 組 (觀摩)第 4 組 (觀摩)第 5 組 (觀摩)第 6 組 (觀摩)📋 小組白板同步中...QQA-Retest-mobile-emulated-2🖨️ 列印筆記SPSPLIT第 1 組 (我)第 2 組 第 3 組 第 4 組 第 5 組 第 6 組 ",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "label": "mobile-emulated",
+      "trial": 3,
+      "prewarmWaitMs": 3000,
+      "url": "https://agiletalks-workshop.web.app/workshop/split/?c=202611-split#/module/E/slide/1",
+      "groups": [
+        "第 1 組",
+        "第 2 組",
+        "第 3 組",
+        "第 4 組",
+        "第 5 組",
+        "第 6 組"
+      ],
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0",
+      "scripts": [
+        "https://agiletalks-workshop.web.app/workshop/split/assets/index-DgBrz1rL.js"
+      ],
+      "domMs": 57.89999997615814,
+      "twoRafMs": 69.69999998807907,
+      "header": "SPSPLIT 需求拆解實戰202611-split · Gen 1進度: 0% (0/27頁)當前視角:第 1 組 (我的組)第 2 組 (觀摩)第 3 組 (觀摩)第 4 組 (觀摩)第 5 組 (觀摩)第 6 組 (觀摩)📋 小組白板同步中...QQA-Retest-mobile-emulated-3🖨️ 列印筆記SPSPLIT第 1 組 (我)第 2 組 第 3 組 第 4 組 第 5 組 第 6 組 ",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    }
+  ]
+}
