@@ -42,10 +42,19 @@ export interface LectureSticky {
   points: string[];
 }
 
+export interface InstructorSupplement {
+  id: string;
+  title?: string;
+  content: string;
+  createdAt: number;
+  updatedAt?: number;
+}
+
 export interface LectureNoteData {
   slideId: string;
   slideTitle?: string;
-  stickies: LectureSticky[];
+  stickies: LectureSticky[]; // AI 課堂精華 (相容原 stickies 資料結構)
+  instructorSupplements?: InstructorSupplement[]; // 講師手動補充 (直接呈現，不需經由 AI)
   prompts?: SlidePromptItem[];
   attachments?: SlideAttachmentItem[];
   rawCleanTranscript?: string; // 老師專用：去除贅字口誤之逐字清稿與師生 Q&A 整理
@@ -210,6 +219,33 @@ export async function deleteSlideAttachment(
 ): Promise<void> {
   const updated = existingAttachments.filter((a) => a.id !== attachmentId);
   await saveLectureNote(classId, generation, slideId, { attachments: updated });
+}
+
+// 儲存/更新講師手動補充 (直接呈現，不需經由 AI)
+export async function saveInstructorSupplement(
+  classId: string,
+  generation: number,
+  slideId: string,
+  supplement: InstructorSupplement,
+  existingSupplements: InstructorSupplement[] = []
+): Promise<void> {
+  const idx = existingSupplements.findIndex((s) => s.id === supplement.id);
+  const updated = idx >= 0
+    ? existingSupplements.map((s) => (s.id === supplement.id ? supplement : s))
+    : [...existingSupplements, supplement];
+  await saveLectureNote(classId, generation, slideId, { instructorSupplements: updated });
+}
+
+// 刪除講師手動補充
+export async function deleteInstructorSupplement(
+  classId: string,
+  generation: number,
+  slideId: string,
+  supplementId: string,
+  existingSupplements: InstructorSupplement[] = []
+): Promise<void> {
+  const updated = existingSupplements.filter((s) => s.id !== supplementId);
+  await saveLectureNote(classId, generation, slideId, { instructorSupplements: updated });
 }
 
 // 全日教材專書 (Master Textbook) Firestore 參照

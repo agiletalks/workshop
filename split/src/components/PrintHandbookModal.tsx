@@ -72,18 +72,6 @@ const builtinPrompts: Record<string, SlidePromptItem> = {
   }
 };
 
-// 便利貼高質感印刷配色輔助
-const getStickyBgColor = (color?: string) => {
-  switch (color) {
-    case 'yellow': return 'bg-amber-50/90 border-amber-200 text-amber-950 shadow-xs';
-    case 'blue': return 'bg-sky-50/90 border-sky-200 text-sky-950 shadow-xs';
-    case 'green': return 'bg-emerald-50/90 border-emerald-200 text-emerald-950 shadow-xs';
-    case 'pink': return 'bg-rose-50/90 border-rose-200 text-rose-950 shadow-xs';
-    case 'purple': return 'bg-purple-50/90 border-purple-200 text-purple-950 shadow-xs';
-    default: return 'bg-amber-50/90 border-amber-200 text-amber-950 shadow-xs';
-  }
-};
-
 // 輕量級高質感教科書 Markdown 排版元件
 const MarkdownTextbookChapter: React.FC<{ content: string }> = ({ content }) => {
   const lines = content.split('\n');
@@ -526,11 +514,11 @@ export const PrintHandbookModal: React.FC<PrintHandbookModalProps> = ({
                         </div>
                       )}
 
-                      {/* 隨堂重點便籤精選 (Key Highlights Stickies) */}
+                      {/* 課堂精華 (Key Highlights) */}
                       {modSlides.some((s) => lectureNotesMap[s.id]?.stickies?.length > 0) && (
                         <div className="pt-8 border-t border-slate-200 print:break-inside-avoid">
                           <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                            <span>📌 本章隨堂重點便籤 (Key Highlights)</span>
+                            <span>✨ 本章課堂精華 (Key Highlights)</span>
                           </h4>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -540,26 +528,58 @@ export const PrintHandbookModal: React.FC<PrintHandbookModalProps> = ({
                               return slideStickies.map((stk) => (
                                 <div
                                   key={stk.id}
-                                  className={`p-4 rounded-2xl border shadow-xs print:border-slate-300 print:break-inside-avoid ${getStickyBgColor(
-                                    stk.color
-                                  )}`}
+                                  className="p-4 rounded-2xl border border-slate-200 bg-white shadow-xs print:border-slate-300 print:break-inside-avoid text-left"
                                 >
-                                  <div className="flex items-center justify-between mb-2 pb-1 border-b border-black/10">
+                                  <div className="flex items-center justify-between mb-2 pb-1 border-b border-slate-100">
                                     <h5 className="font-black text-xs sm:text-sm text-slate-900 truncate">
                                       {stk.title}
                                     </h5>
-                                    <span className="text-[10px] font-mono text-slate-500 shrink-0 ml-2">
+                                    <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold shrink-0 ml-2">
                                       第 {ms.page} 頁
                                     </span>
                                   </div>
-                                  <ul className="space-y-1.5 text-xs leading-relaxed">
+                                  <ul className="space-y-1.5 text-xs leading-relaxed text-slate-700">
                                     {stk.points.map((pt, pIdx) => (
                                       <li key={pIdx} className="flex items-start gap-1.5">
-                                        <span className="font-bold shrink-0">•</span>
+                                        <span className="text-emerald-500 font-bold shrink-0">•</span>
                                         <span>{pt}</span>
                                       </li>
                                     ))}
                                   </ul>
+                                </div>
+                              ));
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 講師手動補充說明 (Instructor Supplements) */}
+                      {modSlides.some((s) => (lectureNotesMap[s.id]?.instructorSupplements?.length || 0) > 0) && (
+                        <div className="pt-6 border-t border-slate-200 print:break-inside-avoid mt-6">
+                          <h4 className="text-xs font-black text-amber-700 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                            <span>✍️ 本章講師補充說明 (Instructor Notes)</span>
+                          </h4>
+
+                          <div className="space-y-3">
+                            {modSlides.map((ms) => {
+                              const supplements = lectureNotesMap[ms.id]?.instructorSupplements || [];
+                              if (supplements.length === 0) return null;
+                              return supplements.map((supp) => (
+                                <div
+                                  key={supp.id}
+                                  className="p-4 rounded-2xl border border-amber-200 bg-amber-50/50 shadow-xs print:border-amber-300 print:break-inside-avoid text-left"
+                                >
+                                  <div className="flex items-center justify-between mb-1.5 pb-1 border-b border-amber-200/50">
+                                    <h5 className="font-black text-xs text-amber-950">
+                                      {supp.title || "講師補充"}
+                                    </h5>
+                                    <span className="text-[10px] font-mono text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded font-bold shrink-0 ml-2">
+                                      第 {ms.page} 頁
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap">
+                                    {supp.content}
+                                  </p>
                                 </div>
                               ));
                             })}

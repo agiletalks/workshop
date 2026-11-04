@@ -252,7 +252,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <button
               onClick={onOpenPrintHandbook}
               className="inline-flex px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-all items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
-              title="印出或匯出全天隨堂講義手冊與重點便利貼"
+              title="印出或匯出全天隨堂講義手冊與課堂精華"
             >
               <span>🖨️ 列印筆記</span>
             </button>

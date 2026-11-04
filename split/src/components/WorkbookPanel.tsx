@@ -9,9 +9,12 @@ import {
   deleteSlidePrompt,
   saveSlideAttachment,
   deleteSlideAttachment,
+  saveInstructorSupplement,
+  deleteInstructorSupplement,
   compileLectureContent,
   type LectureNoteData,
   type LectureSticky,
+  type InstructorSupplement,
   type LectureRecordingState,
   type SlidePromptItem,
   type SlideAttachmentItem
@@ -1044,6 +1047,10 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
   const [editingSticky, setEditingSticky] = useState<LectureSticky | null>(null);
   const [isSavingLecture, setIsSavingLecture] = useState(false);
 
+  // --- 講師專屬隨堂手動補充編輯狀態 (直接呈現，不需經由 AI) ---
+  const [editingSupplement, setEditingSupplement] = useState<{ id?: string; title: string; content: string } | null>(null);
+  const [isSavingSupplement, setIsSavingSupplement] = useState(false);
+
   const isRecordingThisSlide = Boolean(recordingState?.isRecording && recordingState.slideId === slide.id);
   const isRecordingOtherSlide = Boolean(recordingState?.isRecording && recordingState.slideId !== slide.id);
   const isCompilingThisSlide = Boolean(recordingState?.isCompiling && recordingState.compilingSlideId === slide.id);
@@ -1263,6 +1270,53 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
     }
   };
 
+  // 講師手動新增/編輯補充 (直接儲存呈現，完全不需經過 AI)
+  const handleSaveSupplement = async (suppToSave: { id?: string; title: string; content: string }) => {
+    if (!suppToSave.content.trim()) {
+      alert("請輸入補充說明內容");
+      return;
+    }
+    const currentList = lectureData?.instructorSupplements || [];
+    const isEdit = Boolean(suppToSave.id && currentList.some((s) => s.id === suppToSave.id));
+    const item: InstructorSupplement = {
+      id: suppToSave.id || `supp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      title: suppToSave.title.trim(),
+      content: suppToSave.content.trim(),
+      createdAt: isEdit
+        ? currentList.find((s) => s.id === suppToSave.id)?.createdAt || Date.now()
+        : Date.now(),
+      updatedAt: Date.now()
+    };
+    setIsSavingSupplement(true);
+    try {
+      await saveInstructorSupplement(lectureClassId, lectureGenId, slide.id, item, currentList);
+      setEditingSupplement(null);
+    } catch (err: any) {
+      alert("儲存講師補充失敗：" + (err?.message || "請檢查網路連線"));
+    } finally {
+      setIsSavingSupplement(false);
+    }
+  };
+
+  // 講師刪除補充
+  const handleDeleteSupplement = async (suppId: string) => {
+    if (!window.confirm("確定要刪除這則講師補充說明嗎？")) return;
+    setIsSavingSupplement(true);
+    try {
+      await deleteInstructorSupplement(
+        lectureClassId,
+        lectureGenId,
+        slide.id,
+        suppId,
+        lectureData?.instructorSupplements || []
+      );
+    } catch (err: any) {
+      alert("刪除講師補充失敗：" + (err?.message || "請檢查網路連線"));
+    } finally {
+      setIsSavingSupplement(false);
+    }
+  };
+
   // 碼錶計時器格式化 (mm:ss)
   const formatTimer = (sec: number) => {
     const m = String(Math.floor(sec / 60)).padStart(2, '0');
@@ -1384,24 +1438,19 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
     return `${baseUrl}assets/${imageName}`;
   };
 
-  const getStickyBgColor = (color: string) => {
-    switch (color) {
-      case 'yellow': return 'bg-amber-100/90 border-amber-300 text-amber-950 shadow-amber-200/40';
-      case 'green': return 'bg-emerald-100/90 border-emerald-300 text-emerald-950 shadow-emerald-200/40';
-      case 'blue': return 'bg-sky-100/90 border-sky-300 text-sky-950 shadow-sky-200/40';
-      case 'pink': return 'bg-rose-100/90 border-rose-300 text-rose-950 shadow-rose-200/40';
-      case 'purple': return 'bg-purple-100/90 border-purple-300 text-purple-950 shadow-purple-200/40';
-      default: return 'bg-amber-100/90 border-amber-300 text-amber-950 shadow-amber-200/40';
-    }
-  };
-
-  const hasLectureContent = Boolean(lectureData && (lectureData.stickies.length > 0 || lectureData.textbookArticle));
+  const hasLectureContent = Boolean(
+    lectureData && (
+      (lectureData.stickies && lectureData.stickies.length > 0) ||
+      (lectureData.instructorSupplements && lectureData.instructorSupplements.length > 0) ||
+      lectureData.textbookArticle
+    )
+  );
 
   return (
     <div className="flex-1 flex flex-col h-full bg-white select-none overflow-hidden p-3 sm:p-5">
       {/* Title & Tabs Selector / Dynamic Actions */}
       <div className="flex items-center justify-between gap-2 mb-3 shrink-0 border-b border-slate-100 pb-2.5">
-        {/* 標籤頁切換列：四大支柱內容模型 (便利貼、提示詞、範例附件、逐字稿) */}
+        {/* 標籤頁切換列：四大支柱內容模型 (精華、提示詞、範例附件、逐字稿) */}
         <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 overflow-x-auto no-scrollbar flex-1 min-w-0">
           {/* 團隊演練頁：優先顯示小組成果筆記 */}
           {isTask && (
@@ -1418,7 +1467,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             </button>
           )}
 
-          {/* 1. 重點便利貼標籤 */}
+          {/* 1. 課堂精華標籤 */}
           <button
             type="button"
             onClick={() => setActiveTab("stickies")}
@@ -1428,9 +1477,9 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <span>📌 重點便利貼</span>
+            <span>✨ 課堂精華</span>
             <span className="bg-emerald-600 text-white text-[9px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center font-bold">
-              {lectureData?.stickies?.length || 0}
+              {(lectureData?.stickies?.length || 0) + (lectureData?.instructorSupplements?.length || 0)}
             </span>
           </button>
 
@@ -1513,22 +1562,17 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                 </span>
               ) : null}
 
-              {/* 講師專屬：新增便利貼按鈕 */}
-              {isInstructor && hasLectureContent && (
+              {/* 講師專屬：新增手動補充按鈕 (直接呈現，不經 AI) */}
+              {isInstructor && (
                 <button
                   type="button"
                   onClick={() => {
-                    setEditingSticky({
-                      id: `sticky_${Date.now()}_${(lectureData?.stickies?.length || 0)}`,
-                      title: "新重點主題",
-                      color: "yellow",
-                      points: ["重點一"]
-                    });
+                    setEditingSupplement({ title: "", content: "" });
                   }}
-                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap shrink-0"
-                  title="手動新增一張重點便利貼"
+                  className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap shrink-0"
+                  title="手動新增講師補充說明（直接呈現，不經 AI）"
                 >
-                  <span>➕ 新增便籤</span>
+                  <span>✍️ 新增補充</span>
                 </button>
               )}
 
@@ -1710,104 +1754,176 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             </div>
           )}
 
-          {/* 4. 已經生成：重點便利貼群 (無重複二層標籤) */}
-          {!isCompilingThisSlide && hasLectureContent && (
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3 pb-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {lectureData?.stickies.map((stk, sIdx) => (
-                  <div
-                    key={stk.id || sIdx}
-                    className={`p-4 rounded-3xl border shadow-xs transition-all relative flex flex-col justify-between ${getStickyBgColor(
-                      stk.color
-                    )}`}
-                  >
-                    <div>
-                      {/* 便籤主題標題與編輯按鈕 (僅老師可見/可編輯) */}
-                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/10">
-                        <h4 className="font-black text-sm text-slate-900 leading-snug">
-                          {stk.title}
-                        </h4>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-mono opacity-40 font-bold">
-                            #{sIdx + 1}
-                          </span>
+          {/* 4. 主要精華與講師補充顯示區 */}
+          {!isCompilingThisSlide && (
+            <div className="flex-1 overflow-y-auto pr-1 space-y-6 pb-6">
+              
+              {/* ==================== 區塊 A：✨ AI 課堂精華 ==================== */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-800 tracking-wide flex items-center gap-1.5">
+                      <span className="text-emerald-600">✨</span>
+                      <span>AI 課堂精華</span>
+                    </span>
+                    {lectureData?.stickies && lectureData.stickies.length > 0 && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        {lectureData.stickies.length} 項精華要點
+                      </span>
+                    )}
+                  </div>
+                  {lectureData?.recordedSeconds ? (
+                    <span className="text-[10px] font-mono text-slate-400">
+                      講述 {formatTimer(lectureData.recordedSeconds)}
+                    </span>
+                  ) : null}
+                </div>
+
+                {lectureData?.stickies && lectureData.stickies.length > 0 ? (
+                  <div className="space-y-3">
+                    {lectureData.stickies.map((stk, sIdx) => (
+                      <div
+                        key={stk.id || sIdx}
+                        className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:border-emerald-300 transition-all text-left"
+                      >
+                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-md bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center font-mono">
+                              {sIdx + 1}
+                            </span>
+                            <h4 className="font-black text-xs sm:text-sm text-slate-900 leading-snug">
+                              {stk.title}
+                            </h4>
+                          </div>
                           {isInstructor && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingSticky({ ...stk, points: [...stk.points] });
-                              }}
-                              className="px-1.5 py-0.5 rounded-md bg-black/5 hover:bg-black/15 text-slate-800 text-[10px] font-bold transition-all cursor-pointer"
-                              title="編輯此便利貼"
-                            >
-                              ✏️ 編輯
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingSticky({ ...stk, points: [...stk.points] })}
+                                className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold transition-all cursor-pointer"
+                                title="調整此要點"
+                              >
+                                ✏️ 調整
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSticky(stk.id)}
+                                className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all cursor-pointer"
+                                title="刪除"
+                              >
+                                🗑️
+                              </button>
+                            </div>
                           )}
                         </div>
+                        <ul className="space-y-1.5 text-xs leading-relaxed text-slate-700">
+                          {stk.points.map((pt, pIdx) => (
+                            <li key={pIdx} className="flex items-start gap-2">
+                              <span className="text-emerald-500 font-bold shrink-0 mt-0.5">•</span>
+                              <span className="font-medium">{pt}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      {/* 便籤條列重點 */}
-                      <ul className="space-y-1.5 text-xs leading-relaxed text-slate-800 font-medium">
-                        {stk.points.map((pt, pIdx) => (
-                          <li key={pIdx} className="flex items-start gap-1.5">
-                            <span className="text-slate-400 font-bold shrink-0">•</span>
-                            <span>{pt}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    ))}
                   </div>
-                ))}
-
-                {/* 老師專屬：手動新增重點便利貼卡片 */}
-                {isInstructor && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingSticky({
-                        id: `sticky_${Date.now()}_${(lectureData?.stickies?.length || 0)}`,
-                        title: "新增重點主題",
-                        color: "yellow",
-                        points: ["請輸入重點內容"]
-                      });
-                    }}
-                    className="p-5 min-h-[140px] rounded-3xl border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50/50 hover:bg-emerald-50/30 text-slate-400 hover:text-emerald-700 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group"
-                    title="手動新增一張重點便利貼"
-                  >
-                    <span className="w-8 h-8 rounded-full bg-slate-200 group-hover:bg-emerald-200 text-slate-600 group-hover:text-emerald-800 flex items-center justify-center font-bold text-lg">
-                      +
-                    </span>
-                    <span className="text-xs font-bold">新增重點便利貼</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* 5. 課堂隨堂重點準備中 / 待講授狀態 */}
-          {!isCompilingThisSlide && !isRecordingThisSlide && !hasLectureContent && (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-inner ${
-                isInstructor
-                  ? "bg-amber-500/10 border border-amber-500/20 text-amber-500"
-                  : "bg-indigo-500/10 border border-indigo-500/20 text-indigo-500"
-              }`}>
-                {isInstructor ? (
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
                 ) : (
-                  <span className="text-2xl">✨</span>
+                  /* AI 精華空狀態 */
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-center">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center mx-auto mb-2 text-base">
+                      🎙️
+                    </div>
+                    <h5 className="text-xs font-black text-slate-800 mb-1">
+                      {isInstructor ? "尚未萃取本頁精華" : "✨ 本頁精華整理中"}
+                    </h5>
+                    <p className="text-[11px] text-slate-400 max-w-xs mx-auto leading-relaxed">
+                      {isInstructor
+                        ? "點擊右上角「🎙️ 開始錄音」進行隨堂講授，AI 將自動為全班萃取核心觀念精華。"
+                        : "課堂進行講授後，隨堂精華重點將在此為大家即時呈現。"}
+                    </p>
+                  </div>
                 )}
               </div>
-              <h4 className="text-sm font-black text-slate-800 mb-1">
-                {isInstructor ? "尚未錄製本頁重點" : "✨ 本頁隨堂重點整理中"}
-              </h4>
-              <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-                {isInstructor
-                  ? "點擊右上角「🎙️ 開始錄音」即可進行隨堂講授，小編將為全班整理重點便利貼與課堂詳細內容。"
-                  : "課堂進行講授後，隨堂重點與精華內容將在此為大家即時呈現。"}
-              </p>
+
+              {/* ==================== 區塊 B：✍️ 講師手動補充 ==================== */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-800 tracking-wide flex items-center gap-1.5">
+                      <span className="text-amber-600">✍️</span>
+                      <span>講師手動補充</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">（直接呈現，不需經由 AI）</span>
+                  </div>
+                  {isInstructor && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingSupplement({ title: "", content: "" })}
+                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 rounded-lg text-xs font-black transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <span>➕ 新增補充</span>
+                    </button>
+                  )}
+                </div>
+
+                {lectureData?.instructorSupplements && lectureData.instructorSupplements.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {lectureData.instructorSupplements.map((supp, suppIdx) => (
+                      <div
+                        key={supp.id || suppIdx}
+                        className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/70 shadow-xs hover:border-amber-300 transition-all text-left"
+                      >
+                        <div className="flex items-start justify-between gap-2 pb-1.5 mb-1.5 border-b border-amber-200/40">
+                          <div>
+                            {supp.title ? (
+                              <h5 className="font-black text-xs text-amber-950">{supp.title}</h5>
+                            ) : (
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                                補充 #{suppIdx + 1}
+                              </span>
+                            )}
+                          </div>
+                          {isInstructor && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setEditingSupplement({ id: supp.id, title: supp.title || '', content: supp.content })}
+                                className="px-2 py-0.5 rounded-md bg-amber-200/60 hover:bg-amber-200 text-amber-900 text-[10px] font-bold transition-all cursor-pointer"
+                              >
+                                ✏️ 編輯
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSupplement(supp.id)}
+                                className="p-1 rounded-md hover:bg-rose-100 text-amber-700 hover:text-rose-700 transition-all cursor-pointer"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap font-normal">
+                          {supp.content}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  isInstructor ? (
+                    <button
+                      type="button"
+                      onClick={() => setEditingSupplement({ title: "", content: "" })}
+                      className="w-full p-4 rounded-2xl border-2 border-dashed border-slate-200 hover:border-amber-400 bg-slate-50/40 hover:bg-amber-50/30 text-slate-400 hover:text-amber-800 transition-all flex items-center justify-center gap-2 cursor-pointer group text-xs font-bold"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-slate-200 group-hover:bg-amber-200 text-slate-600 group-hover:text-amber-900 flex items-center justify-center font-bold text-xs">
+                        +
+                      </span>
+                      <span>點此直接新增講師補充說明（直接呈現給全班，不經 AI 萃取）</span>
+                    </button>
+                  ) : null
+                )}
+              </div>
+
             </div>
           )}
         </div>
@@ -2493,9 +2609,9 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
           <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <span className="text-xl">📌</span>
+                <span className="text-xl">✨</span>
                 <h3 className="text-base font-black text-slate-900">
-                  {lectureData?.stickies?.some(s => s.id === editingSticky.id) ? "編輯重點便利貼" : "新增重點便利貼"}
+                  調整 AI 精華要點
                 </h3>
               </div>
               <button
@@ -2630,6 +2746,78 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
                   {isSavingLecture ? "儲存中..." : "💾 儲存並同步"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 講師專屬：手動補充編輯彈窗 (直接呈現，不經 AI) */}
+      {editingSupplement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">✍️</span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    {editingSupplement.id ? "編輯講師補充" : "新增講師補充"}
+                  </h3>
+                  <p className="text-[11px] text-amber-700 font-medium">
+                    此內容將直接呈現給全班學員，不需透過 AI 萃取。
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSupplement(null)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 mb-1 block">補充主題 / 標題（選填）</label>
+                <input
+                  type="text"
+                  value={editingSupplement.title}
+                  onChange={(e) => setEditingSupplement({ ...editingSupplement, title: e.target.value })}
+                  placeholder="例如：實務避坑指南、隨堂提醒..."
+                  className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 mb-1 block">
+                  補充內容（必填，支援多行段落）<span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  value={editingSupplement.content}
+                  onChange={(e) => setEditingSupplement({ ...editingSupplement, content: e.target.value })}
+                  rows={6}
+                  placeholder="請直接輸入補充內容，送出後將即時同步給全班學員..."
+                  className="w-full px-3 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 focus:bg-white leading-relaxed resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setEditingSupplement(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                disabled={isSavingSupplement}
+                onClick={() => handleSaveSupplement(editingSupplement)}
+                className="px-5 py-2 text-xs font-black text-slate-950 bg-amber-500 hover:bg-amber-400 active:scale-95 rounded-xl shadow-md transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isSavingSupplement ? "儲存中..." : "立即發布"}
+              </button>
             </div>
           </div>
         </div>
