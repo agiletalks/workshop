@@ -143,5 +143,33 @@ try {
   process.exit(1);
 }
 
+// 7. Verify inline script syntax in HTML files (BOARD-05 regression guard)
+console.log('Validating HTML inline scripts syntax...');
+const vm = require('vm');
+const htmlCheckFiles = [
+  path.join(rootDir, 'split', 'public', 'board.html'),
+  path.join(distWorkshopDir, 'split', 'board.html'),
+  path.join(distWorkshopDir, 'ai-arm', 'board.html')
+];
+for (const f of htmlCheckFiles) {
+  if (fs.existsSync(f)) {
+    const html = fs.readFileSync(f, 'utf8');
+    const scripts = [...html.matchAll(/<script(?![^>]*src=)([^>]*)>([\s\S]*?)<\/script>/gi)];
+    scripts.forEach((m, idx) => {
+      const typeMatch = m[1].match(/type=["']([^"']+)["']/i);
+      const isModule = typeMatch && typeMatch[1] === 'module';
+      if (!isModule) {
+        try {
+          new vm.Script(m[2]);
+        } catch (err) {
+          console.error(`Error: Syntax error in ${f} script #${idx + 1}:`, err.message);
+          process.exit(1);
+        }
+      }
+    });
+  }
+}
+console.log('✓ All target HTML inline scripts passed syntax validation.');
+
 console.log('=== Build Completed Successfully ===');
 console.log(`Build output is ready at: ${distDir}`);

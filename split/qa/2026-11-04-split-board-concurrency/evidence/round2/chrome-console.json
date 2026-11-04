@@ -1,0 +1,20 @@
+[
+  {
+    "level": "warn",
+    "message": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+    "timestamp": "2026-11-04T08:19:27.533Z",
+    "url": "https://cdn.tailwindcss.com/"
+  },
+  {
+    "level": "error",
+    "message": "SyntaxError: Identifier 'MY_CLIENT_ID' has already been declared",
+    "timestamp": "2026-11-04T08:19:27.822Z",
+    "url": "https://agiletalks-workshop.web.app/workshop/split/board.html?class=qa-split-collab-20261104&room=qa-collab-r1&team=1"
+  },
+  {
+    "level": "error",
+    "message": "ReferenceError: showToolbar is not defined\n    at HTMLDivElement.onclick (https://agiletalks-workshop.web.app/workshop/split/board.html?class=qa-split-collab-20261104&room=qa-collab-r1&team=1:488:336)",
+    "timestamp": "2026-11-04T08:19:43.995Z",
+    "url": "https://agiletalks-workshop.web.app/workshop/split/board.html?class=qa-split-collab-20261104&room=qa-collab-r1&team=1"
+  }
+]

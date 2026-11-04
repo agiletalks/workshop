@@ -6,6 +6,19 @@ console.log('🧪 Testing SPLIT Board Concurrency Fixes...');
 
 const source = fs.readFileSync('split/public/board.html', 'utf8');
 
+// 0. Pre-flight verification: Full HTML inline scripts syntax check (BOARD-05 regression guard)
+console.log('🔍 Checking inline scripts syntax in split/public/board.html...');
+const scriptMatches = [...source.matchAll(/<script(?![^>]*src=)([^>]*)>([\s\S]*?)<\/script>/gi)];
+assert.ok(scriptMatches.length > 0, 'No inline scripts found in split/public/board.html');
+scriptMatches.forEach((m, idx) => {
+  try {
+    new vm.Script(m[2]);
+    console.log(`  ✓ Script #${idx + 1} syntax OK`);
+  } catch (err) {
+    throw new Error(`[BOARD-05] Syntax error in script #${idx + 1}: ${err.message}`);
+  }
+});
+
 function extractBlock(startMarker, endMarker) {
   const start = source.indexOf(startMarker);
   const end = source.indexOf(endMarker, start);

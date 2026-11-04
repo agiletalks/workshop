@@ -1,0 +1,15 @@
+[
+  {
+    "line": 160,
+    "result": "PASS"
+  },
+  {
+    "line": 214,
+    "result": "PASS"
+  },
+  {
+    "line": 1034,
+    "result": "FAIL",
+    "error": "SyntaxError: Identifier 'MY_CLIENT_ID' has already been declared"
+  }
+]

@@ -2467,12 +2467,6 @@
     // =========================================================================
     // === 白板在線在場系統與視角跟隨 (Presence & Follow Mode System) ===
     // =========================================================================
-    const MY_CLIENT_ID = 'cli_' + (sessionStorage.getItem('aigile_board_cli_id') || (function() {
-      const id = Math.random().toString(36).substring(2, 10);
-      sessionStorage.setItem('aigile_board_cli_id', id);
-      return id;
-    })());
-
     const BOARD_PRESENCE_COLLECTION = 'ai_arm_board_presence';
     let boardPresenceUnsubscribe = null;
     let boardPresenceHeartbeatTimer = null;
