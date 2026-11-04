@@ -1,0 +1,82 @@
+{
+  "time": "2026-11-04T06:01:06.111Z",
+  "A": {
+    "notes": [
+      {
+        "id": "note-welcome-team-note",
+        "text": "【第 1 組 線上協作白板】 雙擊畫布空白處可新增便利貼，全組成員即時同步協作！\n驗收條件: 💡 提示：卡片反面為詳細備註或驗收準則 (AC)。點擊右上角 T 圖示可自動放大字級。\n更多"
+      },
+      {
+        "id": "note-note-gynnkf6ry-mw1pdr7d",
+        "text": "QA-20261104 A 並行更新 R1\n更多"
+      },
+      {
+        "id": "note-note-tn3m2y2bm-mw1pdxw4",
+        "text": "QA-20261104 B 並行更新 R1\n更多"
+      },
+      {
+        "id": "note-note-40jtg3216-mw1pgjjq",
+        "text": "QA-20261104 C 背景新增\n更多"
+      },
+      {
+        "id": "note-note-3m98xl45c-mw1pk3up",
+        "text": "QA-20261104 D 同時新增\n更多"
+      }
+    ],
+    "status": "第 1 組 專屬線上白板\n全組即時協作中\nQA-Retest-PC\n第 1 組白板 (5 張)\n第 2 組白板\n第 3 組白板\n第 4 組白板\n第 5 組白板\n第 6 組白板\n新增便利貼\n上傳圖片\nQ\nQ"
+  },
+  "B": {
+    "notes": [
+      {
+        "id": "note-welcome-team-note",
+        "text": "【第 1 組 線上協作白板】 雙擊畫布空白處可新增便利貼，全組成員即時同步協作！\n驗收條件: 💡 提示：卡片反面為詳細備註或驗收準則 (AC)。點擊右上角 T 圖示可自動放大字級。\n更多"
+      },
+      {
+        "id": "note-note-gynnkf6ry-mw1pdr7d",
+        "text": "QA-20261104 A 並行更新 R1\n更多"
+      },
+      {
+        "id": "note-note-tn3m2y2bm-mw1pdxw4",
+        "text": "QA-20261104 B 並行更新 R1\n更多"
+      },
+      {
+        "id": "note-note-40jtg3216-mw1pgjjq",
+        "text": "QA-20261104 C 背景新增\n更多"
+      },
+      {
+        "id": "note-note-3m98xl45c-mw1pk3up",
+        "text": "QA-20261104 D 同時新增\n更多"
+      },
+      {
+        "id": "note-note-tfnlxm8ct-mw1pk3oj",
+        "text": "QA-20261104 E 同時新增\n更多"
+      }
+    ],
+    "status": "第 1 組 專屬線上白板\n全組即時協作中\nQA-20261104-MobileSim\n第 1 組白板 (6 張)\n第 2 組白板\n第 3 組白板\n第 4 組白板\n第 5 組白板\n第 6 組白板\n新增便利貼\n上傳圖片\nQ\nQ"
+  },
+  "C": {
+    "notes": [
+      {
+        "id": "note-welcome-team-note",
+        "text": "【第 1 組 線上協作白板】 雙擊畫布空白處可新增便利貼，全組成員即時同步協作！\n驗收條件: 💡 提示：卡片反面為詳細備註或驗收準則 (AC)。點擊右上角 T 圖示可自動放大字級。\n更多"
+      },
+      {
+        "id": "note-note-gynnkf6ry-mw1pdr7d",
+        "text": "QA-20261104 A 並行更新 R1\n更多"
+      },
+      {
+        "id": "note-note-tn3m2y2bm-mw1pdxw4",
+        "text": "QA-20261104 B 並行更新 R1\n更多"
+      },
+      {
+        "id": "note-note-40jtg3216-mw1pgjjq",
+        "text": "QA-20261104 C 背景新增\n更多"
+      },
+      {
+        "id": "note-note-3m98xl45c-mw1pk3up",
+        "text": "QA-20261104 D 同時新增\n更多"
+      }
+    ],
+    "status": "第 1 組 專屬線上白板\n全組即時協作中\nQA-Retest-PC\n第 1 組白板 (5 張)\n第 2 組白板\n第 3 組白板\n第 4 組白板\n第 5 組白板\n第 6 組白板\n新增便利貼\n上傳圖片\nQ"
+  }
+}

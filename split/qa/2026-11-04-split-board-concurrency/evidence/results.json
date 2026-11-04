@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-04T06:03:59.662Z",
+  "scope": "Local VM executes extracted current production-source functions; Firestore top-level merge emulated, not live cloud/browser test; no cloud writes.",
+  "source": "split/public/board.html",
+  "results": [
+    {
+      "case": "different cards concurrent write",
+      "reproduced": true,
+      "expected": "both edits retained",
+      "actual": [
+        {
+          "id": "A",
+          "text": "original A",
+          "x": 0,
+          "y": 0,
+          "createdAt": "2026-11-04T06:02:59.659Z",
+          "updatedAt": "2026-11-04T06:02:59.659Z"
+        },
+        {
+          "id": "B",
+          "text": "B edited by user 2",
+          "x": 200,
+          "y": 0,
+          "createdAt": "2026-11-04T06:02:59.659Z",
+          "updatedAt": "2026-11-04T06:03:59.660Z"
+        }
+      ],
+      "reason": "set merge true replaces notes array as a field"
+    },
+    {
+      "case": "remote deletion resurrected",
+      "reproduced": true,
+      "expected": "deleted note absent",
+      "actual": [
+        {
+          "id": "fresh",
+          "text": "new note",
+          "x": 0,
+          "y": 0,
+          "createdAt": "2026-11-04T06:03:59.660Z",
+          "updatedAt": "2026-11-04T06:03:59.660Z"
+        }
+      ],
+      "reason": "15 second local retention plus subsequent full array write"
+    },
+    {
+      "case": "drag release with pending stale snapshot",
+      "reproduced": true,
+      "expected": "x=500",
+      "actualX": 0,
+      "reason": "drag does not update note timestamp; equal timestamp remote wins after save"
+    }
+  ]
+}

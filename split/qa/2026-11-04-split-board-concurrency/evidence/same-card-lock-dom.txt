@@ -1,0 +1,158 @@
+- banner:
+  - heading "第 1 組 專屬線上白板" [level=1]:
+    - generic: 第 1 組 專屬線上白板
+  - generic: 全組即時協作中
+  - generic: QA-20261104-MobileSim
+  - generic "點擊切換查看不同小組的線上白板":
+    - combobox:
+      - option "第 1 組白板 (4 張)" [selected]
+      - option "第 2 組白板"
+      - option "第 3 組白板"
+      - option "第 4 組白板"
+      - option "第 5 組白板"
+      - option "第 6 組白板"
+  - button "新增便利貼":
+    - generic: 新增便利貼
+  - button "上傳圖片":
+    - generic: 上傳圖片
+  - button "白板背景":
+  - button "批量匯入":
+  - button "檔案匯出":
+  - generic "在線成員：點擊頭像即可跟隨該成員視角":
+    - generic "QA-20261104-MobileSim (您)":
+      - generic: Q
+    - generic "QA-Retest-PC (點擊跟隨視角)":
+      - generic: Q
+  - button "視角置中":
+  - button "操作說明與快捷鍵":
+  - button "取消釘住工具列":
+- 'button "縮小 (快捷鍵: -)"':
+- generic: 100%
+- 'button "放大 (快捷鍵: +)"':
+- button "觸控板":
+  - text: 觸控板
+- button "滑鼠":
+  - text: 滑鼠
+- generic "點擊展開/收合小地圖":
+  - text: 畫布導航
+  - button:
+- generic: "卡片數量:"
+- generic: "4"
+- generic: 【第 1 組 線上協作白板】 雙擊畫布空白處可新增便利貼，全組成員即時同步協作！
+- button "切換文字深淺色 (黑/白)":
+- 'button "字體自適應最大化 (快捷鍵: F)"':
+- button "編輯卡片":
+- generic: "驗收條件: 💡 提示：卡片反面為詳細備註或驗收準則 (AC)。點擊右上角 T 圖示可自動放大字級。"
+- button
+- button
+- button
+- button
+- button
+- button "更多"
+- generic "拖曳以拉出箭頭連線"
+- generic "拖曳以拉出箭頭連線"
+- generic "拖曳以拉出箭頭連線"
+- generic "拖曳以拉出箭頭連線"
+- generic: QA-Retest-PC 編輯中
+- generic: QA-20261104 A 並行更新 R1
+- generic "鎖定中":
+  - text: 鎖定
+- generic: QA-20261104 B 並行更新 R1
+- button "切換文字深淺色 (黑/白)":
+- 'button "字體自適應最大化 (快捷鍵: F)"':
+- button "編輯卡片":
+- button
+- button
+- button
+- button
+- button
+- button "更多"
+- generic "拖曳以拉出箭頭連線"
+- generic "拖曳以拉出箭頭連線"
+- generic "拖曳以拉出箭頭連線"
+- generic "拖曳以拉出箭頭連線"
+- generic: QA-20261104 C 背景新增
+- button "切換文字深淺色 (黑/白)":
+- 'button "字體自適應最大化 (快捷鍵: F)"':
+- button "編輯卡片":
+- button
+- button
+- button
+- button
+- button
+- button "更多"
+- generic "拖曳以拉出箭頭連線"
+- generic "拖曳以拉出箭頭連線"
+- generic "拖曳以拉出箭頭連線"
+- generic "拖曳以拉出箭頭連線"
+- text: 便利貼詳細資訊
+- generic: "#note-40j"
+- heading "便利貼內容 (Text)" [level=4]
+- paragraph: QA-20261104 C 背景新增
+- heading "驗收條件 / 備註 (Acceptance Criteria)" [level=4]
+- paragraph: （無驗收條件與備註說明）
+- text: "建立: 2026/11/4 13:57:53"
+- text: "修改: 2026/11/4 13:57:53"
+- heading "編輯卡片與 AC" [level=3]:
+  - text: 編輯卡片與 AC
+- button:
+- generic: 內容 (Text)
+- textbox "請輸入主要看板故事、工作事項內容..." [active]: QA-20261104 C 背景新增
+- generic: 驗收條件 / 補充備註 (Acceptance Criteria)
+- textbox "請輸入敏捷交付規格、驗收標準（AC）或技術卡片細節..."
+- generic: 卡片背景色彩
+- button "黃色"
+- button "橘色"
+- button "紫色"
+- button "綠色":
+- button "粉紅色"
+- button "藍色"
+- button "黑色"
+- button "白色"
+- button "紅色"
+- button "3M 鮮紅"
+- button "3M 亮橘"
+- button "3M 亮黃"
+- button "3M 翠綠"
+- button "3M 湖水藍"
+- button "3M 桃粉"
+- text: 自訂色彩：
+- textbox: "#bbf7d0"
+- generic: "#BBF7D0"
+- text: 文字深淺色彩：
+- button "自動對比"
+- button "深黑": 深黑
+- button "純白": 純白
+- button "刪除便利貼":
+  - text: 刪除便利貼
+- button "取消"
+- button "儲存便利貼"
+- text: 已選取
+- generic: "0"
+- text: 張卡片
+- button "橫向排列":
+  - text: 橫向排列
+- button "縱向排列":
+  - text: 縱向排列
+- button "網格對齊":
+  - text: 網格對齊
+- button "變更色彩": 變更色彩
+- button "字體縮放":
+  - text: 字體縮放
+- button "文字黑白":
+  - text: 文字黑白
+- button "刪除":
+  - text: 刪除
+- button "改字":
+  - text: 改字
+- button "反轉":
+  - text: 反轉
+- 'button "起: 右"':
+  - generic: "起:"
+  - generic: 右
+- 'button "終: 左"':
+  - generic: "終:"
+  - generic: 左
+- button "2.5px":
+  - generic: 2.5px
+- button "刪除連線":
