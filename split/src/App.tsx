@@ -152,7 +152,19 @@ function App() {
   const [isQuestionsOpen, setIsQuestionsOpen] = useState(false);
 
   // 6. 自訂團隊演練任務清單 (模組 3)
-  const [customTasks, setCustomTasks] = useState<TeamTaskItem[]>([]);
+  const [customTasks, setCustomTasks] = useState<TeamTaskItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const cid = (params.get("c") || params.get("class") || userSession?.classId || "").trim().toLowerCase();
+      if (cid) {
+        const cached = localStorage.getItem(`split_custom_tasks_${cid}`);
+        if (cached) return JSON.parse(cached) as TeamTaskItem[];
+      }
+    } catch (_) {}
+    return [];
+  });
+  const [customTasksLoaded, setCustomTasksLoaded] = useState(false);
   const [isTaskEditorOpen, setIsTaskEditorOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TeamTaskItem | null>(null);
   const [taskInsertAnchor, setTaskInsertAnchor] = useState<string>("slide-01");
@@ -331,10 +343,15 @@ function App() {
           initialTasksLoadedRef.current = true;
         }
         prevTaskIdsRef.current = new Set(tasks.map(t => t.id));
+      try {
+        localStorage.setItem(`split_custom_tasks_${userSession.classId.toLowerCase()}`, JSON.stringify(tasks));
+      } catch (_) {}
         setCustomTasks(tasks);
+        setCustomTasksLoaded(true);
       },
       (err) => {
         console.warn('[App] Firestore custom tasks sync failed:', err);
+        setCustomTasksLoaded(true);
       }
     );
 
@@ -350,6 +367,9 @@ function App() {
       const tasks = await fetchCustomTasks(userSession.classId);
       setCustomTasks(tasks);
       prevTaskIdsRef.current = new Set(tasks.map(t => t.id));
+      try {
+        localStorage.setItem(`split_custom_tasks_${userSession.classId.toLowerCase()}`, JSON.stringify(tasks));
+      } catch (_) {}
       setTaskSyncMessage("✅ 目錄已就地同步完成");
       setTimeout(() => setTaskSyncMessage(null), 3000);
     } catch (err) {
@@ -515,11 +535,12 @@ function App() {
   };
 
   // 初始載入時解析 Hash 投影片深層連結 (僅執行一次)
+  const initialHashRef = useRef<string>(typeof window !== 'undefined' ? window.location.hash : '');
   const initialHashParsedRef = useRef(false);
   useEffect(() => {
-    if (initialHashParsedRef.current || mergedSlides.length === 0) return;
+    if (initialHashParsedRef.current || !customTasksLoaded || mergedSlides.length === 0) return;
     initialHashParsedRef.current = true;
-    const hash = window.location.hash;
+    const hash = initialHashRef.current || window.location.hash;
     if (!hash) return;
     if (hash === '#/overview') {
       setViewMode('overview');
@@ -531,14 +552,16 @@ function App() {
       const pageNum = parseInt(match[2], 10);
       const target = mergedSlides.find(s => s.moduleId === modId && s.page === pageNum);
       if (target && target.id !== activeSlideIdRef.current) {
+        activeSlideIdRef.current = target.id;
         setActiveSlideId(target.id);
       }
     }
-  }, [mergedSlides]);
+  }, [mergedSlides, customTasksLoaded]);
 
   // 監聽網址 Hash 變更以同步當前投影片 (使用者點上一頁/下一頁瀏覽器導航時觸發)
   useEffect(() => {
     const handleHashChange = () => {
+      if (!customTasksLoaded) return;
       const hash = window.location.hash;
       if (!hash) return;
       if (hash === '#/overview') {
@@ -551,7 +574,8 @@ function App() {
         const pageNum = parseInt(match[2], 10);
         const target = mergedSlides.find(s => s.moduleId === modId && s.page === pageNum);
         if (target && target.id !== activeSlideIdRef.current) {
-          setActiveSlideId(target.id);
+          activeSlideIdRef.current = target.id;
+        setActiveSlideId(target.id);
           if (viewModeRef.current !== 'focus') setViewMode('focus');
         }
       }
@@ -559,21 +583,22 @@ function App() {
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [mergedSlides]);
+  }, [mergedSlides, customTasksLoaded]);
 
   // 當 activeSlide 改變時，更新網址列 Hash (單向同步，不觸發重複渲染)
   useEffect(() => {
+
     if (workbook.viewMode === "overview") {
-      if (window.location.hash !== "#/overview") {
+      if (customTasksLoaded && initialHashParsedRef.current && window.location.hash !== "#/overview") {
         window.location.hash = "#/overview";
       }
-    } else if (activeSlide) {
+    } else if (activeSlide && activeSlideIndex !== -1 && customTasksLoaded && initialHashParsedRef.current && activeSlide.id === activeSlideIdRef.current) {
       const targetHash = `#/module/${activeSlide.moduleId}/slide/${activeSlide.page}`;
       if (window.location.hash !== targetHash) {
         window.location.hash = targetHash;
       }
     }
-  }, [workbook.viewMode, activeSlide?.moduleId, activeSlide?.page]);
+  }, [customTasksLoaded, workbook.viewMode, activeSlide?.moduleId, activeSlide?.page, activeSlideIndex]);
 
   const handleNext = () => {
     if (activeSlideIndex < mergedSlides.length - 1) {
@@ -621,6 +646,7 @@ function App() {
 
   const handleSelectSlide = (slideId: string) => {
     setActiveSlideId(slideId);
+
     if (workbook.viewMode === "overview") {
       setViewMode("focus");
     }

@@ -2127,7 +2127,7 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
             className={`w-full flex-1 p-4 border rounded-2xl outline-none transition-all text-sm resize-none leading-relaxed ${
               isInputDisabled
                 ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
-                : "bg-slate-50 focus:bg-white border-slate-200 focus:border-fubon-blue focus:ring-4 focus:ring-fubon-blue-glow"
+                : "bg-slate-50 text-slate-800 focus:bg-white border-slate-200 focus:border-fubon-blue focus:ring-4 focus:ring-fubon-blue-glow"
             }`}
           />
 
@@ -2159,8 +2159,8 @@ export const WorkbookPanel: React.FC<WorkbookPanelProps> = ({
           )}
 
           {/* Attachments Section (小組產出：支援圖檔、PDF、HTML網頁、網頁連結) */}
-          <div className="mt-3 pt-3 border-t border-slate-100 shrink-0">
-            <div className="flex items-center justify-between mb-2">
+          <div className="mt-3 pt-3 pb-14 md:pb-12 border-t border-slate-100 shrink-0">
+            <div className="flex flex-wrap items-center gap-2.5 pr-28 mb-2">
               <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <span>📎 小組產出與附件 ({teamNote?.attachments?.length || 0})</span>
               </span>
